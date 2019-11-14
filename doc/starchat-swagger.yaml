@@ -113,7 +113,7 @@ paths:
             type: string
       responses:
         '201':
-          description: instance successfully created
+          description: instance successfully disabled
           content:
             application/json:
               schema:
@@ -122,12 +122,12 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/{index_name}/index_management/delete':
-    post:
+  '/{index_name}/index_management':
+    delete:
       tags:
         - admin
       summary: mark for delete an instance
-      operationId: post_index_management_delete
+      operationId: delete_index_management
       description: "set the delete flag to true in the instance registry"
       parameters:
         - in: path
@@ -138,7 +138,31 @@ paths:
             type: string
       responses:
         '201':
-          description: instance successfully created
+          description: instance successfully mark for deletion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexManagementResponse'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
+    get:
+      tags:
+        - admin
+      summary: check if an instance is the registry
+      operationId: get_index_management
+      description: "check if an instance is in the registry"
+      parameters:
+        - in: path
+          name: index_name
+          description: "the name of the index: it must have the following format index_<organization>_<language>_<arbitrary suffix> e.g. index_getjenny_italian_usecase0"
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: instance read succes
           content:
             application/json:
               schema:

@@ -1,10 +1,13 @@
 package com.getjenny.starchat.services
 
 import akka.actor.{Actor, Props}
+import com.getjenny.starchat.SCActorSystem
+import com.getjenny.starchat.services.CronReloadDTService.ReloadAnalyzersTickActor
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.index.query.QueryBuilders
 
+import scala.concurrent.duration._
 import scala.util.Try
 
 object CronDeleteInstanceService extends CronService {
@@ -46,6 +49,18 @@ object CronDeleteInstanceService extends CronService {
       res
     }
 
+  }
+
+  def scheduleAction(): Unit = {
+    if (systemIndexManagementService.elasticClient.instanceRegistryDeleteFrequency > 0) {
+      val reloadDecisionTableActorRef =
+        SCActorSystem.system.actorOf(Props(new ReloadAnalyzersTickActor))
+      SCActorSystem.system.scheduler.schedule(
+        0 seconds,
+        systemIndexManagementService.elasticClient.instanceRegistryDeleteFrequency seconds,
+        reloadDecisionTableActorRef,
+        tickMessage)
+    }
   }
 
   object DeleteInstanceActor {

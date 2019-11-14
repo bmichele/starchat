@@ -10,6 +10,7 @@ object SystemIndexManagementElasticClient extends ElasticClient {
 
   // decision table changes awareness per index mechanism
   val dtReloadCheckFrequency : Int = config.getInt("es.dt_reload_check_frequency")
+  val instanceRegistryDeleteFrequency : Int = config.getInt("es.instance_registry_delete_frequency")
   val dtReloadTimestampFieldName = "timestamp"
 
   // alive nodes detection mechanism

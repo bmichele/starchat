@@ -61,8 +61,8 @@ object CronReloadDTService extends CronService {
           if (indexMgmRes.check) {
             log.error("Index exists but loading results in an error: " + indexMgmRes.message)
           } else {
-            val r = instanceRegistryService.deleteEntry(ids = List(index))
-            log.debug("Deleted update record for the index: " + r)
+            instanceRegistryService.deleteEntry(ids = List(index))
+            log.debug("Deleted update record for the index: " + index)
           }
         }
     }

@@ -6,7 +6,7 @@ package com.getjenny.starchat.services
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.{DeleteDocumentsResult, DtReloadTimestamp, IndexManagementResponse}
+import com.getjenny.starchat.entities.{DtReloadTimestamp, IndexManagementResponse}
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
@@ -16,23 +16,29 @@ import org.elasticsearch.common.xcontent.XContentFactory._
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
+import scalaz.Scalaz._
+import org.elasticsearch.common.Strings
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.Map
 import scala.util.{Failure, Success, Try}
-import scalaz.Scalaz._
 
-case class InstanceRegistryDocument(timestamp: Option[Long] = None, enabled: Option[Boolean] = None,
-                                    delete: Option[Boolean] = None) {
+case class InstanceRegistryDocument(timestamp: Option[Long] = None,
+                                    enabled: Option[Boolean] = None,
+                                    delete: Option[Boolean] = None,
+                                    deleted: Option[Boolean] = None) {
   def builder: XContentBuilder = {
     val builder = jsonBuilder().startObject()
     timestamp.foreach(t => builder.field("timestamp", t))
     enabled.foreach(e => builder.field("enabled", e))
     delete.foreach(d => builder.field("delete", d))
+    deleted.foreach(d => builder.field("deleted", d))
     builder.endObject()
   }
 
-  def isEmpty: Boolean = timestamp.isEmpty && enabled.isEmpty && delete.isEmpty
+  def isEmpty: Boolean = {
+    deleted.getOrElse(false) || timestamp.isEmpty && enabled.isEmpty && delete.isEmpty
+  }
 }
 
 object InstanceRegistryDocument {
@@ -46,7 +52,8 @@ object InstanceRegistryDocument {
     }
     val enabled = source.get("enabled").map(_.asInstanceOf[Boolean])
     val delete = source.get("delete").map(_.asInstanceOf[Boolean])
-    InstanceRegistryDocument(Option(timestamp), enabled, delete)
+    val isDeleted = source.get("deleted").map(_.asInstanceOf[Boolean])
+    InstanceRegistryDocument(Option(timestamp), enabled, delete, isDeleted)
   }
 
   def empty: InstanceRegistryDocument = {
@@ -67,7 +74,7 @@ object InstanceRegistryService extends AbstractDataService {
                       refresh: Int = 0): Option[DtReloadTimestamp] = {
     val ts: Long = if (timestamp === InstanceRegistryDocument.InstanceRegistryTimestampDefault) System.currentTimeMillis else timestamp
 
-    val response = updateInstance(dtIndexName, timestamp = Option(ts), enabled = None, delete = None)
+    val response = updateInstance(dtIndexName, timestamp = Option(ts), enabled = None, delete = None, deleted = None)
 
     log.debug("dt reload timestamp response status: {}", response.status())
 
@@ -109,26 +116,30 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   def disableInstance(indexName: String): IndexManagementResponse = {
-    val response = updateInstance(indexName, timestamp = None, enabled = Option(false), delete = None)
+    val response = updateInstance(indexName, timestamp = None, enabled = Option(false), delete = None, deleted = None)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
   def markDeleteInstance(indexName: String): IndexManagementResponse = {
-    val response = updateInstance(indexName, timestamp = None, enabled = Option(false), delete = Option(true))
+    val response = updateInstance(indexName, timestamp = None, enabled = Option(false), delete = Option(true), None)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
 
   private[this] def updateInstance(indexName: String, timestamp: Option[Long],
-                                   enabled: Option[Boolean], delete: Option[Boolean]): UpdateResponse = {
+                                   enabled: Option[Boolean],
+                                   delete: Option[Boolean],
+                                   deleted: Option[Boolean]): UpdateResponse = {
     if(!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
-    val toBeUpdated = InstanceRegistryDocument(timestamp =  timestamp , enabled = enabled, delete = delete)
+    val toBeUpdated = InstanceRegistryDocument(timestamp =  timestamp , enabled = enabled,
+      delete = delete,
+      deleted = deleted)
     val response = esCrudBase.update(indexName, toBeUpdated.builder)
     esCrudBase.refresh()
-    log.debug("Updated instance {} with {} on index {}", indexName, enabled, indexName)
 
     val updatedDocument = findEsLanguageIndex(indexName)
+    log.debug("Updated instance {} with document: {}", indexName, updatedDocument)
     cache.put(indexName, updatedDocument)
     response
   }
@@ -139,7 +150,11 @@ object InstanceRegistryService extends AbstractDataService {
     case Success(response) => if (!response.isExists || response.isSourceEmpty) {
       InstanceRegistryDocument.empty
     } else {
-      InstanceRegistryDocument(response.getSource.asScala.toMap)
+      val document = InstanceRegistryDocument(response.getSource.asScala.toMap)
+      document.deleted match {
+        case Some(true) => InstanceRegistryDocument.empty
+        case _ => document
+      }
     }
     case Failure(e) =>
       log.error(e, "Error while reading from instance-registry - id: {}", dtIndexName)
@@ -153,10 +168,9 @@ object InstanceRegistryService extends AbstractDataService {
       .getOrElse(InstanceRegistryDocument.InstanceRegistryTimestampDefault))
   }
 
-  def deleteEntry(ids: List[String]): DeleteDocumentsResult = {
-    val result = delete(indexName = InstanceRegistryIndex, ids = ids, refresh = 1)
+  def deleteEntry(ids: List[String]): Unit = {
+    ids.foreach(entry => updateInstance(entry, None, None, None, deleted = Option(true)))
     ids.foreach(cache.remove)
-    result
   }
 
   def getAll: List[(String, InstanceRegistryDocument)] = {

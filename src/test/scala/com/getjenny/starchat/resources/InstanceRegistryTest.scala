@@ -93,7 +93,7 @@ class InstanceRegistryTest extends TestBase {
 
       val instance = instanceRegistry.getInstance(indexName)
 
-      assert(instance === InstanceRegistryDocument.empty)
+      assert(instance.isEmpty)
     }
   }
 
