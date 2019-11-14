@@ -17,6 +17,20 @@ class InstanceRegistryTest extends TestBase {
          instanceRegistry.addInstance(invalidIndexName)
       }
     }
+    
+    "map fields returned by elastic" in {
+      val sourceMap = Map(
+        "timestamp" -> 0l,
+        "enabled" -> false,
+        "delete" -> false,
+        "deleted" -> false
+      )
+      val document = InstanceRegistryDocument(sourceMap)
+      assert(document.timestamp.isDefined)
+      assert(document.enabled.isDefined)
+      assert(document.delete.isDefined)
+      assert(document.deleted.isDefined)
+    }
 
     "add and enable an instance" in {
       instanceRegistry.addInstance(indexName)
