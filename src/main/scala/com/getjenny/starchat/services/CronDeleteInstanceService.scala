@@ -8,6 +8,7 @@ import com.getjenny.starchat.utils.Index
 import org.elasticsearch.index.query.QueryBuilders
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Try
 
 object CronDeleteInstanceService extends CronService {
