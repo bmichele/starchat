@@ -5,7 +5,7 @@ info:
   description: An Open Source, scalable conversational engine for B2B applications. You can find
     out more about StarChat at [starchat.ai](http://starchat.ai) or on
     [github GetJenny/starchat](https://github.com/GetJenny/starchat).
-  version: "v5.1"
+  version: "v5.2"
   title: StarChat APIs
   contact:
     email: angelo@getjenny.com
