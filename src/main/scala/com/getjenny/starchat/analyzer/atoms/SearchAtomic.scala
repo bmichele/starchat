@@ -21,7 +21,7 @@ class SearchAtomic(arguments: List[String], restrictedArgs: Map[String, String])
   override def toString: String = atomName + "(\"" + stateArg + "\")"
   val isEvaluateNormalized: Boolean = false
 
-  override val matchThreshold: Double = 0.65
+  override val matchThreshold: Double = 1.2
 
   val decisionTableService: DecisionTableService.type = DecisionTableService
 
@@ -38,6 +38,6 @@ class SearchAtomic(arguments: List[String], restrictedArgs: Map[String, String])
       case _ => 0.0d
     }
 
-    Result(score=score * 1.2d)
+    Result(score=score * 1.5d)
   } // returns elasticsearch score of the highest query in queries
 }
