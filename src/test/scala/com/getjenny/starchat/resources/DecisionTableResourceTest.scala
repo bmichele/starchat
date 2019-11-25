@@ -447,6 +447,52 @@ class DecisionTableResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return an HTTP code 200  and returning a random bubble response" in {
+      val decisionTableRequest = DTDocumentCreate(
+        state = "forgot_password",
+        executionOrder = 0,
+        maxStateCount = 0,
+        analyzer = "reinfConjunction(bor(vOneKeyword(\"forgot\"), vOneKeyword(\"don't remember\")), bor(vOneKeyword(\"password\")))",
+        queries = List("I forgot my password",
+          "my password is wrong",
+          "don't remember the password"),
+        bubble = "Hello %name%, how can I help you?|Hello %name%, ask me anything!",
+        action = "show_button",
+        actionInput = Map("text to be shown on button" -> "password_recovery"),
+        stateData = Map("url" -> "www.getjenny.com"),
+        successValue = "eval(show_buttons)",
+        failureValue = "dont_understand",
+        evaluationClass = Some("default"),
+        version = None
+      )
+
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val request = ResponseRequestIn(conversationId = "conv_12131",
+        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
+        )),
+        state = None,
+        data = Some(Map("name" -> "Donald Duck", "job" -> "idle")),
+        threshold = Some(0),
+        evaluationClass = None,
+        maxResults = Some(1),
+        searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
+      )
+
+      Post("/index_getjenny_english_0/get_next_response", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[ResponseRequestOut]]
+        val headResponseRequestOut = response.headOption.getOrElse(fail)
+        assert(headResponseRequestOut.bubble === "Hello Donald Duck, how can I help you?" ||
+          headResponseRequestOut.bubble === "Hello Donald Duck, ask me anything!")
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 when deleting a document" in {
       Delete("/index_getjenny_english_0/decisiontable?id=forgot_password&refresh=1") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -455,7 +501,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         headDeleteDocumentResult.index should be ("index_getjenny_english_0.state")
         headDeleteDocumentResult.id should be ("forgot_password")
         headDeleteDocumentResult.found should be (true)
-        headDeleteDocumentResult.version should be (4)
+        headDeleteDocumentResult.version should be (5)
       }
     }
   }
