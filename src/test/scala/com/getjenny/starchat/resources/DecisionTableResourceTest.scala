@@ -2,7 +2,6 @@ package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
 import com.getjenny.starchat.entities._
-import com.getjenny.starchat.utils.Index
 
 class DecisionTableResourceTest extends TestEnglishBase {
 
@@ -448,7 +447,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 200  and returning a random bubble response" in {
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
