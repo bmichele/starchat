@@ -6,7 +6,7 @@ package com.getjenny.starchat.services
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.{ClusterLoadingDtStatusIndex, DeleteDocumentsSummaryResult, NodeDtLoadingStatus, NodeLoadingAllDtStatus}
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.InstanceRegistryService.allInstanceTimestamp
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.utils.Index

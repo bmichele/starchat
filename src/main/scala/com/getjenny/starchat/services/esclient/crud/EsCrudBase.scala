@@ -2,7 +2,7 @@ package com.getjenny.starchat.services.esclient.crud
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.RefreshIndexResult
+import com.getjenny.starchat.entities.io.RefreshIndexResult
 import com.getjenny.starchat.services.esclient.ElasticClient
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.delete.DeleteRequest

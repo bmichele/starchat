@@ -9,8 +9,8 @@ import java.time.{ZoneId, ZoneOffset}
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.util.{RandomNumbers, Time}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es.{QaDocumentEntityManager, TermCountEntityManager, _}
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents.{QaDocumentEntityManager, TermCountEntityManager, _}
 import com.getjenny.starchat.services.esclient.QuestionAnswerElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import org.apache.lucene.search.join._

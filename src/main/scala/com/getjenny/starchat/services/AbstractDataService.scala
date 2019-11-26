@@ -1,7 +1,7 @@
 package com.getjenny.starchat.services
 
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.{DeleteDocumentResult, DeleteDocumentsResult, DeleteDocumentsSummaryResult}
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.esclient.ElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}

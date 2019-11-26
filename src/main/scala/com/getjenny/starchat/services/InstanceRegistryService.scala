@@ -6,7 +6,7 @@ package com.getjenny.starchat.services
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.{DtReloadTimestamp, IndexManagementResponse}
+import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse}
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
@@ -17,7 +17,7 @@ import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import scalaz.Scalaz._
-import org.elasticsearch.common.Strings
+
 import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.Map

@@ -2,8 +2,8 @@ package com.getjenny.starchat.services.esclient.crud
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.es.{ReadEntityManager, WriteEntityManager}
-import com.getjenny.starchat.entities.{DeleteDocumentResult, IndexDocumentResult, UpdateDocumentResult}
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents.{ReadEntityManager, WriteEntityManager}
 import com.getjenny.starchat.services.DeleteDataServiceException
 import com.getjenny.starchat.services.esclient.ElasticClient
 import com.getjenny.starchat.utils.Index

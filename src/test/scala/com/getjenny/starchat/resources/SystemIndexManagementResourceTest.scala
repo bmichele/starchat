@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit._
 import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{IndexManagementResponse, RefreshIndexResults}
 import com.getjenny.starchat.serializers.JsonSupport
 import com.getjenny.starchat.utils.Index
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}

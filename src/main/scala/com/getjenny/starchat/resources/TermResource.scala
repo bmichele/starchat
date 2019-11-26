@@ -9,8 +9,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
 import akka.stream.scaladsl.Source
-import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es.{SearchTerm, Term, Terms}
+import com.getjenny.starchat.entities.io.{DocsIds, IndexManagementResponse, Permissions, ReturnMessageData}
+import com.getjenny.starchat.entities.persistents.{SearchTerm, Term, Terms}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services.TermService
 

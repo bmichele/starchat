@@ -3,6 +3,7 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
 import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, Permissions, User}
 
 class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
 

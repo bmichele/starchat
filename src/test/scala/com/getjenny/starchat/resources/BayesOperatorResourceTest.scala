@@ -3,7 +3,8 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
 import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es._
+import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, DTAnalyzerLoad, IndexDocumentResult, Permissions, ResponseRequestIn, ResponseRequestInUserInput, ResponseRequestOut, SearchAlgorithm, User}
+import com.getjenny.starchat.entities.persistents._
 
 class BayesOperatorResourceTest extends TestEnglishBase {
 

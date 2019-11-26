@@ -6,7 +6,7 @@ package com.getjenny.starchat.services.actions
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.DtActionResult
+import com.getjenny.starchat.entities.io.DtActionResult
 
 case class DtActionException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)

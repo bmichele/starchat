@@ -2,6 +2,7 @@ package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.CreateLanguageIndexRequest
 
 
 trait TestEnglishBase extends TestBase {

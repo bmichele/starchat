@@ -8,7 +8,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{IndexManagementResponse, Permissions}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services.InstanceRegistryService
 

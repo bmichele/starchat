@@ -1,5 +1,5 @@
 package com.getjenny.starchat.utils
 
-class CycleDetection {
-
+object CycleDetection {
+  //TODO: to be implemented
 }

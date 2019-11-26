@@ -1,7 +1,7 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.getjenny.starchat.entities.es.EsEntityManager
+import com.getjenny.starchat.entities.persistents.EsEntityManager
 import com.getjenny.starchat.serializers.JsonSupport
 import com.getjenny.starchat.services.esclient.IndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud

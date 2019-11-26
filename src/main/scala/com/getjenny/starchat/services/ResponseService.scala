@@ -8,8 +8,8 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.analyzers._
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context, Result}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.es.DTDocumentCreate
-import com.getjenny.starchat.entities.{ResponseRequestOut, _}
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents.DTDocumentCreate
 import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._

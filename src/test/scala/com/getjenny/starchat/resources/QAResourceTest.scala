@@ -1,8 +1,8 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
-import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es._
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents._
 
 class QAResourceTest extends TestEnglishBase {
 

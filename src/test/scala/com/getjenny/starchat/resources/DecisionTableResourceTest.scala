@@ -2,7 +2,8 @@ package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
 import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es.{DTDocumentCreate, DTDocumentUpdate, SearchDTDocumentsResults}
+import com.getjenny.starchat.entities.io.{DTAnalyzerLoad, DTAnalyzerMap, DTDocumentSearch, DeleteDocumentsResult, DeleteDocumentsSummaryResult, DtReloadTimestamp, IndexDocumentListResult, IndexDocumentResult, Permissions, ResponseRequestIn, ResponseRequestInUserInput, ResponseRequestOut, ResponseRequestOutOperationResult, ReturnMessageData, SearchAlgorithm, UpdateDocumentResult, User}
+import com.getjenny.starchat.entities.persistents.{DTDocumentCreate, DTDocumentUpdate, SearchDTDocumentsResults}
 import com.getjenny.starchat.utils.Index
 
 class DecisionTableResourceTest extends TestEnglishBase {

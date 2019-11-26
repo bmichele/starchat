@@ -1,6 +1,6 @@
 package com.getjenny.starchat.utils
 
-import com.getjenny.starchat.entities.CommonOrSpecificSearch
+import com.getjenny.starchat.entities.io.CommonOrSpecificSearch
 import com.getjenny.starchat.services.DecisionTableService.elasticClient
 import com.getjenny.starchat.services.TermService
 

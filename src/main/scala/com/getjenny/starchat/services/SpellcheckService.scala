@@ -4,7 +4,7 @@ package com.getjenny.starchat.services
  * Created by angelo on 21/04/17.
  */
 
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.esclient.KnowledgeBaseElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}

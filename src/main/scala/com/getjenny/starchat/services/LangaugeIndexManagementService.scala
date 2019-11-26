@@ -6,7 +6,7 @@ package com.getjenny.starchat.services
 
 import java.io._
 
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.esclient.IndexManagementElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest

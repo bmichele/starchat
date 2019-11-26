@@ -4,7 +4,7 @@ package com.getjenny.starchat.services.actions
  * Created by Angelo Leto <angelo@getjenny.com> on 26/04/19.
  */
 
-import com.getjenny.starchat.entities.DtActionResult
+import com.getjenny.starchat.entities.io.DtActionResult
 import courier.Defaults._
 import courier._
 import javax.mail.internet.InternetAddress

@@ -7,7 +7,7 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{Permissions, ReturnMessageData, TokenizerQueryRequest, TokenizersDescription}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services.TermService
 

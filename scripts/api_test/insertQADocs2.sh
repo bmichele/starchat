@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 PORT=${1:-8888}
-INDEX_NAME=${2:-index_getjenny_english_0}
+INDEX_NAME=${2:-index_getjenny_english_1}
 #ROUTE=${3:-prior_data}
 ROUTE=conversation_logs
 #ROUTE=${3:-knowledgebase}

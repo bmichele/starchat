@@ -7,8 +7,9 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{Permissions, ReturnMessageData}
 import com.getjenny.starchat.routing._
+
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 

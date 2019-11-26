@@ -1,0 +1,6 @@
+package com.getjenny.starchat.entities.io
+
+case class DtReloadTimestamp(
+                              indexName: String,
+                              timestamp: Long
+                            )

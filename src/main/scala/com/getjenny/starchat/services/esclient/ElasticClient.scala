@@ -6,7 +6,7 @@ package com.getjenny.starchat.services.esclient
 
 import java.net.InetAddress
 
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{FailedShard, RefreshIndexResult}
 import com.getjenny.starchat.utils.SslContext
 import com.typesafe.config.{Config, ConfigFactory}
 import javax.net.ssl._

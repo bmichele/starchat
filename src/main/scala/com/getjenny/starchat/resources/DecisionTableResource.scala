@@ -10,8 +10,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
 import com.getjenny.analyzer.analyzers.AnalyzerEvaluationException
-import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es.{DTDocumentCreate, DTDocumentUpdate}
+import com.getjenny.starchat.entities.io
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents.{DTDocumentCreate, DTDocumentUpdate}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services._
 import scalaz.Scalaz._
@@ -257,7 +258,7 @@ trait DecisionTableResource extends StarChatResource {
                             log.error(message, e)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
-                                ResponseRequestOutOperationResult(
+                                io.ResponseRequestOutOperationResult(
                                   ReturnMessageData(code = 112, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]
@@ -270,7 +271,7 @@ trait DecisionTableResource extends StarChatResource {
                             log.error(message, e)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
-                                ResponseRequestOutOperationResult(
+                                io.ResponseRequestOutOperationResult(
                                   ReturnMessageData(code = 113, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]
@@ -283,7 +284,7 @@ trait DecisionTableResource extends StarChatResource {
                             log.error(message, e)
                             completeResponse(StatusCodes.RequestTimeout,
                               Option {
-                                ResponseRequestOutOperationResult(
+                                io.ResponseRequestOutOperationResult(
                                   ReturnMessageData(code = 114, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]
@@ -296,7 +297,7 @@ trait DecisionTableResource extends StarChatResource {
                             log.error(message, e)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
-                                ResponseRequestOutOperationResult(
+                                io.ResponseRequestOutOperationResult(
                                   ReturnMessageData(code = 115, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]

@@ -6,7 +6,7 @@ package com.getjenny.starchat.services
 
 import java.io._
 
-import com.getjenny.starchat.entities.{IndexManagementResponse, _}
+import com.getjenny.starchat.entities.io.{IndexManagementResponse, RefreshIndexResult, RefreshIndexResults}
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.typesafe.config.{Config, ConfigFactory}
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest

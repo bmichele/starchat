@@ -7,7 +7,7 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import breeze.io.CSVReader
-import com.getjenny.starchat.entities.es.{DTDocumentCreate, SearchDTDocument, SearchDTDocumentsResults, Term}
+import com.getjenny.starchat.entities.persistents.{DTDocumentCreate, SearchDTDocument, SearchDTDocumentsResults, Term}
 import com.getjenny.starchat.serializers.JsonSupport
 import scalaz.Scalaz._
 

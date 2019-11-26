@@ -10,8 +10,8 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
 import akka.stream.scaladsl.Source
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es.{QADocument, TermCountFields}
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents.{QADocument, TermCountFields}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services.QuestionAnswerService
 

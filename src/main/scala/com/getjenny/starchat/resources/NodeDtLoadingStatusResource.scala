@@ -3,7 +3,7 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
-import com.getjenny.starchat.entities.{NodeDtLoadingStatus, Permissions, ReturnMessageData}
+import com.getjenny.starchat.entities.io.{NodeDtLoadingStatus, Permissions, ReturnMessageData}
 import com.getjenny.starchat.routing.{StarChatCircuitBreaker, StarChatResource}
 import com.getjenny.starchat.services.{NodeDtLoadingStatusService, NodeDtLoadingStatusServiceException}
 

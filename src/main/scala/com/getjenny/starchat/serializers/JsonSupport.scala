@@ -10,8 +10,8 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.getjenny.analyzer.expressions.AnalyzersData
-import com.getjenny.starchat.entities.es._
-import com.getjenny.starchat.entities.{QAAggregatedAnalyticsRequest, _}
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents._
 import scalaz.Scalaz._
 import spray.json._
 
@@ -33,6 +33,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object SearchAlgorithmFormat extends JsonFormat[SearchAlgorithm.Value] {
     def write(obj: SearchAlgorithm.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): SearchAlgorithm.Value = json match {
       case JsString(str) =>
         SearchAlgorithm.values.find(_.toString === str) match {
@@ -51,6 +52,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object QAAggregationsTypesFormat extends JsonFormat[QAAggregationsTypes.Value] {
     def write(obj: QAAggregationsTypes.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): QAAggregationsTypes.Value = json match {
       case JsString(str) =>
         QAAggregationsTypes.values.find(_.toString === str) match {
@@ -77,6 +79,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object DoctypesFormat extends JsonFormat[Doctypes.Value] {
     def write(obj: Doctypes.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): Doctypes.Value = json match {
       case JsString(str) =>
         Doctypes.values.find(_.toString === str) match {
@@ -95,6 +98,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object AgentFormat extends JsonFormat[Agent.Value] {
     def write(obj: Agent.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): Agent.Value = json match {
       case JsString(str) =>
         Agent.values.find(_.toString === str) match {
@@ -114,6 +118,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object EscalatedFormat extends JsonFormat[Escalated.Value] {
     def write(obj: Escalated.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): Escalated.Value = json match {
       case JsString(str) =>
         Escalated.values.find(_.toString === str) match {
@@ -132,6 +137,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object AnsweredFormat extends JsonFormat[Answered.Value] {
     def write(obj: Answered.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): Answered.Value = json match {
       case JsString(str) =>
         Answered.values.find(_.toString === str) match {
@@ -150,6 +156,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object TriggeredFormat extends JsonFormat[Triggered.Value] {
     def write(obj: Triggered.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): Triggered.Value = json match {
       case JsString(str) =>
         Triggered.values.find(_.toString === str) match {
@@ -168,6 +175,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object FollowupFormat extends JsonFormat[Followup.Value] {
     def write(obj: Followup.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): Followup.Value = json match {
       case JsString(str) =>
         Followup.values.find(_.toString === str) match {
@@ -239,6 +247,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object PermissionsJsonFormat extends JsonFormat[Permissions.Value] {
     def write(obj: Permissions.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): Permissions.Value = json match {
       case JsString(str) =>
         Permissions.values.find(_.toString === str) match {
@@ -263,6 +272,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object CommonOrSpecificSearchFormat extends JsonFormat[CommonOrSpecificSearch.Value] {
     def write(obj: CommonOrSpecificSearch.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): CommonOrSpecificSearch.Value = json match {
       case JsString(str) =>
         CommonOrSpecificSearch.values.find(_.toString === str) match {
@@ -280,6 +290,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object ObservedSearchDestFormat extends JsonFormat[ObservedDataSources.Value] {
     def write(obj: ObservedDataSources.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): ObservedDataSources.Value = json match {
       case JsString(str) =>
         ObservedDataSources.values.find(_.toString === str) match {
@@ -298,6 +309,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object TermCountFieldsFormat extends JsonFormat[TermCountFields.Value] {
     def write(obj: TermCountFields.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): TermCountFields.Value = json match {
       case JsString(str) =>
         TermCountFields.values.find(_.toString === str) match {
@@ -316,6 +328,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object SynonymExtractionDistanceFunctionFormat extends JsonFormat[SynonymExtractionDistanceFunction.Value] {
     def write(obj: SynonymExtractionDistanceFunction.Value): JsValue = JsString(obj.toString)
+
     def read(json: JsValue): SynonymExtractionDistanceFunction.Value = json match {
       case JsString(str) =>
         SynonymExtractionDistanceFunction.values.find(_.toString === str) match {
@@ -343,6 +356,27 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val conversationsFormat = jsonFormat2(Conversations)
   implicit val updateQAByQueryReqFormat = jsonFormat2(UpdateQAByQueryReq)
 
-  implicit val createLanguageIndexRequestFromat = jsonFormat1(CreateLanguageIndexRequest)
+  implicit val createLanguageIndexRequestFormat = jsonFormat1(CreateLanguageIndexRequest)
+
+  implicit val dtHistoryItemUnmarshalling:
+    Unmarshaller[String, DtHistoryType.Value] =
+    Unmarshaller.strict[String, DtHistoryType.Value] { enumValue =>
+      DtHistoryType.value(enumValue)
+    }
+
+  implicit object DtHistoryTypeFormat extends JsonFormat[DtHistoryType.Value] {
+    def write(obj: DtHistoryType.Value): JsValue = JsString(obj.toString)
+
+    def read(json: JsValue): DtHistoryType.Value = json match {
+      case JsString(str) =>
+        DtHistoryType.values.find(_.toString === str) match {
+          case Some(t) => t
+          case _ => throw DeserializationException("DtHistoryType string is invalid")
+        }
+      case _ => throw DeserializationException("DtHistoryType string expected")
+    }
+  }
+
+  implicit val dtHistoryItemFormat = jsonFormat2(DtHistoryItem)
 
 }

@@ -10,8 +10,8 @@ import java.util
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.utils.TokenToVector
-import com.getjenny.starchat.entities.es._
-import com.getjenny.starchat.entities.{SearchAlgorithm, _}
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import org.apache.lucene.search.join._

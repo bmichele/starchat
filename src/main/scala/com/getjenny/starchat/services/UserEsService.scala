@@ -5,7 +5,7 @@ package com.getjenny.starchat.services
  */
 
 import com.getjenny.analyzer.util.RandomNumbers
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.auth.AbstractStarChatAuthenticator
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.typesafe.config.{Config, ConfigFactory}

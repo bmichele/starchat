@@ -8,14 +8,13 @@ import java.util.UUID.randomUUID
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.{ClusterNode, ClusterNodes, DeleteDocumentsSummaryResult}
+import com.getjenny.starchat.entities.io.{ClusterNode, ClusterNodes, DeleteDocumentsSummaryResult}
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.get.{GetRequest, GetResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
-import org.elasticsearch.common.unit.TimeValue
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory._
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}

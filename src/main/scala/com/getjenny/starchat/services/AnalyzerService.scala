@@ -10,8 +10,8 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.expressions.{AnalyzersData, AnalyzersDataInternal, Context}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
-import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.es.{DecisionTableEntityManager, TextTerms}
+import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.persistents.{DecisionTableEntityManager, TextTerms}
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import org.elasticsearch.index.query.QueryBuilders
