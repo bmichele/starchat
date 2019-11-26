@@ -16,7 +16,7 @@ import org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentType}
 import org.elasticsearch.index.query.QueryBuilders
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
-import org.elasticsearch.client.RequestOptions
+
 import scala.collection.JavaConverters._
 
 case class TestDocument(id: String, message: String)

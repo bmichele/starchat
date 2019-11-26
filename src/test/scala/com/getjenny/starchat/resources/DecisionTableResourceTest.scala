@@ -427,11 +427,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 200  and returning a random bubble response" in {
-<<<<<<< HEAD
-      val decisionTableRequest = DTDocument(
-=======
       val decisionTableRequest = DTDocumentCreate(
->>>>>>> multitenant_bayes_starchat
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,

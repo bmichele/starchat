@@ -5,9 +5,9 @@ import akka.testkit.{ImplicitSender, TestKitBase}
 import com.getjenny.starchat.entities.io.UpdateDocumentsResult
 import com.getjenny.starchat.entities.persistents.{Term, Terms}
 import com.getjenny.starchat.services.CronDeleteInstanceService.{DeleteInstanceActor, DeleteInstanceResponse}
+import com.getjenny.starchat.services.InstanceRegistryService
 import com.getjenny.starchat.services.esclient.IndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
-import com.getjenny.starchat.services.{InstanceRegistryDocument, InstanceRegistryService}
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.index.query.QueryBuilders
 
