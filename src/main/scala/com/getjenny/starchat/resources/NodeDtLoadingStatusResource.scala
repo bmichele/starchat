@@ -3,17 +3,16 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
-import com.getjenny.starchat.entities.{NodeDtLoadingStatus, Permissions, ReturnMessageData}
+import com.getjenny.starchat.entities.io.{NodeDtLoadingStatus, Permissions, ReturnMessageData}
 import com.getjenny.starchat.routing.{StarChatCircuitBreaker, StarChatResource}
 import com.getjenny.starchat.services.{NodeDtLoadingStatusService, NodeDtLoadingStatusServiceException}
 
-import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 /**
-  * Created by Angelo Leto <angelo@getjenny.com> on 29/01/19.
-  */
+ * Created by Angelo Leto <angelo@getjenny.com> on 29/01/19.
+ */
 
 trait NodeDtLoadingStatusResource extends StarChatResource {
   private[this] val nodeDtLoadingStatusService: NodeDtLoadingStatusService.type = NodeDtLoadingStatusService

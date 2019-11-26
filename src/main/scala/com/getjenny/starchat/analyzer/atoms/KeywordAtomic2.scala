@@ -6,7 +6,6 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
-import com.getjenny.starchat.entities._
 import com.getjenny.starchat.services._
 import scalaz.Scalaz._
 
@@ -47,15 +46,10 @@ class KeywordAtomic2(arguments: List[String], restrictedArgs: Map[String, String
   private[this] def fractionOfQueriesWithWordOfState(indexName: String, word: String, state: String): Double = {
     // get keyword freq in queries associated to the current state
     //TODO: to be optimized
-    DecisionTableService.wordFrequenciesInQueriesByState(indexName).find(item => item.state === state) match {
-      case Some(t) =>
-        t.wordFreqs.get(word) match {
-          case Some(v) => v
-          case _ => 0.0d
-        }
-      case _ => 0.0d
-    }
-
+   DecisionTableService
+      .wordFrequenciesInQueriesByState(indexName).find(item => item.state === state)
+      .flatMap(_.wordFreqs.get(word))
+      .getOrElse(0.0d)
   }
 
   private[this] def wordFrequencyInQueriesFieldOfAllStates(indexName: String, word: String): Double = {
@@ -248,8 +242,16 @@ class KeywordAtomic2(arguments: List[String], restrictedArgs: Map[String, String
         Result(score = 0.0)
       else
         Result(score = 1.0)
+
     }
 
-
   }
+
+  override def matches(userQuery: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
+    if (rxToBeMatched.findFirstMatchIn(userQuery).isEmpty)
+      Result(score = 0.0)
+    else
+      Result(score = 1.0)
+  }
+
 }

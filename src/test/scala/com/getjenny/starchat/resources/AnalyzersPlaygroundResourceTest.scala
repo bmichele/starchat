@@ -3,6 +3,7 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
 import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, Permissions, User}
 
 class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
 
@@ -323,24 +324,6 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         response.data.getOrElse(fail).traversedStates should be (Vector("one", "two"))
         response.data.getOrElse(fail).extractedVariables("lng") should be ("en")
         response.value should be (0)
-      }
-    }
-  }
-
-  it should {
-    "return an HTTP code 200 when deleting an index" in {
-      Delete(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val response = responseAs[IndexManagementResponse]
-      }
-    }
-  }
-
-  it should {
-    "return an HTTP code 200 when deleting an existing system index" in {
-      Delete(s"/system_index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val response = responseAs[IndexManagementResponse]
       }
     }
   }

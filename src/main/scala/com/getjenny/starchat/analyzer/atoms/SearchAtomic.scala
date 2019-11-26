@@ -4,9 +4,9 @@ package com.getjenny.starchat.analyzer.atoms
   * Created by mal on 20/02/2017.
   */
 
-import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
+import com.getjenny.analyzer.atoms.AbstractAtomic
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.persistents.SearchDTDocument
 import com.getjenny.starchat.services._
 
 /**
@@ -21,7 +21,7 @@ class SearchAtomic(arguments: List[String], restrictedArgs: Map[String, String])
   override def toString: String = atomName + "(\"" + stateArg + "\")"
   val isEvaluateNormalized: Boolean = false
 
-  override val matchThreshold: Double = 1.2
+  override val matchThreshold: Double = 1.2d
 
   val decisionTableService: DecisionTableService.type = DecisionTableService
 

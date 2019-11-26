@@ -17,6 +17,7 @@ import au.com.bytecode.opencsv.CSVWriter
 import breeze.io.CSVReader
 import com.getjenny.analyzer.expressions.AnalyzersData
 import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, SearchAlgorithm}
 import com.getjenny.starchat.serializers.JsonSupport
 import scopt.OptionParser
 

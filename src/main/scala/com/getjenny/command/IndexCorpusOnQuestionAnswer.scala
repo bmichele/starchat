@@ -12,7 +12,8 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.stream.ActorMaterializer
-import com.getjenny.starchat.entities._
+import com.getjenny.starchat.entities.{persistents, _}
+import com.getjenny.starchat.entities.persistents.{Doctypes, QADocument, QADocumentAnnotations, QADocumentCore}
 import com.getjenny.starchat.serializers.JsonSupport
 import com.roundeights.hasher.Implicits._
 import scopt.OptionParser

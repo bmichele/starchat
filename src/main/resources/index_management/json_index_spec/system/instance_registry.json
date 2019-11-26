@@ -1,0 +1,15 @@
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date",
+        "format": "epoch_millis",
+        "store": true,
+        "index": true
+      },
+      "enabled": {"type":  "boolean"},
+      "delete": {"type":  "boolean"},
+      "deleted": {"type":  "boolean"}
+    }
+  }
+}

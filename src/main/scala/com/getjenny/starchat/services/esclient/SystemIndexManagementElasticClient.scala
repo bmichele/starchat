@@ -1,10 +1,8 @@
 package com.getjenny.starchat.services.esclient
 
-import com.getjenny.starchat.services.SystemIndexManagementService.config
-
 /**
-  * Created by Angelo Leto <angelo@getjenny.com> on 14/11/17.
-  */
+ * Created by Angelo Leto <angelo@getjenny.com> on 14/11/17.
+ */
 
 object SystemIndexManagementElasticClient extends ElasticClient {
   override val indexName: String = config.getString("es.system_index_name")
@@ -12,6 +10,7 @@ object SystemIndexManagementElasticClient extends ElasticClient {
 
   // decision table changes awareness per index mechanism
   val dtReloadCheckFrequency : Int = config.getInt("es.dt_reload_check_frequency")
+  val instanceRegistryDeleteFrequency : Int = config.getInt("es.instance_registry_delete_frequency")
   val dtReloadTimestampFieldName = "timestamp"
 
   // alive nodes detection mechanism
