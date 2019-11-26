@@ -6,13 +6,13 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit._
-import com.getjenny.starchat.entities._
-import com.getjenny.starchat.entities.io.{IndexManagementResponse, RefreshIndexResults}
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.serializers.JsonSupport
 import com.getjenny.starchat.utils.Index
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.duration._
+
 class SystemIndexManagementResourceTest extends WordSpec with Matchers with ScalatestRouteTest with JsonSupport with BeforeAndAfterAll{
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(10.seconds.dilated(system))
 
