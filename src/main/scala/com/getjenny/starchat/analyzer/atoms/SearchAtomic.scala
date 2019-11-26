@@ -21,7 +21,7 @@ class SearchAtomic(arguments: List[String], restrictedArgs: Map[String, String])
   override def toString: String = atomName + "(\"" + stateArg + "\")"
   val isEvaluateNormalized: Boolean = false
 
-  override val matchThreshold: Double = 0.65
+  override val matchThreshold: Double = 1.2d
 
   val decisionTableService: DecisionTableService.type = DecisionTableService
 
