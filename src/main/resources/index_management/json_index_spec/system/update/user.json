@@ -1,0 +1,16 @@
+{
+  "properties": {
+    "id": {
+      "type": "keyword",
+      "store": true
+    },
+    "password": {
+      "type": "keyword",
+      "store": true
+    },
+    "salt": {
+      "type": "keyword",
+      "store": true
+    }
+  }
+}

@@ -913,8 +913,7 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   def updateByQuery(indexName: String, updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
-    val searchRes: Option[SearchQADocumentsResults] =
-      search(indexName = indexName, documentSearch = updateReq.documentSearch)
+    val searchRes: Option[SearchQADocumentsResults] = search(indexName, updateReq.documentSearch)
     searchRes match {
       case Some(r) =>
         val id = r.hits.map(_.document.id)

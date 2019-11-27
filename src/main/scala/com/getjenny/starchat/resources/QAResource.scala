@@ -5,6 +5,7 @@ package com.getjenny.starchat.resources
  */
 
 import akka.NotUsed
+import akka.http.scaladsl.common.{EntityStreamingSupport, JsonEntityStreamingSupport}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
@@ -126,8 +127,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
               authenticator.hasPermissions(user, indexName, Permissions.stream)) {
               extractRequest { _ =>
                 val entryIterator = questionAnswerService.allDocuments(indexName)
-                val entries: Source[QADocument, NotUsed] =
-                  Source.fromIterator(() => entryIterator)
+                val entries: Source[QADocument, NotUsed] = Source.fromIterator(() => entryIterator)
                 complete(entries)
               }
             }

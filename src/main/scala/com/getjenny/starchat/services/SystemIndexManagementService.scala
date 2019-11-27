@@ -106,8 +106,8 @@ object SystemIndexManagementService extends AbstractDataService {
         createIndexRes.isAcknowledged)
     })
 
-    val message = "IndexCreation: " + operationsMessage.map{ case (msg, _) => msg}.mkString(" ")
-    IndexManagementResponse(message = message, check = operationsMessage.forall{case(_, ck) => ck})
+    val message = "IndexCreation: " + operationsMessage.map { case (msg, _) => msg }.mkString(" ")
+    IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
   def remove(indexSuffix: Option[String] = None): IndexManagementResponse = {
@@ -134,8 +134,8 @@ object SystemIndexManagementService extends AbstractDataService {
         deleteIndexRes.isAcknowledged)
     })
 
-    val message = "IndexDeletion: " + operationsMessage.map{ case (msg, _) => msg}.mkString(" ")
-    IndexManagementResponse(message = message, check = operationsMessage.forall{case(_, ck) => ck})
+    val message = "IndexDeletion: " + operationsMessage.map { case (msg, _) => msg }.mkString(" ")
+    IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
   def check(indexSuffix: Option[String] = None): IndexManagementResponse = {
@@ -157,43 +157,39 @@ object SystemIndexManagementService extends AbstractDataService {
       (item.indexSuffix + "(" + fullIndexName + ", " + check + ")", check)
     })
 
-    val message = "IndexCheck: " + operationsMessage.map{ case (msg, _) => msg}.mkString(" ")
-    IndexManagementResponse(message = message, check = operationsMessage.forall{case(_, ck) => ck})
+    val message = "IndexCheck: " + operationsMessage.map { case (msg, _) => msg }.mkString(" ")
+    IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
   def update(indexSuffix: Option[String] = None): IndexManagementResponse = {
     val client: RestHighLevelClient = elasticClient.httpClient
 
-    val operationsMessage: List[(String, Boolean)] = schemaFiles.filter(item => {
-      indexSuffix match {
-        case Some(t) => t === item.indexSuffix
-        case _ => true
+    val operationsMessage: List[(String, Boolean)] = schemaFiles
+      .filter(item => indexSuffix.forall(_ === item.indexSuffix))
+      .map { item =>
+        val jsonInStream: Option[InputStream] = Option {
+          getClass.getResourceAsStream(item.updatePath)
+        }
+        val schemaJson: String = jsonInStream match {
+          case Some(stream) => Source.fromInputStream(stream, "utf-8").mkString
+          case _ =>
+            throw new FileNotFoundException(s"Check the file: (${item.path})")
+        }
+
+        val fullIndexName = elasticClient.indexName + "." + item.indexSuffix
+
+        val putMappingReq = new PutMappingRequest(fullIndexName)
+          .source(schemaJson, XContentType.JSON)
+
+        val putMappingRes: AcknowledgedResponse = client.indices
+          .putMapping(putMappingReq, RequestOptions.DEFAULT)
+
+        val check = putMappingRes.isAcknowledged
+        (item.indexSuffix + "(" + fullIndexName + ", " + check + ")", check)
       }
-    }).map(item => {
-      val jsonInStream: Option[InputStream] = Option {
-        getClass.getResourceAsStream(item.updatePath)
-      }
-      val schemaJson: String = jsonInStream match {
-        case Some(stream) => Source.fromInputStream(stream, "utf-8").mkString
-        case _ =>
-          val message = "Check the file: (" + item.path + ")"
-          throw new FileNotFoundException(message)
-      }
 
-      val fullIndexName = elasticClient.indexName + "." + item.indexSuffix
-
-      val putMappingReq = new PutMappingRequest(fullIndexName)
-        .source(schemaJson, XContentType.JSON)
-
-      val putMappingRes: AcknowledgedResponse = client.indices
-        .putMapping(putMappingReq, RequestOptions.DEFAULT)
-
-      val check = putMappingRes.isAcknowledged
-      (item.indexSuffix + "(" + fullIndexName + ", " + check + ")", check)
-    })
-
-    val message = "IndexUpdate: " + operationsMessage.map{ case (msg, _) => msg}.mkString(" ")
-    IndexManagementResponse(message = message, check = operationsMessage.forall{case(_, ck) => ck})
+    val message = "IndexUpdate: " + operationsMessage.map { case (msg, _) => msg }.mkString(" ")
+    IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
   def refresh(indexSuffix: Option[String] = None): Option[RefreshIndexResults] = {
