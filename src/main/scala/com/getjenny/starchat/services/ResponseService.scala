@@ -113,7 +113,7 @@ object ResponseService extends AbstractDataService {
         (AnalyzerService.analyzersMap(indexName).analyzerMap.toList, false)
     }
     val maxResults: Int = request.maxResults.getOrElse(2)
-    val threshold: Double = request.threshold.getOrElse(0.0d)
+    val threshold: Double = request.threshold.getOrElse(elasticClient.getNextResponseThreshold)
 
     // attach search res analyzer result to the states
     val analyzersEvalData: Map[String, Result] = evaluationList
