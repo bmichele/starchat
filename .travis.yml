@@ -14,6 +14,13 @@ script:
   - curl -v -k https://0.0.0.0:9200 && echo "OK PORT(9200)" || echo "FAILED PORT(9200)"
   - sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport codacyCoverage
   - sbt ++$TRAVIS_SCALA_VERSION dockerComposeStop
+
+deploy:
+  provider: script
+  script: bash docker_push.sh
+  on:
+    tags: true
+
 notifications:
   webhooks:
     urls:
