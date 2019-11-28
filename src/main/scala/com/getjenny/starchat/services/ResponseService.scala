@@ -9,12 +9,11 @@ import com.getjenny.analyzer.analyzers._
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context, Result}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.{ResponseRequestOut, _}
+import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
-import com.getjenny.starchat.services.actions._
+
 import scala.collection.immutable.Map
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 case class ResponseServiceException(message: String = "", cause: Throwable = None.orNull)
