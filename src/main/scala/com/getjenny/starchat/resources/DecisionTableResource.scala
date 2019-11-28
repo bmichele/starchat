@@ -452,7 +452,7 @@ trait DecisionTableResource extends StarChatResource {
             extractRequest { request =>
               authenticateBasicAsync(realm = authRealm, authenticator = authenticator.authenticator) { user =>
                 authorizeAsync(_ => authenticator.hasPermissions(user, "admin", Permissions.write)) {
-                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(maxFailure = 5, callTimeout = 120.seconds, resetTimeout = 120.seconds)
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(maxFailure = 5, callTimeout = 60.seconds, resetTimeout = 120.seconds)
                   onCompleteWithBreakerFuture(breaker)(bayesOperatorCacheService.load(indexName)) {
                     case Success(t) =>
                       val status = if(t.status) StatusCodes.OK else StatusCodes.BadRequest
