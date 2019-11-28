@@ -63,7 +63,6 @@ class SystemIndexManagementResourceTest extends WordSpec with Matchers with Scal
     "return HTTP code 400 when an operation is not supported" in {
       Post(s"/system_index_management/operation") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        val response = responseAs[IndexManagementResponse]
       }
     }
 
@@ -83,6 +82,16 @@ class SystemIndexManagementResourceTest extends WordSpec with Matchers with Scal
   it should {
     "return 200 when getting system indices" in {
       Get(s"/system_index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[IndexManagementResponse]
+        response.check shouldEqual true
+      }
+    }
+  }
+
+  it should {
+    "return 200 when update system indices" in {
+      Put(s"/system_index_management?indexSuffix=user") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[IndexManagementResponse]
         response.check shouldEqual true

@@ -31,6 +31,53 @@ class LanguageIndexManagementResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return all language index" in {
+      Get("/language_index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[String]]
+        response.foreach(println)
+        response.size shouldEqual 5
+      }
+    }
+  }
+
+  it should {
+    "return an http 200 when close index" in {
+      Post("/language_index_management/close?index_name=index_english") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[OpenCloseIndex]]
+        response.foreach(println)
+      }
+    }
+  }
+
+  it should {
+    "return an HTTP code 200 when update index settings" in {
+      Put("/language_index_management/settings?index_name=index_english") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
+  it should {
+    "return an HTTP code 200 when update index mappings" in {
+      Put("/language_index_management/mappings?index_name=index_english&indexSuffix=analyzer") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
+  it should {
+    "return an http 200 when open index" in {
+      Post("/language_index_management/open?index_name=index_english") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[OpenCloseIndex]]
+        response.foreach(println)
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 when calling elasticsearch index refresh" in {
       Post("/language_index_management/refresh?index_name=index_english") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
