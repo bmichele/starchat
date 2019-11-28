@@ -10,6 +10,13 @@ class RootAPIResourceTest extends TestBase {
         status shouldEqual StatusCodes.OK
       }
     }
+
+    "return a 200 with build info" in {
+      Post(s"/") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual com.getjenny.starchat.autogen.utils.BuildInfo.toJson
+      }
+    }
   }
 }
 

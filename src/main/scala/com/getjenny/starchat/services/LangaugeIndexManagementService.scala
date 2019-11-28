@@ -277,7 +277,7 @@ object LangaugeIndexManagementService extends AbstractDataService {
                      indexSuffix: Option[String] = None): IndexManagementResponse = {
     val client: RestHighLevelClient = elasticClient.httpClient
 
-    val (_, language, _) = Index.patternsFromIndexName(indexName: String)
+    val language = Index.languageFromSpecificLanguageIndexName(indexName)
 
     val analyzerJsonPath: String = analyzerFiles(language).updatePath
     val analyzerJsonIs: Option[InputStream] = Option {

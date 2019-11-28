@@ -130,15 +130,17 @@ trait SystemIndexManagementResource extends StarChatResource {
                 authenticator = authenticator.authenticator) { user =>
                 authorizeAsync(_ =>
                   authenticator.hasPermissions(user, "admin", Permissions.write)) {
-                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                  onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.update()) {
-                    case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
-                      t
-                    })
-                    case Failure(e) => completeResponse(StatusCodes.BadRequest,
-                      Option {
-                        IndexManagementResponse(message = e.getMessage)
+                  parameters('indexSuffix.as[String].?) { indexSuffix =>
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.update(indexSuffix)) {
+                      case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
+                        t
                       })
+                      case Failure(e) => completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          IndexManagementResponse(message = e.getMessage)
+                        })
+                    }
                   }
                 }
               }

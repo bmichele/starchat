@@ -48,6 +48,13 @@ object Index {
     (organization, language, arbitrary)
   }
 
+  def languageFromSpecificLanguageIndexName(languageSpecificIndexName: String): String = {
+    languageSpecificIndexName match {
+      case languageIndexMatchRegex(languagePattern) => languagePattern
+      case _ => throw new Exception("specific language index name is not well formed")
+    }
+  }
+
   /** calculate and return the full index name
     *
     * @param indexName the index name

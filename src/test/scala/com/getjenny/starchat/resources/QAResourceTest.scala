@@ -251,6 +251,79 @@ class QAResourceTest extends TestEnglishBase {
 
   for (qaRoute <- qaRoutes) {
     it should {
+      s"return an HTTP code 200 when updating all terms $qaRoute" in {
+        val request = UpdateQATermsRequest(
+          id = ""
+        )
+
+        Post(s"/index_getjenny_english_0/updateTerms/$qaRoute", request) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val responses = responseAs[String].split('\n')
+          responses.length shouldEqual 5
+        }
+      }
+    }
+  }
+
+  for (qaRoute <- qaRoutes) {
+    it should {
+      s"return an HTTP code 200 when streaming all documents in the $qaRoute" in {
+        Get(s"/index_getjenny_english_0/stream/$qaRoute") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val response = responseAs[String].split('\n')
+          response.length shouldEqual 5
+        }
+      }
+    }
+  }
+
+  for (qaRoute <- qaRoutes) {
+    it should {
+      s"return an HTTP code 200 when update by query conversations from the $qaRoute" in {
+        val search = QADocumentSearch(
+          coreData = Some(QADocumentCore(question = Some("I forgot my password"))),
+          size = Some(2)
+        )
+        val update = QADocumentUpdate(
+          id = List("id1", "id2"),
+          coreData = Some(QADocumentCore(
+            question = Some("I think I forgot my password"),
+            answer = Some("did you try hunter3?"),
+            verified = Some(true)
+          )),
+          annotations = Some(QADocumentAnnotations(
+            feedbackConvScore = Some(1.0),
+            algorithmConvScore = Some(1.0),
+            feedbackAnswerScore = Some(1.0),
+            algorithmAnswerScore = Some(1.0)
+          ))
+        )
+        val request = UpdateQAByQueryReq(search, update)
+        Put(s"/index_getjenny_english_0/$qaRoute/conversations?refresh=1", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          responseAs[UpdateDocumentsResult]
+        }
+
+        val searchRequest = QADocumentSearch(
+          coreData = Some(QADocumentCore(question = Some("I think I forgot my password"))),
+          size = Some(2)
+        )
+        Post(s"/index_getjenny_english_0/$qaRoute/search", searchRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val response = responseAs[SearchQADocumentsResults]
+          response.totalHits should be (3)
+          response.hitsCount should be (2)
+          response.hits.size should be (2)
+          response.hits.map(_.document
+            .coreData.getOrElse(fail)
+            .question.getOrElse(fail)) should contain only "I think I forgot my password"
+        }
+      }
+    }
+  }
+
+  for (qaRoute <- qaRoutes) {
+    it should {
       s"return an HTTP code 200 when getting analytics from the $qaRoute" in {
         val request = QAAggregatedAnalyticsRequest(
           aggregations = Some(QAAggregationsTypes.values.toList)
@@ -383,6 +456,51 @@ class QAResourceTest extends TestEnglishBase {
             coreData.question shouldEqual None
           }
         })
+      }
+    }
+  }
+
+  for (qaRoute <- qaRoutes) {
+    it should {
+      s"setup counter cache parameters in the $qaRoute" in {
+        val request = CountersCacheParameters(Some(1), Some(1), Some(1), Some(1))
+        Post(s"/index_getjenny_english_0/cache/$qaRoute", request) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val response = responseAs[CountersCacheParameters]
+          response.totalTermsCacheMaxSize should be (Option(1))
+          response.dictSizeCacheMaxSize should be (Option(1))
+          response.countTermCacheMaxSize should be (Option(1))
+          response.cacheStealTimeMillis should be (Option(1))
+        }
+      }
+    }
+
+    it should {
+      s"delete counter cache parameters in the $qaRoute" in {
+        Delete(s"/index_getjenny_english_0/cache/$qaRoute") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val (cacheParameters, _) = responseAs[(CountersCacheParameters, CountersCacheSize)]
+          cacheParameters.totalTermsCacheMaxSize should be (Option(1))
+          cacheParameters.dictSizeCacheMaxSize should be (Option(1))
+          cacheParameters.countTermCacheMaxSize should be (Option(1))
+          cacheParameters.cacheStealTimeMillis should be (Option(1))
+        }
+      }
+    }
+
+    it should {
+      s"get counter cache parameters in the $qaRoute" in {
+        Get(s"/index_getjenny_english_0/cache/$qaRoute") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val (cacheParameters, cacheSize) = responseAs[(CountersCacheParameters, CountersCacheSize)]
+          cacheParameters.totalTermsCacheMaxSize should be (Option(1))
+          cacheParameters.dictSizeCacheMaxSize should be (Option(1))
+          cacheParameters.countTermCacheMaxSize should be (Option(1))
+          cacheParameters.cacheStealTimeMillis should be (Option(1))
+          cacheSize.dictSizeCacheSize shouldEqual 0
+          cacheSize.totalTermsCacheSize shouldEqual 0
+          cacheSize.countTermCacheSize shouldEqual 0
+        }
       }
     }
   }
