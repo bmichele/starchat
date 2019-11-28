@@ -43,25 +43,26 @@ object BayesOperatorCacheService extends AbstractDataService {
   private[this] val esCrudBase = new EsCrudBase(elasticClient, indexName)
   private[this] val bayesOperator = "BayesOperator"
 
-  def loadAsync(indexName: String): Future[BayesOperatorCacheServiceResponse] = {
+  def loadAsync(indexName: String): BayesOperatorCacheServiceResponse = {
     Future(performLoad(indexName))
-      .map(value => BayesOperatorCacheServiceResponse(indexName, status = true, s"Loaded $value items in cache"))
-      .recover { case exception =>
-        log.error(exception, "Error during load bayes operator cache:")
-        BayesOperatorCacheServiceResponse(indexName, status = false, s"Error while loading cache ${exception.getMessage}")
-
+      .onComplete {
+        handleLoadResponse(indexName, _)
       }
+    BayesOperatorCacheServiceResponse(indexName, status = true, "Loading async")
   }
 
   def load(indexName: String): BayesOperatorCacheServiceResponse = {
-    Try {
+    handleLoadResponse(indexName, Try {
       performLoad(indexName)
-    }.map(value => BayesOperatorCacheServiceResponse(indexName, status = true, s"Loaded $value items in cache"))
-      .recover { case exception =>
-        log.error(exception, "Error during load bayes operator cache:")
-        BayesOperatorCacheServiceResponse(indexName, status = false, s"Error while loading cache ${exception.getMessage}")
+    })
+  }
 
-      }.get
+  private[this] def handleLoadResponse(indexName: String, response: Try[Int]): BayesOperatorCacheServiceResponse = response match {
+    case Failure(exception) =>
+      log.error(exception, "Error during load bayes operator cache:")
+      BayesOperatorCacheServiceResponse(indexName, status = false, s"Error while loading cache ${exception.getMessage}")
+    case Success(value) =>
+      BayesOperatorCacheServiceResponse(indexName, status = true, s"Loaded $value items in cache")
   }
 
   private[this] def performLoad(indexName: String): Int = {

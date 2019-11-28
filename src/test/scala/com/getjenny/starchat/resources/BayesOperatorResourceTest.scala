@@ -162,10 +162,8 @@ class BayesOperatorResourceTest extends TestEnglishBase {
     }
 
     "load cache in async mode" in {
-      import scala.concurrent.duration._
-      val future = BayesOperatorCacheService.loadAsync("index_getjenny_english_0")
+      val response = BayesOperatorCacheService.loadAsync("index_getjenny_english_0")
 
-      val response = Await.result(future, 5 seconds)
       assert(response.status)
     }
   }
