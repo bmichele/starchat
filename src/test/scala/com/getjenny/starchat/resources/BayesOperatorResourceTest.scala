@@ -170,14 +170,14 @@ class BayesOperatorResourceTest extends TestEnglishBase {
 
   it should {
     "return http 200 while loading cache" in {
-      Post(s"/index_getjenny_english_0/decisiontable/cache") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable/bayescache") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[BayesOperatorCacheServiceResponse]
         response.status shouldEqual true
       }
     }
     "return http 200 while loading cache async" in {
-      Post(s"/index_getjenny_english_0/decisiontable/cache/async") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable/bayescache/async") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[BayesOperatorCacheServiceResponse]
         response.status shouldEqual true

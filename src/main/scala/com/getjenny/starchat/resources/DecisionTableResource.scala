@@ -446,7 +446,7 @@ trait DecisionTableResource extends StarChatResource {
 
   def decisionTableCacheLoad: Route = handleExceptions(routesExceptionHandler) {
     concat(
-      pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "cache") { indexName =>
+      pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bayescache") { indexName =>
         pathEnd {
           post {
             extractRequest { request =>
@@ -469,7 +469,7 @@ trait DecisionTableResource extends StarChatResource {
             }
           }
         }
-      }, pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "cache"  ~ Slash ~ "async") { indexName =>
+      }, pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bayescache"  ~ Slash ~ "async") { indexName =>
         pathEnd {
           post {
             extractRequest { request =>
