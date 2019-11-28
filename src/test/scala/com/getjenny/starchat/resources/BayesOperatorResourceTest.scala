@@ -4,6 +4,9 @@ import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
+import com.getjenny.starchat.services.BayesOperatorCacheService
+
+import scala.concurrent.Await
 
 class BayesOperatorResourceTest extends TestEnglishBase {
 
@@ -152,6 +155,39 @@ class BayesOperatorResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "load cache" in {
+      val response = BayesOperatorCacheService.load("index_getjenny_english_0")
+
+      assert(response.status)
+    }
+
+    "load cache in async mode" in {
+      import scala.concurrent.duration._
+      val future = BayesOperatorCacheService.loadAsync("index_getjenny_english_0")
+
+      val response = Await.result(future, 5 seconds)
+      assert(response.status)
+    }
+  }
+
+  it should {
+    "return http 200 while loading cache" in {
+      Post(s"/index_getjenny_english_0/decisiontable/cache") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[BayesOperatorCacheServiceResponse]
+        response.status shouldEqual true
+      }
+    }
+    "return http 200 while loading cache async" in {
+      Post(s"/index_getjenny_english_0/decisiontable/cache/async") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[BayesOperatorCacheServiceResponse]
+        response.status shouldEqual true
+      }
+    }
+  }
+
+  it should {
     "return S1 with score 2/3 when get_next_response input is [I love Keyword1]" in {
       val request = ResponseRequestIn(
         conversationId = "conv_12345",
@@ -268,8 +304,6 @@ class BayesOperatorResourceTest extends TestEnglishBase {
       }
     }
   }
-
-
 }
 
 

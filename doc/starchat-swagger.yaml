@@ -1358,6 +1358,64 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
+  '/<index_name>/decisiontable/cache/async':
+    post:
+      tags:
+        - customer
+      summary: trigger an async update of the bayes operator cache
+      operationId: post_decisiontable_cache_async
+      description: trigger an async update of the bayes operator cache
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: request successfully executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BayesOperatorCacheServiceResponse'
+        '400':
+          description: 'bad request - error during loading execution'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BayesOperatorCacheServiceResponse'
+        '401':
+          description: authorization denied or authentication failed
+  '/<index_name>/decisiontable/cache':
+    post:
+      tags:
+        - customer
+      summary: trigger update of the bayes operator cache
+      operationId: post_decisiontable_cache
+      description: trigger an update of the bayes operator cache
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: request successfully executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BayesOperatorCacheServiceResponse'
+        '400':
+          description: 'bad request - error during loading execution'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BayesOperatorCacheServiceResponse'
+        '401':
+          description: authorization denied or authentication failed
   '/<index_name>/spellcheck/terms':
     post:
       tags:
@@ -3126,9 +3184,9 @@ components:
           items:
             type: string
           example:
-           - "welcome_state1"
-           - "welcome_state2"
-           - "welcome_state3"
+            - "welcome_state1"
+            - "welcome_state2"
+            - "welcome_state3"
         data:
           type:  object
           description: the variables passed to StarChat, they may be used by the analyzers and to complete the templates.
@@ -3731,16 +3789,16 @@ components:
         description: tokenizer description, the key is the tokenizer name
         example: "2 words shingles"
       example: {
-        "shingles2" : "2-grams",
-        "space_punctuation" : "lowercase",
-        "shingles2_10" : "from 2 to 10 n-grams",
-        "base" : "lowercase",
-        "base_stem" : "lowercase + stemming",
-        "shingles3" : "3-grams",
-        "raw" : "lowercase",
-        "stop" : "lowercase + stopwords elimination",
-        "shingles4" : "4-grams",
-        "stop_stem" : "lowercase + stopwords elimination + stemming"
+        "shingles2": "2-grams",
+        "space_punctuation": "lowercase",
+        "shingles2_10": "from 2 to 10 n-grams",
+        "base": "lowercase",
+        "base_stem": "lowercase + stemming",
+        "shingles3": "3-grams",
+        "raw": "lowercase",
+        "stop": "lowercase + stopwords elimination",
+        "shingles4": "4-grams",
+        "stop_stem": "lowercase + stopwords elimination + stemming"
       }
     Term:
       type: object
@@ -3966,7 +4024,7 @@ components:
           example: ['id1', 'id2']
     TermsExtractionRequest:
       required:
-        -  text
+        - text
       properties:
         text:
           type: string
@@ -5371,3 +5429,17 @@ components:
           * `STEM_NGRAM4` - character stemmed ngram search with size 4 (normalized 0-1)
           * `AUTO` - StarChat choose which algorithm is better considering the query length
           * `DEFAULT` - AUTO
+    BayesOperatorCacheServiceResponse:
+      type: object
+      properties:
+        indexName:
+          type: string
+          description: indexName cache has been loaded
+          example: index
+        status:
+          type: boolean
+          description: if loading has been successful
+          example: conv_id_1234
+        message:
+          type: string
+          description: description containing error or number of elements loaded
