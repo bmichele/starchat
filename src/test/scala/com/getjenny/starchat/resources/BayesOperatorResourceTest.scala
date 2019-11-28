@@ -6,8 +6,6 @@ import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.BayesOperatorCacheService
 
-import scala.concurrent.Await
-
 class BayesOperatorResourceTest extends TestEnglishBase {
 
 

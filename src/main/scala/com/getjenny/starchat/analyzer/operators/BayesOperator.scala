@@ -8,8 +8,6 @@ import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.services.{AnalyzerService, BayesOperatorCacheService, DecisionTableRuntimeItem}
 import scalaz.Scalaz._
 
-import scala.collection.mutable
-
 /**
   * Created by Andrea Collamati <andrea@getjenny.com> on 20/09/2019.
   */
@@ -77,7 +75,7 @@ class BayesOperator(val children: List[Expression]) extends AbstractOperator(chi
     }
   }
 
-  private def calculateBayesScore(data: AnalyzersDataInternal, currentStateName: String, triggerCondition: Expression): Double = {
+  private[this] def calculateBayesScore(data: AnalyzersDataInternal, currentStateName: String, triggerCondition: Expression): Double = {
     val activeAnalyzeMap = AnalyzerService
       .analyzersMap
       .getOrElse(data.context.indexName,

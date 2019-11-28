@@ -13,7 +13,7 @@ import org.elasticsearch.action.get.GetResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory._
 import org.elasticsearch.index.query.QueryBuilders
-
+import scalaz.Scalaz._
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -76,22 +76,21 @@ object BayesOperatorCacheService extends AbstractDataService {
       .collect { case (state, Some(analyzer)) => state -> analyzer }
       .toMap
 
-
     val allQueries = analyzerMap.values
       .flatMap { x => x.queries }
-
 
     val allBayesOperators = analyzers
       .map { case (state, analyzer: StarChatAnalyzer) =>
         state -> analyzer.firstOccurrenceOfOperator(bayesOperator)
-      }.collect { case (state, Some(bayes)) => state -> bayes.asInstanceOf[BayesOperator] }
-
+      }.collect { case (state, Some(bayes)) => state -> bayes }
 
     val scores = allQueries.par
       .flatMap(q =>
         allBayesOperators
-          .map { case (state, analyzer) => (indexName, state) -> analyzer.evaluate(q, AnalyzersDataInternal(Context(indexName, state))).score }
-          .filter { case (_, analyzer) => analyzer != 0 }
+          .map { case (state, analyzer) =>
+            (indexName, state) -> analyzer.evaluate(q, AnalyzersDataInternal(Context(indexName, state))).score
+          }
+          .filter { case (_, analyzer) => analyzer =/= 0 }
       ).toMap
       .toList
 
