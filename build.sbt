@@ -10,7 +10,7 @@ crossScalaVersions := Seq("2.12.10")
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
 libraryDependencies ++= {
-  val AkkaHttpVersion	= "10.1.9"
+  val AkkaHttpVersion	= "10.1.10"
   val AkkaVersion	= "2.5.25"
   val AnalyzerVersion = "3.0.0"
   val BreezeVersion	= "0.13.2"

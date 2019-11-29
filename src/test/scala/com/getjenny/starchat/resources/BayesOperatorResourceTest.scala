@@ -155,14 +155,12 @@ class BayesOperatorResourceTest extends TestEnglishBase {
   it should {
     "load cache" in {
       val response = BayesOperatorCacheService.load("index_getjenny_english_0")
-
-      assert(response.status)
+      response.status shouldBe(true)
     }
 
     "load cache in async mode" in {
       val response = BayesOperatorCacheService.loadAsync("index_getjenny_english_0")
-
-      assert(response.status)
+      response.status shouldBe(true)
     }
   }
 
