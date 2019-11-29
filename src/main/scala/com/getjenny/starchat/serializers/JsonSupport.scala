@@ -357,6 +357,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val updateQAByQueryReqFormat = jsonFormat2(UpdateQAByQueryReq)
 
   implicit val createLanguageIndexRequestFormat = jsonFormat1(CreateLanguageIndexRequest)
+  implicit val bayesOperatorCacheResponse = jsonFormat3(BayesOperatorCacheServiceResponse)
 
   implicit val dtHistoryItemUnmarshalling:
     Unmarshaller[String, DtHistoryType.Value] =
