@@ -16,7 +16,6 @@ import com.getjenny.starchat.entities.persistents.{DTDocumentCreate, DTDocumentU
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services._
 import scalaz.Scalaz._
-
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
@@ -28,6 +27,7 @@ trait DecisionTableResource extends StarChatResource {
   private[this] val analyzerService: AnalyzerService.type = AnalyzerService
   private[this] val responseService: ResponseService.type = ResponseService
   private[this] val dtReloadService: InstanceRegistryService.type = InstanceRegistryService
+  private[this] val bayesOperatorCacheService: BayesOperatorCacheService.type = BayesOperatorCacheService
   private[this] val fileTypeRegex: Regex = "^(csv|json)$".r
 
   def decisionTableRoutesAllRoutes: Route = handleExceptions(routesExceptionHandler) {
@@ -442,6 +442,57 @@ trait DecisionTableResource extends StarChatResource {
           }
         }
     }
+  }
+
+  def decisionTableCacheLoad: Route = handleExceptions(routesExceptionHandler) {
+    concat(
+      pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bayescache") { indexName =>
+        pathEnd {
+          post {
+            extractRequest { request =>
+              authenticateBasicAsync(realm = authRealm, authenticator = authenticator.authenticator) { user =>
+                authorizeAsync(_ => authenticator.hasPermissions(user, "admin", Permissions.write)) {
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(maxFailure = 5, callTimeout = 60.seconds, resetTimeout = 120.seconds)
+                  onCompleteWithBreakerFuture(breaker)(bayesOperatorCacheService.load(indexName)) {
+                    case Success(t) =>
+                      val status = if(t.status) StatusCodes.OK else StatusCodes.BadRequest
+                      completeResponse(status, StatusCodes.BadRequest, Option(t))
+                    case Failure(e) =>
+                      log.error(logTemplate(user.id, indexName, "decisionTableCacheLoad", request.method, request.uri), e)
+                      completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          ReturnMessageData(code = 120, message = e.getMessage)
+                        })
+                  }
+                }
+              }
+            }
+          }
+        }
+      }, pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bayescache"  ~ Slash ~ "async") { indexName =>
+        pathEnd {
+          post {
+            extractRequest { request =>
+              authenticateBasicAsync(realm = authRealm, authenticator = authenticator.authenticator) { user =>
+                authorizeAsync(_ => authenticator.hasPermissions(user, "admin", Permissions.write)) {
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                  onCompleteWithBreakerFuture(breaker)(bayesOperatorCacheService.loadAsync(indexName)) {
+                    case Success(t) =>
+                      val status = if(t.status) StatusCodes.OK else StatusCodes.BadRequest
+                      completeResponse(status, StatusCodes.BadRequest, Option(t))
+                    case Failure(e) =>
+                      log.error(logTemplate(user.id, indexName, "decisionTableCacheLoadAsync", request.method, request.uri), e)
+                      completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          ReturnMessageData(code = 120, message = e.getMessage)
+                        })
+                  }
+                }
+              }
+            }
+          }
+        }
+      })
   }
 }
 
