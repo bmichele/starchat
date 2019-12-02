@@ -44,17 +44,21 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
   }
 
   def status(): InstanceRegistryStatus = {
-    (enabled, delete, deleted) match {
-      case (None, None, _) => Missing
-      case (_, Some(delete), _) if delete => MarkedForDeletion
-      case (Some(enabled), _, _) => if (enabled) Enabled else Disabled
-      case _ => throw new IllegalArgumentException("Instance registry has inconsistent state")
+    (timestamp, enabled, delete, deleted) match {
+      case (None, None, Some(_), Some(_)) |
+        (_, Some(false), Some(true), Some(false)) => Missing
+      case (_, Some(false), _, Some(false)) => MarkedForDeletion
+      case (_, Some(false), _, Some(true)) => Missing
+      case (_, Some(true), _, _) => Enabled
+      case (_, Some(false), _, _) => Disabled
+      case _ => throw new IllegalArgumentException(s"Instance registry has inconsistent state: " +
+        s"(timestamp ${timestamp}, enabled ${enabled}, delete ${delete}, deleted ${deleted})")
     }
   }
 }
 
 object InstanceRegistryDocument {
-  val InstanceRegistryTimestampDefault: Long = 0
+  val InstanceRegistryTimestampDefault: Long = System.currentTimeMillis
 
   def apply(source: Map[String, Any]): InstanceRegistryDocument = {
     val timestamp = source.get("timestamp") match {
@@ -90,9 +94,13 @@ object InstanceRegistryService extends AbstractDataService {
 
   val cache = new TrieMap[String, InstanceRegistryDocument]()
 
-  def updateTimestamp(dtIndexName: String, timestamp: Long = InstanceRegistryDocument.InstanceRegistryTimestampDefault,
+  def updateTimestamp(dtIndexName: String,
+                      timestamp: Long = InstanceRegistryDocument.InstanceRegistryTimestampDefault,
                       refresh: Int = 0): Option[DtReloadTimestamp] = {
-    val ts: Long = if (timestamp === InstanceRegistryDocument.InstanceRegistryTimestampDefault) System.currentTimeMillis else timestamp
+    val ts: Long = if (timestamp === InstanceRegistryDocument.InstanceRegistryTimestampDefault)
+      System.currentTimeMillis
+    else
+      timestamp
 
     val response = updateInstance(dtIndexName, timestamp = ts.some, enabled = None, delete = None, deleted = None)
 
@@ -114,12 +122,23 @@ object InstanceRegistryService extends AbstractDataService {
 
     val document = InstanceRegistryDocument(
       timestamp = InstanceRegistryDocument.InstanceRegistryTimestampDefault.some,
-      enabled = false.some,
+      enabled = true.some,
       delete = false.some,
       deleted = false.some
     )
 
-    if (!findEsLanguageIndex(indexName).isEmpty) throw new IllegalArgumentException("Instance already exists!")
+    val instanceRegistryDocument = findEsLanguageIndex(indexName)
+
+    if (!instanceRegistryDocument.isEmpty &&
+      (
+        instanceRegistryDocument.enabled.getOrElse(false) ||
+          ( !instanceRegistryDocument.delete.getOrElse(false) &&
+            !instanceRegistryDocument.deleted.getOrElse(false) )
+      )
+    ) throw new IllegalArgumentException(s"Instance (${indexName}) already exists and is enabled or marked for deletion")
+
+    if (!instanceRegistryDocument.isEmpty && instanceRegistryDocument.deleted.getOrElse(false))
+      throw new IllegalArgumentException(s"Instance (${indexName}) already exists, delete it to recreate")
 
     val response = esCrudBase.update(indexName, document.builder, upsert = true)
 

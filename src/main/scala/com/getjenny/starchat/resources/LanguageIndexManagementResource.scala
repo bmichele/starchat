@@ -7,6 +7,7 @@ import com.getjenny.starchat.entities.io.{CreateLanguageIndexRequest, IndexManag
 import com.getjenny.starchat.routing.{StarChatCircuitBreaker, StarChatResource}
 import com.getjenny.starchat.services.LangaugeIndexManagementService
 
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 trait LanguageIndexManagementResource extends StarChatResource {
@@ -21,7 +22,7 @@ trait LanguageIndexManagementResource extends StarChatResource {
             authenticateBasicAsync(realm = authRealm, authenticator = authenticator.authenticator) { user =>
               authorizeAsync(_ => authenticator.hasPermissions(user, "admin", Permissions.write)) {
                 entity(as[CreateLanguageIndexRequest]) { createLanguageIndexRequest =>
-                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 60.seconds)
                   onCompleteWithBreakerFuture(breaker)(languageIndexManagementService.create(createLanguageIndexRequest.languageList)) {
                     case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
                       t

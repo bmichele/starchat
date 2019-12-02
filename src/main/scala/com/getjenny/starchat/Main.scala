@@ -95,6 +95,9 @@ final class StarChatService(parameters: Option[Parameters] = None) extends RestI
   cronCleanDeadNodesService.scheduleAction()
   cronNodeAliveSignalService.scheduleAction()
   cronCleanDtLoadingRecordsService.scheduleAction()
+
+  cronDeleteInstanceService.scheduleAction()
+  cronCleanDtLoadingRecordsService.scheduleAction()
 }
 
 object Main extends App {

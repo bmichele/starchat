@@ -37,6 +37,7 @@ trait RestInterface extends RootAPIResource
   lazy val cronCleanDeadNodesService: CronCleanDeadNodesService.type = CronCleanDeadNodesService
   lazy val cronNodeAliveSignalService: CronNodeAliveSignalService.type = CronNodeAliveSignalService
   lazy val cronCleanDtLoadingRecordsService: CronCleanDtLoadingRecordsService.type = CronCleanDtLoadingRecordsService
+  lazy val cronDeleteInstanceService: CronDeleteInstanceService.type = CronDeleteInstanceService
   lazy val cronInitializeSystemIndicesService: CronInitializeSystemIndicesService.type = CronInitializeSystemIndicesService
   lazy val systemService: InstanceRegistryService.type = InstanceRegistryService
   lazy val knowledgeBaseService: KnowledgeBaseService.type = KnowledgeBaseService
