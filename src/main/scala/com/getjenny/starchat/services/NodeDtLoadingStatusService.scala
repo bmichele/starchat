@@ -7,7 +7,7 @@ package com.getjenny.starchat.services
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
-import com.getjenny.starchat.services.InstanceRegistryService.allInstanceTimestamp
+import com.getjenny.starchat.services.InstanceRegistryService.allEnabledInstanceTimestamp
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse, SearchType}
@@ -120,7 +120,7 @@ object NodeDtLoadingStatusService extends AbstractDataService {
   }
 
   def nodeLoadingStatusAll(verbose: Boolean = false, strict: Boolean = false) : NodeLoadingAllDtStatus = {
-    val idxUpdateStatus = allInstanceTimestamp(minTimestamp = Some(0)).map{ dtReloadTs =>
+    val idxUpdateStatus = allEnabledInstanceTimestamp(minTimestamp = Some(0)).map{ dtReloadTs =>
       val upToDate = analyzerService.analyzersMap.get(dtReloadTs.indexName) match {
         case Some(t) => t.lastReloadingTimestamp >= dtReloadTs.timestamp
         case _ => false

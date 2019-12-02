@@ -1,8 +1,8 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
-import com.getjenny.starchat.entities.io.{CreateLanguageIndexRequest, IndexManagementResponse}
-import com.getjenny.starchat.services.InstanceRegistryService
+import com.getjenny.starchat.entities.io.{CreateLanguageIndexRequest, IndexManagementResponse, IndexManagementStatusResponse}
+import com.getjenny.starchat.services.{InstanceRegistryService, InstanceRegistryStatus}
 
 class IndexManagementResourceTest extends TestBase {
 
@@ -10,25 +10,54 @@ class IndexManagementResourceTest extends TestBase {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
+    val instance = InstanceRegistryService.getInstance("index_getjenny_english_0")
     Post("/language_index_management", createEnglishRequest) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
   }
 
   "StarChat" should {
+
+    "return an HTTP code 400 trying to enable a non existent instance" in {
+      Post("/index_getjenny_english_0/index_management/enable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "return an HTTP code 400 trying to disable a non existent instance" in {
+      Post("/index_getjenny_english_0/index_management/disable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "return an HTTP code 400 when mark delete a non existent instance" in {
+      Delete(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
     "return an HTTP code 200 when add instance" in {
-      Post(s"/index_getjenny_english_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      Post("/index_getjenny_english_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[IndexManagementResponse]
         response.message shouldEqual "Created instance index_getjenny_english_0, operation status: CREATED"
       }
     }
 
-    "return an HTTP 200 and a check is true when instance is in the registry" in {
-      Get(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    "return an HTTP 200 and a check is true when an instance is enabled" in {
+      Post("/index_getjenny_english_0/index_management/enable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[IndexManagementResponse]
+        response.message shouldEqual "Enabled instance index_getjenny_english_0, operation status: OK"
         response.check shouldEqual true
+      }
+    }
+
+    "return an HTTP 200 and status" in {
+      Get(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[IndexManagementStatusResponse]
+        response.status shouldEqual InstanceRegistryStatus.Enabled.toString
       }
     }
 
@@ -37,6 +66,7 @@ class IndexManagementResourceTest extends TestBase {
         status shouldEqual StatusCodes.OK
         val response = responseAs[IndexManagementResponse]
         response.message shouldEqual "Disabled instance index_getjenny_english_0, operation status: OK"
+        response.check shouldEqual true
       }
     }
 
@@ -54,13 +84,28 @@ class IndexManagementResourceTest extends TestBase {
       }
     }
 
-    "return an HTTP 200 and a false check if instance is not yet in the registry" in {
+    "return an HTTP 200 and status Missing if instance is not yet in the registry" in {
       InstanceRegistryService.deleteEntry(List("index_getjenny_english_0"))
 
       Get(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+        val response = responseAs[IndexManagementStatusResponse]
+        response.status shouldEqual InstanceRegistryStatus.Missing.toString
+      }
+    }
+
+
+    "return an HTTP code 200 when create an instance with the same name as a deleted instance" in {
+      Post("/index_getjenny_english_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
         val response = responseAs[IndexManagementResponse]
-        response.check shouldEqual false
+        response.message shouldEqual "Created instance index_getjenny_english_0, operation status: OK"
+      }
+
+      Get(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[IndexManagementStatusResponse]
+        response.status shouldEqual InstanceRegistryStatus.Disabled.toString
       }
     }
 

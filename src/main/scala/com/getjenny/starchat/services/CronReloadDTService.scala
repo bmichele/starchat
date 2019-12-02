@@ -27,7 +27,7 @@ object CronReloadDTService extends CronService {
         log.debug("Start DT reloading session: {} items({})", startUpdateTimestamp, maxItemsIndexesToUpdate)
 
         val indexCheck: List[(String, Boolean)] =
-          instanceRegistryService.allInstanceTimestamp(Some(updateTimestamp), Some(maxItemsIndexesToUpdate))
+          instanceRegistryService.allEnabledInstanceTimestamp(Some(updateTimestamp), Some(maxItemsIndexesToUpdate))
             .map { dtReloadEntry =>
               val indexAnalyzers: Option[ActiveAnalyzers] =
                 analyzerService.analyzersMap.get(dtReloadEntry.indexName)

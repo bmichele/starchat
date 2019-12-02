@@ -20,10 +20,11 @@ trait IndexManagementResource extends StarChatResource {
   private[this] val instanceRegistry = InstanceRegistryService
   private[this] val createOperation = "create"
   private[this] val disableOperation = "disable"
+  private[this] val enableOperation = "enable"
 
   def postIndexManagementCreateRoutes: Route = handleExceptions(routesExceptionHandler) {
     concat(
-      pathPrefix(indexRegex ~ Slash ~ "index_management" ~ Slash ~ s"^($createOperation|$disableOperation)".r) {
+      pathPrefix(indexRegex ~ Slash ~ "index_management" ~ Slash ~ s"^($createOperation|$disableOperation|$enableOperation)".r) {
         (indexName, operation) =>
           post {
             authenticateBasicAsync(realm = authRealm,
@@ -33,6 +34,7 @@ trait IndexManagementResource extends StarChatResource {
                 onCompleteWithBreakerFuture(breaker)(
                   operation match {
                     case `createOperation` => instanceRegistry.addInstance(indexName)
+                    case `enableOperation` => instanceRegistry.enableInstance(indexName)
                     case `disableOperation` => instanceRegistry.disableInstance(indexName)
                   }
                 ) {handleResponse}
