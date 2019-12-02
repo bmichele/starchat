@@ -1,12 +1,12 @@
 package com.getjenny.starchat.resources
 
-import com.getjenny.starchat.services.{InstanceRegistryDocument, InstanceRegistryService}
+import com.getjenny.starchat.services.{InstanceRegistryDocument, InstanceRegistryService, InstanceRegistryStatus}
 
 class InstanceRegistryTest extends TestBase {
 
   val instanceRegistry: InstanceRegistryService.type = InstanceRegistryService
   val indexName = "index_getjenny_english_test_0"
-  val indexNameCommon = "index_getjenny_english_common_0"
+  val indexName2 = "index_getjenny_english_test_1"
   val invalidIndexName = "starchat_system.index_test"
   val timestamp = System.currentTimeMillis()
 
@@ -17,7 +17,7 @@ class InstanceRegistryTest extends TestBase {
          instanceRegistry.addInstance(invalidIndexName)
       }
     }
-    
+
     "map fields returned by elastic" in {
       val sourceMap = Map(
         "timestamp" -> 0l,
@@ -26,23 +26,25 @@ class InstanceRegistryTest extends TestBase {
         "deleted" -> false
       )
       val document = InstanceRegistryDocument(sourceMap)
-      assert(document.timestamp.isDefined)
-      assert(document.enabled.isDefined)
-      assert(document.delete.isDefined)
-      assert(document.deleted.isDefined)
+      document.timestamp.isDefined shouldEqual true
+      document.enabled.isDefined shouldEqual true
+      document.delete.isDefined shouldEqual true
+      document.deleted.isDefined shouldEqual true
     }
 
-    "add and enable an instance" in {
+    "add an instance" in {
       instanceRegistry.addInstance(indexName)
-      instanceRegistry.addInstance(indexNameCommon)
+      instanceRegistry.addInstance(indexName2)
 
       val instance = instanceRegistry.getInstance(indexName)
-      val instance2 = instanceRegistry.getInstance(indexNameCommon)
+      val instance2 = instanceRegistry.getInstance(indexName2)
 
-      assert(instance.enabled.isDefined)
-      assert(instance.enabled === Some(true))
-      assert(instance2.enabled.isDefined)
-      assert(instance2.enabled === Some(true))
+      instance.enabled.isDefined  shouldEqual true
+      instance.enabled shouldEqual Some(false)
+      instance.status() shouldEqual InstanceRegistryStatus.Disabled
+      instance2.enabled.isDefined  shouldEqual true
+      instance2.enabled shouldEqual Some(false)
+      instance2.status() shouldEqual InstanceRegistryStatus.Disabled
     }
 
     "fail if trying to search an invalid index name" in {
@@ -57,49 +59,39 @@ class InstanceRegistryTest extends TestBase {
       }
     }
 
+    "enable instance" in {
+      instanceRegistry.enableInstance(indexName)
+
+      val instance = instanceRegistry.getInstance(indexName)
+      instance.enabled.isDefined shouldEqual true
+      instance.enabled shouldEqual Some(true)
+      instance.status() shouldEqual InstanceRegistryStatus.Enabled
+    }
+
     "disable instance" in {
       instanceRegistry.disableInstance(indexName)
 
       val instance = instanceRegistry.getInstance(indexName)
-      assert(instance.enabled.isDefined)
-      assert(instance.enabled === Some(false))
+      instance.enabled.isDefined shouldEqual true
+      instance.enabled shouldEqual Some(false)
+      instance.status() shouldEqual InstanceRegistryStatus.Disabled
     }
 
     "mark delete instance" in {
       instanceRegistry.markDeleteInstance(indexName)
 
       val instance = instanceRegistry.getInstance(indexName)
-      assert(instance.delete.isDefined)
-      assert(instance.delete === Some(true))
-    }
-
-    "update timestamp" in {
-      instanceRegistry.updateTimestamp(indexName, timestamp, 1)
-
-      val instance = instanceRegistry.instanceTimestamp(indexName)
-
-      assert(instance.timestamp === timestamp)
+      instance.delete.isDefined shouldEqual true
+      instance.delete shouldEqual Some(true)
+      instance.status() shouldEqual InstanceRegistryStatus.MarkedForDeletion
     }
 
     "get all instances" in {
 
       val allInstances = instanceRegistry.getAll
 
-      assert(allInstances.nonEmpty)
-      assert(allInstances.size === 2)
-    }
-
-    "get all instances timestamp" in {
-
-      val allInstances = instanceRegistry.allInstanceTimestamp()
-
-      assert(allInstances.nonEmpty)
-      assert(allInstances.size === 2)
-
-      val instancesMap = allInstances.map(x => x.indexName -> x.timestamp).toMap
-
-      assert(instancesMap(indexName) === timestamp)
-      assert(instancesMap(indexNameCommon) === 0)
+      allInstances.nonEmpty shouldEqual true
+      allInstances.size shouldEqual 2
     }
 
     "delete entry" in {
@@ -107,7 +99,39 @@ class InstanceRegistryTest extends TestBase {
 
       val instance = instanceRegistry.getInstance(indexName)
 
-      assert(instance.isEmpty)
+      instance.isEmpty shouldEqual true
+      instance.status() shouldEqual InstanceRegistryStatus.Missing
+    }
+
+    "recreate entry" in {
+      instanceRegistry.addInstance(indexName)
+
+      val instance = instanceRegistry.getInstance(indexName)
+      instance.isEmpty shouldEqual false
+      instance.status() shouldEqual InstanceRegistryStatus.Disabled
+    }
+
+    "update timestamp" in {
+      instanceRegistry.updateTimestamp(indexName, timestamp, 1)
+
+      val instance = instanceRegistry.instanceTimestamp(indexName)
+
+      instance.timestamp shouldEqual timestamp
+    }
+
+    "get all enabled instances timestamp" in {
+
+      instanceRegistry.enableInstance(indexName)
+
+      val allInstances = instanceRegistry.allEnabledInstanceTimestamp()
+
+      allInstances.nonEmpty shouldEqual true
+      allInstances.size shouldEqual 1
+
+      val instancesMap = allInstances.map(x => x.indexName -> x.timestamp).toMap
+
+      instancesMap.get(indexName) shouldEqual Some(timestamp)
+      instancesMap.get(indexName2) shouldEqual None
     }
   }
 

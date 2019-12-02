@@ -7,3 +7,8 @@ case class IndexManagementResponse(
                                     message: String,
                                     check: Boolean = false
                                   )
+
+case class IndexManagementStatusResponse(
+                                    message: Option[String],
+                                    status: String
+                                  )

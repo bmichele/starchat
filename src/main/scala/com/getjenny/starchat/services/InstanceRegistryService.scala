@@ -6,7 +6,7 @@ package com.getjenny.starchat.services
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse}
+import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse, IndexManagementStatusResponse}
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
@@ -27,6 +27,9 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
                                     enabled: Option[Boolean] = None,
                                     delete: Option[Boolean] = None,
                                     deleted: Option[Boolean] = None) {
+
+  import InstanceRegistryStatus._
+
   def builder: XContentBuilder = {
     val builder = jsonBuilder().startObject()
     timestamp.foreach(t => builder.field("timestamp", t))
@@ -38,6 +41,15 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
 
   def isEmpty: Boolean = {
     deleted.getOrElse(false) || timestamp.isEmpty && enabled.isEmpty && delete.isEmpty
+  }
+
+  def status(): InstanceRegistryStatus = {
+    (enabled, delete, deleted) match {
+      case (None, None, _) => Missing
+      case (_, Some(delete), _) if delete => MarkedForDeletion
+      case (Some(enabled), _, _) => if (enabled) Enabled else Disabled
+      case _ => throw new IllegalArgumentException("Instance registry has inconsistent state")
+    }
   }
 }
 
@@ -61,6 +73,14 @@ object InstanceRegistryDocument {
   }
 }
 
+object InstanceRegistryStatus extends Enumeration {
+  type InstanceRegistryStatus = Value
+  val Missing: InstanceRegistryStatus = Value("Missing")
+  val MarkedForDeletion: InstanceRegistryStatus = Value("MarkedForDeletion")
+  val Enabled: InstanceRegistryStatus = Value("Enabled")
+  val Disabled: InstanceRegistryStatus = Value("Disabled")
+}
+
 object InstanceRegistryService extends AbstractDataService {
   override val elasticClient: SystemIndexManagementElasticClient.type = SystemIndexManagementElasticClient
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
@@ -74,7 +94,7 @@ object InstanceRegistryService extends AbstractDataService {
                       refresh: Int = 0): Option[DtReloadTimestamp] = {
     val ts: Long = if (timestamp === InstanceRegistryDocument.InstanceRegistryTimestampDefault) System.currentTimeMillis else timestamp
 
-    val response = updateInstance(dtIndexName, timestamp = Option(ts), enabled = None, delete = None, deleted = None)
+    val response = updateInstance(dtIndexName, timestamp = ts.some, enabled = None, delete = None, deleted = None)
 
     log.debug("dt reload timestamp response status: {}", response.status())
 
@@ -84,44 +104,60 @@ object InstanceRegistryService extends AbstractDataService {
         throw new Exception("System: index refresh failed: (" + InstanceRegistryIndex + ", " + dtIndexName + ")")
       }
     }
-    Option {
-      DtReloadTimestamp(indexName = InstanceRegistryIndex, timestamp = ts)
-    }
+
+    DtReloadTimestamp(indexName = InstanceRegistryIndex, timestamp = ts).some
   }
 
   def addInstance(indexName: String): IndexManagementResponse = {
-    if(!isValidIndexName(indexName))
+    if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
     val document = InstanceRegistryDocument(
-      timestamp = Option(InstanceRegistryDocument.InstanceRegistryTimestampDefault),
-      enabled = Option(true)
+      timestamp = InstanceRegistryDocument.InstanceRegistryTimestampDefault.some,
+      enabled = false.some,
+      delete = false.some,
+      deleted = false.some
     )
-    val response = esCrudBase.create(indexName, document.builder)
-    cache.put(indexName, document)
+
+    if (!findEsLanguageIndex(indexName).isEmpty) throw new IllegalArgumentException("Instance already exists!")
+
+    val response = esCrudBase.update(indexName, document.builder, upsert = true)
+
+    cache.put(indexName, findEsLanguageIndex(indexName))
     IndexManagementResponse(s"Created instance $indexName, operation status: ${response.status}", check = true)
   }
 
   def getInstance(indexName: String): InstanceRegistryDocument = {
-    if(!isValidIndexName(indexName))
+    if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
     cache.getOrElseUpdate(indexName, findEsLanguageIndex(indexName))
   }
 
-  def checkInstance(indexName: String): IndexManagementResponse = {
-    esCrudBase.refresh()
+  def checkInstance(indexName: String): IndexManagementStatusResponse = {
     val document = findEsLanguageIndex(indexName)
-    IndexManagementResponse(message = s"IndexCheck for entry: $indexName", !document.isEmpty)
+
+    IndexManagementStatusResponse(message = Some(s"Index check for instance: $indexName"), document.status().toString)
+  }
+
+  def enableInstance(indexName: String): IndexManagementResponse = {
+    require(!findEsLanguageIndex(indexName).isEmpty, s"Instance $indexName does not exists")
+
+    val response = updateInstance(indexName, timestamp = None, enabled = true.some, delete = None, deleted = None)
+    IndexManagementResponse(s"Enabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
   def disableInstance(indexName: String): IndexManagementResponse = {
-    val response = updateInstance(indexName, timestamp = None, enabled = Option(false), delete = None, deleted = None)
+    require(!findEsLanguageIndex(indexName).isEmpty, s"Instance $indexName does not exists")
+
+    val response = updateInstance(indexName, timestamp = None, enabled = false.some, delete = None, deleted = None)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
   def markDeleteInstance(indexName: String): IndexManagementResponse = {
-    val response = updateInstance(indexName, timestamp = None, enabled = Option(false), delete = Option(true), None)
+    require(!findEsLanguageIndex(indexName).isEmpty, s"Instance $indexName does not exists")
+
+    val response = updateInstance(indexName, timestamp = None, enabled = false.some, delete = true.some, None)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -129,10 +165,10 @@ object InstanceRegistryService extends AbstractDataService {
                                    enabled: Option[Boolean],
                                    delete: Option[Boolean],
                                    deleted: Option[Boolean]): UpdateResponse = {
-    if(!isValidIndexName(indexName))
+    if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
-    val toBeUpdated = InstanceRegistryDocument(timestamp =  timestamp , enabled = enabled,
+    val toBeUpdated = InstanceRegistryDocument(timestamp = timestamp, enabled = enabled,
       delete = delete,
       deleted = deleted)
     val response = esCrudBase.update(indexName, toBeUpdated.builder)
@@ -162,14 +198,14 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   def instanceTimestamp(dtIndexName: String): DtReloadTimestamp = {
-    val document = getInstance(dtIndexName)
+    val document = findEsLanguageIndex(dtIndexName)
 
     DtReloadTimestamp(indexName = dtIndexName, timestamp = document.timestamp
       .getOrElse(InstanceRegistryDocument.InstanceRegistryTimestampDefault))
   }
 
   def deleteEntry(ids: List[String]): Unit = {
-    ids.foreach(entry => updateInstance(entry, None, None, None, deleted = Option(true)))
+    ids.foreach(entry => updateInstance(entry, None, None, delete = false.some, deleted = true.some))
     ids.foreach(cache.remove)
   }
 
@@ -181,22 +217,22 @@ object InstanceRegistryService extends AbstractDataService {
     }.toList
   }
 
-  def allInstanceTimestamp(minTimestamp: Option[Long] = None,
-                           maxItems: Option[Long] = None): List[DtReloadTimestamp] = {
+  def allEnabledInstanceTimestamp(minTimestamp: Option[Long] = None,
+                                  maxItems: Option[Long] = None): List[DtReloadTimestamp] = {
     val boolQueryBuilder: BoolQueryBuilder = QueryBuilders.boolQuery()
     minTimestamp match {
       case Some(minTs) => boolQueryBuilder.filter(
         QueryBuilders.rangeQuery(elasticClient.dtReloadTimestampFieldName).gt(minTs))
       case _ => ;
     }
-
-    val scrollResp = esCrudBase.read(boolQueryBuilder,
-      maxItems = maxItems.orElse(Option(100L)).map(_.toInt),
-      version = Option(true),
+    boolQueryBuilder.filter(QueryBuilders.termQuery("enabled", true))
+    val response = esCrudBase.read(boolQueryBuilder,
+      maxItems = maxItems.orElse(100L.some).map(_.toInt),
+      version = true.some,
       sort = List(new FieldSortBuilder(elasticClient.dtReloadTimestampFieldName).order(SortOrder.DESC))
     )
 
-    val dtReloadTimestamps: List[DtReloadTimestamp] = scrollResp.getHits.getHits.toList
+    val dtReloadTimestamps: List[DtReloadTimestamp] = response.getHits.getHits.toList
       .map { timestampEntry =>
         val item: SearchHit = timestampEntry
         val docId: String = item.getId // the id is the index name
@@ -209,8 +245,8 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   def isValidIndexName(indexName: String): Boolean = indexName match {
-      case Index.fullInstanceIndex(_) => true
-      case _ => false
+    case Index.fullInstanceIndex(_) => true
+    case _ => false
   }
 
 }
