@@ -87,9 +87,9 @@ object InstanceRegistryStatus extends Enumeration {
 object InstanceRegistryService extends AbstractDataService {
   override val elasticClient: SystemIndexManagementElasticClient.type = SystemIndexManagementElasticClient
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
-  private[this] val InstanceRegistryIndex: String = Index.indexName(elasticClient.indexName,
+  private[this] val instanceRegistryIndex: String = Index.indexName(elasticClient.indexName,
     elasticClient.systemInstanceRegistrySuffix)
-  val esCrudBase = new EsCrudBase(elasticClient, InstanceRegistryIndex)
+  val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
 
   val cache = new TrieMap[String, InstanceRegistryDocument]()
 
@@ -108,11 +108,11 @@ object InstanceRegistryService extends AbstractDataService {
     if (refresh =/= 0) {
       val refreshIndex = esCrudBase.refresh()
       if (refreshIndex.failedShardsN > 0) {
-        throw new Exception("System: index refresh failed: (" + InstanceRegistryIndex + ", " + dtIndexName + ")")
+        throw new Exception("System: index refresh failed: (" + instanceRegistryIndex + ", " + dtIndexName + ")")
       }
     }
 
-    DtReloadTimestamp(indexName = InstanceRegistryIndex, timestamp = ts).some
+    DtReloadTimestamp(indexName = instanceRegistryIndex, timestamp = ts).some
   }
 
   def addInstance(indexName: String): IndexManagementResponse = {
