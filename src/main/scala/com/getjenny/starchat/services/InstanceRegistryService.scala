@@ -45,10 +45,9 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
 
   def status(): InstanceRegistryStatus = {
     (timestamp, enabled, delete, deleted) match {
-      case (None, None, Some(_), Some(_)) |
-           (_, Some(false), _, Some(true)) |
+      case (_, _, _, Some(true)) |
            (None, None, None, None) => Missing
-      case (_, Some(false), Some(true), _) => MarkedForDeletion
+      case (_, Some(false), Some(true), Some(false)) => MarkedForDeletion
       case (_, Some(true), _, _) => Enabled
       case (_, Some(false), _, _) => Disabled
       case _ => throw new IllegalArgumentException(s"Instance registry has inconsistent state: " +
@@ -182,7 +181,8 @@ object InstanceRegistryService extends AbstractDataService {
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
 
-  private[this] def updateInstance(indexName: String, timestamp: Option[Long],
+  private[this] def updateInstance(indexName: String,
+                                   timestamp: Option[Long],
                                    enabled: Option[Boolean],
                                    delete: Option[Boolean],
                                    deleted: Option[Boolean]): UpdateResponse = {
@@ -225,9 +225,11 @@ object InstanceRegistryService extends AbstractDataService {
       .getOrElse(InstanceRegistryDocument.InstanceRegistryTimestampDefault))
   }
 
-  def deleteEntry(ids: List[String]): Unit = {
-    ids.foreach(entry => updateInstance(entry, None, None, delete = false.some, deleted = true.some))
-    ids.foreach(cache.remove)
+  def markAsDeleted(ids: List[String]): Unit = {
+    ids.foreach { entry =>
+      updateInstance(entry, None, None, delete = false.some, deleted = true.some)
+      ids.foreach(cache.remove)
+    }
   }
 
   def getAll: List[(String, InstanceRegistryDocument)] = {

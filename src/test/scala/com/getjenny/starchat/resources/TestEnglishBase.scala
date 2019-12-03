@@ -30,7 +30,7 @@ trait TestEnglishBase extends TestBase {
     Delete(s"/language_index_management?index_name=index_english") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
-    InstanceRegistryService.deleteEntry(List("index_getjenny_english_0", "index_getjenny_english_common_0"))
+    InstanceRegistryService.markAsDeleted(List("index_getjenny_english_0", "index_getjenny_english_common_0"))
     super.afterAll()
   }
 

@@ -1,5 +1,6 @@
 package com.getjenny.starchat.resources
 
+import akka.actor.Props
 import akka.http.scaladsl.model.StatusCodes
 import akka.testkit.{ImplicitSender, TestKitBase}
 import com.getjenny.starchat.entities.io.UpdateDocumentsResult
@@ -22,7 +23,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
   private[this] val client = IndexManagementElasticClient
 
   private[this] val instance = Index.instanceName(indexName)
-  private[this] val deleteInstanceActor = system.actorOf(DeleteInstanceActor.props)
+  private[this] val deleteInstanceActor = system.actorOf(Props(new DeleteInstanceActor))
   "StarChat" should {
 
     "return an HTTP code 201 when creating a new document" in {

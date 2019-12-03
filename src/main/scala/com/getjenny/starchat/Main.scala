@@ -94,7 +94,6 @@ final class StarChatService(parameters: Option[Parameters] = None) extends RestI
   /* activate cron jobs for the alive nodes listing */
   cronCleanDeadNodesService.scheduleAction()
   cronNodeAliveSignalService.scheduleAction()
-  cronCleanDtLoadingRecordsService.scheduleAction()
 
   cronDeleteInstanceService.scheduleAction()
   cronCleanDtLoadingRecordsService.scheduleAction()

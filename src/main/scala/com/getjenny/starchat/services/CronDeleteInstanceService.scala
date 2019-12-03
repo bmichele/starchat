@@ -2,10 +2,10 @@ package com.getjenny.starchat.services
 
 import akka.actor.{Actor, Props}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.services.CronReloadDTService.ReloadAnalyzersTickActor
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.index.query.QueryBuilders
+import scalaz.Scalaz._
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -19,7 +19,6 @@ object CronDeleteInstanceService extends CronService {
     override def receive: Receive = {
       case `tickMessage` =>
         val instances = instanceRegistryService.getAll
-
         sender ! instances
           .map { case (id, doc) => id -> doc.enabled }
           .filterNot { case (_, enabled) => enabled.getOrElse(false) }
@@ -28,9 +27,13 @@ object CronDeleteInstanceService extends CronService {
             systemIndexManagementService.indices
               .filter(_.startsWith(esLanguageSpecificIndexName))
               .map(registryEntryId -> _)
-          }.map { case (id, indexName) => delete(id, indexName)}
-
-
+          }.map { case (id, indexName) =>
+          (id, delete(id, indexName).right.get.documentsDeleted)
+        }.groupBy(_._1).mapValues(_.map(_._2).sum)
+          .filter(_._2 === 0)
+          .map { case(id, _) =>
+            instanceRegistryService.markAsDeleted(List(id))
+          }
       case m => log.error("Unexpected message in  DeleteInstanceActor :{}", m)
     }
 
@@ -39,13 +42,13 @@ object CronDeleteInstanceService extends CronService {
         val instance = Index.instanceName(registryEntryId)
         val crud = new EsCrudBase(systemIndexManagementService.elasticClient, indexName)
         val delete = crud.delete(QueryBuilders.matchQuery("instance", instance))
-        log.info("Deleted instance: {} from index: {} - doc deleted: {}", instance, indexName, delete.getDeleted)
-        instanceRegistryService.deleteEntry(List(registryEntryId))
+        log.info("Deleted instance: {} from index: {} - doc deleted: {}", instance,
+          indexName, delete.getDeleted)
         DeleteInstanceResponse(indexName, instance, delete.getDeleted)
       }.toEither
         .left.map{ _ =>
         log.error("Error during delete registry entry {} for in index {}", registryEntryId, indexName)
-          s"Error during delete registry entry $registryEntryId for in index $indexName"
+        s"Error during delete registry entry $registryEntryId for in index $indexName"
       }
       res
     }
@@ -55,7 +58,7 @@ object CronDeleteInstanceService extends CronService {
   def scheduleAction(): Unit = {
     if (systemIndexManagementService.elasticClient.instanceRegistryDeleteFrequency > 0) {
       val reloadDecisionTableActorRef =
-        SCActorSystem.system.actorOf(Props(new ReloadAnalyzersTickActor))
+        SCActorSystem.system.actorOf(Props(new DeleteInstanceActor))
       SCActorSystem.system.scheduler.schedule(
         0 seconds,
         systemIndexManagementService.elasticClient.instanceRegistryDeleteFrequency seconds,
@@ -63,9 +66,4 @@ object CronDeleteInstanceService extends CronService {
         tickMessage)
     }
   }
-
-  object DeleteInstanceActor {
-    def props: Props = Props(new DeleteInstanceActor)
-  }
-
 }

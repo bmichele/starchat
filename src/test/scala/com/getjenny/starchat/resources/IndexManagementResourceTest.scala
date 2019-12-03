@@ -85,7 +85,7 @@ class IndexManagementResourceTest extends TestBase {
     }
 
     "return an HTTP 200 and status Missing if instance is not yet in the registry" in {
-      InstanceRegistryService.deleteEntry(List("index_getjenny_english_0"))
+      InstanceRegistryService.markAsDeleted(List("index_getjenny_english_0"))
 
       Get(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
