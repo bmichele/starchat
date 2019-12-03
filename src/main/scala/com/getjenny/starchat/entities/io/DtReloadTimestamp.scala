@@ -2,5 +2,5 @@ package com.getjenny.starchat.entities.io
 
 case class DtReloadTimestamp(
                               indexName: String,
-                              timestamp: Long
+                              timestamp: Long = System.currentTimeMillis()
                             )

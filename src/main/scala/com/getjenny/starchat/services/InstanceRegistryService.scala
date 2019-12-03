@@ -46,19 +46,19 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
   def status(): InstanceRegistryStatus = {
     (timestamp, enabled, delete, deleted) match {
       case (None, None, Some(_), Some(_)) |
-        (_, Some(false), Some(true), Some(false)) => Missing
-      case (_, Some(false), _, Some(false)) => MarkedForDeletion
-      case (_, Some(false), _, Some(true)) => Missing
+           (_, Some(false), _, Some(true)) |
+           (None, None, None, None) => Missing
+      case (_, Some(false), Some(true), _) => MarkedForDeletion
       case (_, Some(true), _, _) => Enabled
       case (_, Some(false), _, _) => Disabled
       case _ => throw new IllegalArgumentException(s"Instance registry has inconsistent state: " +
-        s"(timestamp ${timestamp}, enabled ${enabled}, delete ${delete}, deleted ${deleted})")
+        s"(timestamp $timestamp, enabled $enabled, delete $delete, deleted $deleted)")
     }
   }
 }
 
 object InstanceRegistryDocument {
-  val InstanceRegistryTimestampDefault: Long = System.currentTimeMillis
+  val InstanceRegistryTimestampDefault: Long = 0L
 
   def apply(source: Map[String, Any]): InstanceRegistryDocument = {
     val timestamp = source.get("timestamp") match {
@@ -127,22 +127,22 @@ object InstanceRegistryService extends AbstractDataService {
       deleted = false.some
     )
 
-    val instanceRegistryDocument = findEsLanguageIndex(indexName)
+    val instanceRegistryDocument = findInstance(indexName)
 
     if (!instanceRegistryDocument.isEmpty &&
       (
         instanceRegistryDocument.enabled.getOrElse(false) ||
           ( !instanceRegistryDocument.delete.getOrElse(false) &&
             !instanceRegistryDocument.deleted.getOrElse(false) )
-      )
-    ) throw new IllegalArgumentException(s"Instance (${indexName}) already exists and is enabled or marked for deletion")
+        )
+    ) throw new IllegalArgumentException(s"Instance ($indexName) already exists and is enabled or marked for deletion")
 
     if (!instanceRegistryDocument.isEmpty && instanceRegistryDocument.deleted.getOrElse(false))
-      throw new IllegalArgumentException(s"Instance (${indexName}) already exists, delete it to recreate")
+      throw new IllegalArgumentException(s"Instance ($indexName) already exists, delete it to recreate")
 
     val response = esCrudBase.update(indexName, document.builder, upsert = true)
 
-    cache.put(indexName, findEsLanguageIndex(indexName))
+    cache.put(indexName, findInstance(indexName))
     IndexManagementResponse(s"Created instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -150,31 +150,33 @@ object InstanceRegistryService extends AbstractDataService {
     if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
-    cache.getOrElseUpdate(indexName, findEsLanguageIndex(indexName))
+    cache.getOrElseUpdate(indexName, findInstance(indexName))
   }
 
   def checkInstance(indexName: String): IndexManagementStatusResponse = {
-    val document = findEsLanguageIndex(indexName)
+    val document = findInstance(indexName)
 
     IndexManagementStatusResponse(message = Some(s"Index check for instance: $indexName"), document.status().toString)
   }
 
   def enableInstance(indexName: String): IndexManagementResponse = {
-    require(!findEsLanguageIndex(indexName).isEmpty, s"Instance $indexName does not exists")
+    require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
-    val response = updateInstance(indexName, timestamp = None, enabled = true.some, delete = None, deleted = None)
+    val response = updateInstance(indexName, timestamp = None,
+      enabled = true.some, delete = None, deleted = None)
     IndexManagementResponse(s"Enabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
   def disableInstance(indexName: String): IndexManagementResponse = {
-    require(!findEsLanguageIndex(indexName).isEmpty, s"Instance $indexName does not exists")
+    require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
-    val response = updateInstance(indexName, timestamp = None, enabled = false.some, delete = None, deleted = None)
+    val response = updateInstance(indexName, timestamp = None,
+      enabled = false.some, delete = None, deleted = None)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
   def markDeleteInstance(indexName: String): IndexManagementResponse = {
-    require(!findEsLanguageIndex(indexName).isEmpty, s"Instance $indexName does not exists")
+    require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None, enabled = false.some, delete = true.some, None)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
@@ -193,13 +195,13 @@ object InstanceRegistryService extends AbstractDataService {
     val response = esCrudBase.update(indexName, toBeUpdated.builder)
     esCrudBase.refresh()
 
-    val updatedDocument = findEsLanguageIndex(indexName)
+    val updatedDocument = findInstance(indexName)
     log.debug("Updated instance {} with document: {}", indexName, updatedDocument)
     cache.put(indexName, updatedDocument)
     response
   }
 
-  private[this] def findEsLanguageIndex(dtIndexName: String): InstanceRegistryDocument = Try {
+  private[this] def findInstance(dtIndexName: String): InstanceRegistryDocument = Try {
     esCrudBase.read(dtIndexName)
   } match {
     case Success(response) => if (!response.isExists || response.isSourceEmpty) {
@@ -217,7 +219,7 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   def instanceTimestamp(dtIndexName: String): DtReloadTimestamp = {
-    val document = findEsLanguageIndex(dtIndexName)
+    val document = findInstance(dtIndexName)
 
     DtReloadTimestamp(indexName = dtIndexName, timestamp = document.timestamp
       .getOrElse(InstanceRegistryDocument.InstanceRegistryTimestampDefault))

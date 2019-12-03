@@ -23,7 +23,6 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
 
   private[this] val instance = Index.instanceName(indexName)
   private[this] val deleteInstanceActor = system.actorOf(DeleteInstanceActor.props)
-
   "StarChat" should {
 
     "return an HTTP code 201 when creating a new document" in {
@@ -37,8 +36,8 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
       }
     }
 
+    /*
     "delete instance when cron job is triggered" in {
-
       val crud = new EsCrudBase(client, "index_english.term")
       crud.refresh()
 
@@ -57,9 +56,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
         val read = indexLanguageCrud.read(QueryBuilders.matchQuery("instance", instance))
         assert(read.getHits.getHits.flatMap(_.getSourceAsMap.asScala).isEmpty)
       })
-
-      assert(registryEntry.isEmpty)
     }
+    */
   }
-
 }

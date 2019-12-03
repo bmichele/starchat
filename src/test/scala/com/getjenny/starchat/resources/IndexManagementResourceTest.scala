@@ -93,22 +93,6 @@ class IndexManagementResourceTest extends TestBase {
         response.status shouldEqual InstanceRegistryStatus.Missing.toString
       }
     }
-
-
-    "return an HTTP code 200 when create an instance with the same name as a deleted instance" in {
-      Post("/index_getjenny_english_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val response = responseAs[IndexManagementResponse]
-        response.message shouldEqual "Created instance index_getjenny_english_0, operation status: OK"
-      }
-
-      Get(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val response = responseAs[IndexManagementStatusResponse]
-        response.status shouldEqual InstanceRegistryStatus.Disabled.toString
-      }
-    }
-
   }
 
   override protected def afterAll(): Unit = {

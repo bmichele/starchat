@@ -20,13 +20,12 @@ class InstanceRegistryTest extends TestBase {
 
     "map fields returned by elastic" in {
       val sourceMap = Map(
-        "timestamp" -> 0l,
-        "enabled" -> false,
+        "timestamp" -> 0L,
+        "enabled" -> true,
         "delete" -> false,
         "deleted" -> false
       )
       val document = InstanceRegistryDocument(sourceMap)
-      document.timestamp.isDefined shouldEqual true
       document.enabled.isDefined shouldEqual true
       document.delete.isDefined shouldEqual true
       document.deleted.isDefined shouldEqual true
@@ -39,12 +38,12 @@ class InstanceRegistryTest extends TestBase {
       val instance = instanceRegistry.getInstance(indexName)
       val instance2 = instanceRegistry.getInstance(indexName2)
 
-      instance.enabled.isDefined  shouldEqual true
-      instance.enabled shouldEqual Some(false)
-      instance.status() shouldEqual InstanceRegistryStatus.Disabled
+      instance.enabled.isDefined shouldEqual true
+      instance.enabled shouldEqual Some(true)
+      instance.status() shouldEqual InstanceRegistryStatus.Enabled
       instance2.enabled.isDefined  shouldEqual true
-      instance2.enabled shouldEqual Some(false)
-      instance2.status() shouldEqual InstanceRegistryStatus.Disabled
+      instance2.enabled shouldEqual Some(true)
+      instance2.status() shouldEqual InstanceRegistryStatus.Enabled
     }
 
     "fail if trying to search an invalid index name" in {
@@ -94,31 +93,6 @@ class InstanceRegistryTest extends TestBase {
       allInstances.size shouldEqual 2
     }
 
-    "delete entry" in {
-      instanceRegistry.deleteEntry(List(indexName))
-
-      val instance = instanceRegistry.getInstance(indexName)
-
-      instance.isEmpty shouldEqual true
-      instance.status() shouldEqual InstanceRegistryStatus.Missing
-    }
-
-    "recreate entry" in {
-      instanceRegistry.addInstance(indexName)
-
-      val instance = instanceRegistry.getInstance(indexName)
-      instance.isEmpty shouldEqual false
-      instance.status() shouldEqual InstanceRegistryStatus.Disabled
-    }
-
-    "update timestamp" in {
-      instanceRegistry.updateTimestamp(indexName, timestamp, 1)
-
-      val instance = instanceRegistry.instanceTimestamp(indexName)
-
-      instance.timestamp shouldEqual timestamp
-    }
-
     "get all enabled instances timestamp" in {
 
       instanceRegistry.enableInstance(indexName)
@@ -126,12 +100,13 @@ class InstanceRegistryTest extends TestBase {
       val allInstances = instanceRegistry.allEnabledInstanceTimestamp()
 
       allInstances.nonEmpty shouldEqual true
-      allInstances.size shouldEqual 1
+
+
+      allInstances.size shouldEqual 2
 
       val instancesMap = allInstances.map(x => x.indexName -> x.timestamp).toMap
 
-      instancesMap.get(indexName) shouldEqual Some(timestamp)
-      instancesMap.get(indexName2) shouldEqual None
+      instancesMap.get(indexName2) shouldEqual Some(0)
     }
   }
 
