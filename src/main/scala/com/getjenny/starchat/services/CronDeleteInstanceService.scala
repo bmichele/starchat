@@ -18,10 +18,10 @@ object CronDeleteInstanceService extends CronService {
   class DeleteInstanceActor extends Actor {
     override def receive: Receive = {
       case `tickMessage` =>
-        val instances = instanceRegistryService.getAll
+        val instances = instanceRegistryService.getAll //FIXME: use a filtered query instead of getting all entries: fetch only those marked toBeDeleted
         sender ! instances
-          .map { case (id, doc) => id -> doc.enabled }
-          .filterNot { case (_, enabled) => enabled.getOrElse(false) }
+          .filterNot { case (_, doc) => doc.enabled.getOrElse(true) }
+          .filterNot { case (_, doc) => doc.deleted.getOrElse(true) }
           .flatMap { case (registryEntryId, _) =>
             val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(registryEntryId, "")
             systemIndexManagementService.indices
@@ -30,10 +30,9 @@ object CronDeleteInstanceService extends CronService {
           }.map { case (id, indexName) =>
           (id, delete(id, indexName).right.get.documentsDeleted)
         }.groupBy(_._1).mapValues(_.map(_._2).sum)
-          .filter(_._2 === 0)
-          .map { case(id, _) =>
-            instanceRegistryService.markAsDeleted(List(id))
-          }
+          .filter(_._2 === 0).map { case(id, _) =>
+          instanceRegistryService.markAsDeleted(List(id))
+        }
       case m => log.error("Unexpected message in  DeleteInstanceActor :{}", m)
     }
 
@@ -42,7 +41,7 @@ object CronDeleteInstanceService extends CronService {
         val instance = Index.instanceName(registryEntryId)
         val crud = new EsCrudBase(systemIndexManagementService.elasticClient, indexName)
         val delete = crud.delete(QueryBuilders.matchQuery("instance", instance))
-        log.info("Deleted instance: {} from index: {} - doc deleted: {}", instance,
+        log.info("Deleting data from instance: {} index: {} - doc deleted: {}", instance,
           indexName, delete.getDeleted)
         DeleteInstanceResponse(indexName, instance, delete.getDeleted)
       }.toEither
