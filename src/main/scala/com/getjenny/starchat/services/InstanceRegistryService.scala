@@ -116,7 +116,7 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   def addInstance(indexName: String): IndexManagementResponse = {
-    if (!isValidIndexName(indexName))
+    if (!isValidIndexName(indexName)) //FIXME: the addInstance doesn't check that the language index exists, the entry must not be created if the language index doesn't exists
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
     val document = InstanceRegistryDocument(
