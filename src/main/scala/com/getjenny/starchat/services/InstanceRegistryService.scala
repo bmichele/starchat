@@ -197,7 +197,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val updatedDocument = findInstance(indexName)
     log.debug("Updated instance {} with document: {}", indexName, updatedDocument)
-    cache.put(indexName, updatedDocument) //FIXME: this affects a single node
+    cache.put(indexName, updatedDocument)
     response
   }
 
@@ -228,7 +228,7 @@ object InstanceRegistryService extends AbstractDataService {
   def markAsDeleted(ids: List[String]): Unit = {
     ids.foreach { entry =>
       updateInstance(entry, None, None, delete = false.some, deleted = true.some)
-      cache.remove(entry) //FIXME: this affects a single node
+      cache.remove(entry)
     }
   }
 
