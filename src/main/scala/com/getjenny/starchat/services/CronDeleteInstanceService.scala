@@ -18,10 +18,7 @@ object CronDeleteInstanceService extends CronService {
   class DeleteInstanceActor extends Actor {
     override def receive: Receive = {
       case `tickMessage` =>
-        val instances = instanceRegistryService.getAll //FIXME: use a filtered query instead of getting all entries: fetch only those marked toBeDeleted
-        sender ! instances
-          .filterNot { case (_, doc) => doc.enabled.getOrElse(true) }
-          .filterNot { case (_, doc) => doc.deleted.getOrElse(true) }
+        instanceRegistryService.getAllMarkedAsDeleted
           .flatMap { case (registryEntryId, _) =>
             val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(registryEntryId, "")
             systemIndexManagementService.indices

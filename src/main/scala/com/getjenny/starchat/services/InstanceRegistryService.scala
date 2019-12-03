@@ -13,7 +13,7 @@ import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.update.UpdateResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory._
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder, QueryBuilders}
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import scalaz.Scalaz._
@@ -89,6 +89,7 @@ object InstanceRegistryService extends AbstractDataService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val instanceRegistryIndex: String = Index.indexName(elasticClient.indexName,
     elasticClient.systemInstanceRegistrySuffix)
+  private[this] val languageIndexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
   val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
 
   val cache = new TrieMap[String, InstanceRegistryDocument]()
@@ -116,7 +117,7 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   def addInstance(indexName: String): IndexManagementResponse = {
-    if (!isValidIndexName(indexName)) //FIXME: the addInstance doesn't check that the language index exists, the entry must not be created if the language index doesn't exists
+    if (!isValidIndexName(indexName) || !elasticSearchIndexExists(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
     val document = InstanceRegistryDocument(
@@ -131,8 +132,8 @@ object InstanceRegistryService extends AbstractDataService {
     if (!instanceRegistryDocument.isEmpty &&
       (
         instanceRegistryDocument.enabled.getOrElse(false) ||
-          ( !instanceRegistryDocument.delete.getOrElse(false) &&
-            !instanceRegistryDocument.deleted.getOrElse(false) )
+          (!instanceRegistryDocument.delete.getOrElse(false) &&
+            !instanceRegistryDocument.deleted.getOrElse(false))
         )
     ) throw new IllegalArgumentException(s"Instance ($indexName) already exists and is enabled or marked for deletion")
 
@@ -227,13 +228,22 @@ object InstanceRegistryService extends AbstractDataService {
 
   def markAsDeleted(ids: List[String]): Unit = {
     ids.foreach { entry =>
-      updateInstance(entry, None, None, delete = false.some, deleted = true.some)
+      updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some)
       cache.remove(entry)
     }
   }
 
   def getAll: List[(String, InstanceRegistryDocument)] = {
-    val response = esCrudBase.read(QueryBuilders.matchAllQuery())
+    getFromRegistry(QueryBuilders.matchAllQuery())
+  }
+
+  def getAllMarkedAsDeleted: List[(String, InstanceRegistryDocument)] = {
+    val queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("delete", true))
+    getFromRegistry(queryBuilder)
+  }
+
+  private[this] def getFromRegistry(queryBuilder: QueryBuilder): List[(String, InstanceRegistryDocument)] = {
+    val response = esCrudBase.read(queryBuilder)
 
     response.getHits.getHits.map { x =>
       x.getId -> InstanceRegistryDocument(x.getSourceAsMap.asScala.toMap)
@@ -270,6 +280,11 @@ object InstanceRegistryService extends AbstractDataService {
   def isValidIndexName(indexName: String): Boolean = indexName match {
     case Index.fullInstanceIndex(_) => true
     case _ => false
+  }
+
+  private[this] def elasticSearchIndexExists(indexName: String): Boolean = {
+    val languageSpecificIndex = Index.esLanguageFromIndexName(indexName)
+    languageIndexManagementService.getAll.exists(index => languageSpecificIndex === index)
   }
 
 }
