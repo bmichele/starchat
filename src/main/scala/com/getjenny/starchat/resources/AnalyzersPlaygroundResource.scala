@@ -24,7 +24,7 @@ trait AnalyzersPlaygroundResource extends StarChatResource {
             authenticator = authenticator.authenticator) { user =>
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName,
-                Set(Permissions.read, Permissions.write, Permissions.read))) {
+                Set(Permissions.read, Permissions.write, Permissions.admin))) {
               extractRequest { request =>
                 entity(as[AnalyzerEvaluateRequest]) { analyzerRequest =>
                   val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
