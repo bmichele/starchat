@@ -234,20 +234,24 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   def getAll: List[(String, InstanceRegistryDocument)] = {
-    getFromRegistry(QueryBuilders.matchAllQuery())
+    queryRegistry(QueryBuilders.matchAllQuery())
   }
 
   def getAllMarkedToDelete: List[(String, InstanceRegistryDocument)] = {
     val queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("delete", true))
-    getFromRegistry(queryBuilder)
+    queryRegistry(queryBuilder)
   }
 
-  private[this] def getFromRegistry(queryBuilder: QueryBuilder): List[(String, InstanceRegistryDocument)] = {
-    val response = esCrudBase.read(queryBuilder)
-
-    response.getHits.getHits.map { x =>
-      x.getId -> InstanceRegistryDocument(x.getSourceAsMap.asScala.toMap)
-    }.toList
+  private[this] def queryRegistry(queryBuilder: QueryBuilder): List[(String, InstanceRegistryDocument)] = Try {
+    esCrudBase.read(queryBuilder)
+  } match {
+    case Success(response) =>
+      response.getHits.getHits.map { x =>
+        x.getId -> InstanceRegistryDocument(x.getSourceAsMap.asScala.toMap)
+      }.toList
+    case Failure(e) =>
+      log.error(e, "Error while reading from instance-registry")
+      List.empty
   }
 
   def allEnabledInstanceTimestamp(minTimestamp: Option[Long] = None,
