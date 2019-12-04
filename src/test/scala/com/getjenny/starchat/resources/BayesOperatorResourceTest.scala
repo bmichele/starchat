@@ -7,7 +7,7 @@ import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.BayesOperatorCacheService
 
 class BayesOperatorResourceTest extends TestEnglishBase {
-  /*
+
 
   "StarChat" should {
     "return an HTTP code 201 when creating a new user" in {
@@ -298,7 +298,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
       }
     }
   }
-   */
+
 }
 
 
