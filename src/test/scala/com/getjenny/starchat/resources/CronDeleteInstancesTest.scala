@@ -1,14 +1,13 @@
 package com.getjenny.starchat.resources
 
-import akka.actor.Props
 import akka.http.scaladsl.model.StatusCodes
-import akka.testkit.{ImplicitSender, TestKitBase}
+import akka.testkit.{ImplicitSender, TestKitBase, TestProbe}
 import com.getjenny.starchat.entities.io.UpdateDocumentsResult
 import com.getjenny.starchat.entities.persistents.{Term, Terms}
-import com.getjenny.starchat.services.CronDeleteInstanceService.{DeleteInstanceActor, DeleteInstanceResponse}
-import com.getjenny.starchat.services.InstanceRegistryService
+import com.getjenny.starchat.services.CronDeleteInstanceService.DeleteInstanceActor
 import com.getjenny.starchat.services.esclient.IndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
+import com.getjenny.starchat.services.{InstanceRegistryService, SystemIndexManagementService}
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.index.query.QueryBuilders
 
@@ -21,9 +20,11 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
   private[this] val instanceRegistryService = InstanceRegistryService
   private[this] val indexName = "index_getjenny_english_0"
   private[this] val client = IndexManagementElasticClient
-
+  private[this] val systemIndexManagementService: SystemIndexManagementService.type = SystemIndexManagementService
   private[this] val instance = Index.instanceName(indexName)
-  private[this] val deleteInstanceActor = system.actorOf(Props(new DeleteInstanceActor))
+  private[this] val testProbe = TestProbe()
+  private[this] val deleteInstanceActor = system.actorOf(DeleteInstanceActor.props(testProbe.ref))
+
   "StarChat" should {
 
     "return an HTTP code 201 when creating a new document" in {
@@ -37,7 +38,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
       }
     }
 
-    /*
+
     "delete instance when cron job is triggered" in {
       val crud = new EsCrudBase(client, "index_english.term")
       crud.refresh()
@@ -46,18 +47,36 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
 
       deleteInstanceActor ! "tick"
 
-      val messages = expectMsgClass(10 seconds, classOf[List[Either[String, DeleteInstanceResponse]]])
+      val messages = testProbe.expectMsgClass(10 seconds, classOf[Map[String, Long]])
 
+      messages shouldBe empty
+
+      val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "")
+      systemIndexManagementService
+        .indices
+        .filter(_.startsWith(esLanguageSpecificIndexName))
+        .foreach(fullIndexName => {
+          val indexLanguageCrud = new EsCrudBase(client, fullIndexName)
+          indexLanguageCrud.refresh()
+          val read = indexLanguageCrud.read(QueryBuilders.matchQuery("instance", instance))
+          assert(read.getHits.getHits.flatMap(_.getSourceAsMap.asScala).isEmpty)
+        })
+
+      //At first registry entry is not deleted, because we cannot be sure that the elasticsearch
+      // delete has deleted all elements
       val registryEntry = instanceRegistryService.getInstance(indexName)
-      assert(!messages.exists(_.isLeft))
+      registryEntry.isEmpty shouldBe false
 
-      messages.filter(_.isRight).map(_.right.get).foreach(m => {
-        val indexLanguageCrud = new EsCrudBase(client, m.indexName)
-        indexLanguageCrud.refresh()
-        val read = indexLanguageCrud.read(QueryBuilders.matchQuery("instance", instance))
-        assert(read.getHits.getHits.flatMap(_.getSourceAsMap.asScala).isEmpty)
-      })
+      deleteInstanceActor ! "tick"
+      val completedDelete = testProbe.expectMsgClass(10 seconds, classOf[Map[String, Long]])
+      completedDelete
+        .filterNot{ case (_, v) => v === 0L} shouldBe empty
+
+      //Only when elasticsearch has deleted 0 elements we are sure that instance is completely deleted
+      //so we can safely delete the instance from the registry
+      val registryEntryDeleted = instanceRegistryService.getInstance(indexName)
+      registryEntryDeleted.isEmpty shouldBe true
     }
-    */
+
   }
 }

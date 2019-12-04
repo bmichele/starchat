@@ -131,7 +131,7 @@ object ResponseService extends AbstractDataService {
             context = Context(indexName = indexName, stateName = stateName)
           )
           Try(starchatAnalyzer.evaluate(userText, data = analyzersDataInternal)) match {
-            case Success(evalRes) =>
+            case Success(evalRes: Result) =>
               log.debug("ResponseService: Evaluation of State({}) Query({}) Score({})",
                 stateName, userText, evalRes.toString)
               evalRes

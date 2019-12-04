@@ -1,20 +1,45 @@
 package com.getjenny.starchat.resources
 
+import com.getjenny.starchat.entities.io.CreateLanguageIndexRequest
+import com.getjenny.starchat.services.InstanceRegistryStatus._
 import com.getjenny.starchat.services.{InstanceRegistryDocument, InstanceRegistryService, InstanceRegistryStatus}
+import scalaz.Scalaz._
 
 class InstanceRegistryTest extends TestBase {
-
+  val createEnglishRequest = CreateLanguageIndexRequest(List("english"))
   val instanceRegistry: InstanceRegistryService.type = InstanceRegistryService
-  val indexName = "index_getjenny_english_test_0"
-  val indexName2 = "index_getjenny_english_test_1"
+  val indexName = "index_getjenny_english_0"
+  val nonExistentIndex = "index_getjenny_french_0"
+  val indexName2 = "index_getjenny_english_common_0"
   val invalidIndexName = "starchat_system.index_test"
   val timestamp = System.currentTimeMillis()
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    Post("/language_index_management", createEnglishRequest) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      true
+    }
+  }
+
+  override protected def afterAll(): Unit = {
+    Delete(s"/language_index_management?index_name=index_english") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      true
+    }
+    InstanceRegistryService.markAsDeleted(List("index_getjenny_english_0", "index_getjenny_english_common_0"))
+    super.afterAll()
+  }
 
   "Instance Registry" should {
 
     "fail if index name is not valid" in {
-       intercept[Exception]{
-         instanceRegistry.addInstance(invalidIndexName)
+      intercept[Exception] {
+        instanceRegistry.addInstance(invalidIndexName)
+      }
+    }
+
+    "fail if index not exists" in {
+      intercept[Exception] {
+        instanceRegistry.addInstance(nonExistentIndex)
       }
     }
 
@@ -31,6 +56,34 @@ class InstanceRegistryTest extends TestBase {
       document.deleted.isDefined shouldEqual true
     }
 
+    "evaluate correctly statuses" in {
+      InstanceRegistryDocument().status() shouldEqual Missing
+      InstanceRegistryDocument(deleted = true.some).status() shouldEqual Missing
+      InstanceRegistryDocument(enabled = false.some, deleted = true.some).status shouldEqual Missing
+
+      intercept[Exception] {
+        InstanceRegistryDocument(deleted = false.some).status()
+      }
+
+      InstanceRegistryDocument(enabled = true.some).status() shouldEqual Enabled
+      InstanceRegistryDocument(enabled = true.some, delete = false.some).status() shouldEqual Enabled
+      InstanceRegistryDocument(enabled = false.some).status() shouldEqual Disabled
+      InstanceRegistryDocument(enabled = false.some, delete = false.some).status() shouldEqual Disabled
+      InstanceRegistryDocument(enabled = false.some, delete = true.some).status() shouldEqual MarkedForDeletion
+      InstanceRegistryDocument(enabled = true.some, delete = true.some).status() shouldEqual MarkedForDeletion
+      InstanceRegistryDocument(enabled = true.some, delete = true.some, deleted = false.some)
+        .status() shouldEqual MarkedForDeletion
+      InstanceRegistryDocument(delete = true.some).status() shouldEqual MarkedForDeletion
+    }
+
+    "evaluate correctly is empty" in {
+      InstanceRegistryDocument().isEmpty shouldBe true
+      InstanceRegistryDocument(deleted = true.some).isEmpty shouldBe true
+      InstanceRegistryDocument(deleted = true.some, enabled = true.some).isEmpty shouldBe true
+      InstanceRegistryDocument(deleted = true.some, delete = true.some).isEmpty shouldBe true
+      InstanceRegistryDocument(deleted = true.some, timestamp = 0L.some).isEmpty shouldBe true
+    }
+
     "add an instance" in {
       instanceRegistry.addInstance(indexName)
       instanceRegistry.addInstance(indexName2)
@@ -38,12 +91,12 @@ class InstanceRegistryTest extends TestBase {
       val instance = instanceRegistry.getInstance(indexName)
       val instance2 = instanceRegistry.getInstance(indexName2)
 
-      instance.enabled.isDefined shouldEqual true
+      instance.enabled.isDefined shouldBe true
       instance.enabled shouldEqual Some(true)
-      instance.status() shouldEqual InstanceRegistryStatus.Enabled
-      instance2.enabled.isDefined  shouldEqual true
+      instance.status() shouldEqual Enabled
+      instance2.enabled.isDefined shouldBe true
       instance2.enabled shouldEqual Some(true)
-      instance2.status() shouldEqual InstanceRegistryStatus.Enabled
+      instance2.status() shouldEqual Enabled
     }
 
     "fail if trying to search an invalid index name" in {
@@ -64,7 +117,7 @@ class InstanceRegistryTest extends TestBase {
       val instance = instanceRegistry.getInstance(indexName)
       instance.enabled.isDefined shouldEqual true
       instance.enabled shouldEqual Some(true)
-      instance.status() shouldEqual InstanceRegistryStatus.Enabled
+      instance.status() shouldEqual Enabled
     }
 
     "disable instance" in {
@@ -73,7 +126,13 @@ class InstanceRegistryTest extends TestBase {
       val instance = instanceRegistry.getInstance(indexName)
       instance.enabled.isDefined shouldEqual true
       instance.enabled shouldEqual Some(false)
-      instance.status() shouldEqual InstanceRegistryStatus.Disabled
+      instance.status() shouldEqual Disabled
+    }
+
+    "try to create instance that already exists" in {
+      intercept[Exception] {
+        instanceRegistry.addInstance(indexName)
+      }
     }
 
     "mark delete instance" in {
@@ -82,7 +141,38 @@ class InstanceRegistryTest extends TestBase {
       val instance = instanceRegistry.getInstance(indexName)
       instance.delete.isDefined shouldEqual true
       instance.delete shouldEqual Some(true)
-      instance.status() shouldEqual InstanceRegistryStatus.MarkedForDeletion
+      instance.status() shouldEqual MarkedForDeletion
+    }
+
+    "try to create instance that already exists and marked to delete" in {
+      intercept[Exception] {
+        instanceRegistry.addInstance(indexName)
+      }
+    }
+
+    "delete entry" in {
+      instanceRegistry.markAsDeleted(List(indexName))
+
+      val instance = instanceRegistry.getInstance(indexName)
+
+      instance.isEmpty shouldEqual true
+      instance.status() shouldEqual Missing
+    }
+
+    "recreate entry" in {
+      instanceRegistry.addInstance(indexName)
+
+      val instance = instanceRegistry.getInstance(indexName)
+      instance.isEmpty shouldEqual false
+      instance.status() shouldEqual Enabled
+    }
+
+    "update timestamp" in {
+      instanceRegistry.updateTimestamp(indexName, timestamp, 1)
+
+      val instance = instanceRegistry.instanceTimestamp(indexName)
+
+      instance.timestamp shouldEqual timestamp
     }
 
     "get all instances" in {

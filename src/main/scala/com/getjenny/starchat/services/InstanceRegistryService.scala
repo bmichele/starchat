@@ -4,12 +4,16 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 23/08/17.
  */
 
+import java.util.concurrent.TimeUnit
+
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse, IndexManagementStatusResponse}
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
+import com.google.common.cache.{Cache, CacheBuilder}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.elasticsearch.action.update.UpdateResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory._
@@ -19,9 +23,10 @@ import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
 import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.Map
 import scala.util.{Failure, Success, Try}
+
+class InstanceRegistryException(message: String = "", cause: Throwable = None.orNull) extends Exception(message, cause)
 
 case class InstanceRegistryDocument(timestamp: Option[Long] = None,
                                     enabled: Option[Boolean] = None,
@@ -45,15 +50,15 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
 
   def status(): InstanceRegistryStatus = {
     (timestamp, enabled, delete, deleted) match {
-      case (_, _, _, Some(true)) |
-           (None, None, None, None) => Missing
-      case (_, Some(false), Some(true), Some(false)) => MarkedForDeletion
+      case (_, _, _, Some(true)) | (_, None, None, None) => Missing
+      case (_, _, Some(delete), _) if delete => MarkedForDeletion
       case (_, Some(true), _, _) => Enabled
       case (_, Some(false), _, _) => Disabled
-      case _ => throw new IllegalArgumentException(s"Instance registry has inconsistent state: " +
+      case _ => throw new InstanceRegistryException(s"Instance registry has inconsistent state: " +
         s"(timestamp $timestamp, enabled $enabled, delete $delete, deleted $deleted)")
     }
   }
+
 }
 
 object InstanceRegistryDocument {
@@ -90,9 +95,12 @@ object InstanceRegistryService extends AbstractDataService {
   private[this] val instanceRegistryIndex: String = Index.indexName(elasticClient.indexName,
     elasticClient.systemInstanceRegistrySuffix)
   private[this] val languageIndexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
-  val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
+  private[this] val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
+  private[this] val config: Config = ConfigFactory.load()
 
-  val cache = new TrieMap[String, InstanceRegistryDocument]()
+  private[this] val cache: Cache[String, InstanceRegistryDocument] = CacheBuilder.newBuilder()
+    .expireAfterWrite(config.getInt("starchat.instance_registry.cache_expiration_time"), TimeUnit.SECONDS)
+    .build[String, InstanceRegistryDocument]
 
   def updateTimestamp(dtIndexName: String,
                       timestamp: Long = InstanceRegistryDocument.InstanceRegistryTimestampDefault,
@@ -109,7 +117,7 @@ object InstanceRegistryService extends AbstractDataService {
     if (refresh =/= 0) {
       val refreshIndex = esCrudBase.refresh()
       if (refreshIndex.failedShardsN > 0) {
-        throw new Exception("System: index refresh failed: (" + instanceRegistryIndex + ", " + dtIndexName + ")")
+        throw new InstanceRegistryException("System: index refresh failed: (" + instanceRegistryIndex + ", " + dtIndexName + ")")
       }
     }
 
@@ -129,16 +137,8 @@ object InstanceRegistryService extends AbstractDataService {
 
     val instanceRegistryDocument = findInstance(indexName)
 
-    if (!instanceRegistryDocument.isEmpty &&
-      (
-        instanceRegistryDocument.enabled.getOrElse(false) ||
-          (!instanceRegistryDocument.delete.getOrElse(false) &&
-            !instanceRegistryDocument.deleted.getOrElse(false))
-        )
-    ) throw new IllegalArgumentException(s"Instance ($indexName) already exists and is enabled or marked for deletion")
-
-    if (!instanceRegistryDocument.isEmpty && instanceRegistryDocument.deleted.getOrElse(false))
-      throw new IllegalArgumentException(s"Instance ($indexName) already exists, delete it to recreate")
+    if (!instanceRegistryDocument.isEmpty)
+      throw new InstanceRegistryException(s"Instance ($indexName) already exists, delete it to recreate")
 
     val response = esCrudBase.update(indexName, document.builder, upsert = true)
 
@@ -150,7 +150,7 @@ object InstanceRegistryService extends AbstractDataService {
     if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
-    cache.getOrElseUpdate(indexName, findInstance(indexName))
+    cache.get(indexName, () => findInstance(indexName))
   }
 
   def checkInstance(indexName: String): IndexManagementStatusResponse = {
@@ -229,7 +229,7 @@ object InstanceRegistryService extends AbstractDataService {
   def markAsDeleted(ids: List[String]): Unit = {
     ids.foreach { entry =>
       updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some)
-      cache.remove(entry)
+      cache.invalidate(entry)
     }
   }
 
@@ -237,7 +237,7 @@ object InstanceRegistryService extends AbstractDataService {
     getFromRegistry(QueryBuilders.matchAllQuery())
   }
 
-  def getAllMarkedAsDeleted: List[(String, InstanceRegistryDocument)] = {
+  def getAllMarkedToDelete: List[(String, InstanceRegistryDocument)] = {
     val queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("delete", true))
     getFromRegistry(queryBuilder)
   }
@@ -283,8 +283,8 @@ object InstanceRegistryService extends AbstractDataService {
   }
 
   private[this] def elasticSearchIndexExists(indexName: String): Boolean = {
-    val languageSpecificIndex = Index.esLanguageFromIndexName(indexName)
-    languageIndexManagementService.getAll.exists(index => languageSpecificIndex === index)
+    val languageSpecificIndex = Index.esLanguageFromIndexName(indexName, "")
+    languageIndexManagementService.getAll.exists(_.startsWith(languageSpecificIndex))
   }
 
 }

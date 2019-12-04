@@ -1,6 +1,6 @@
 package com.getjenny.starchat.services
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
@@ -15,25 +15,31 @@ object CronDeleteInstanceService extends CronService {
 
   case class DeleteInstanceResponse(indexName: String, instance: String, documentsDeleted: Long)
 
-  class DeleteInstanceActor extends Actor {
+  class DeleteInstanceActor(probeActor: Option[ActorRef] = None) extends Actor {
     override def receive: Receive = {
       case `tickMessage` =>
-        instanceRegistryService.getAllMarkedAsDeleted
+
+        val deleteResponse = instanceRegistryService.getAllMarkedToDelete
           .flatMap { case (registryEntryId, _) =>
             val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(registryEntryId, "")
             systemIndexManagementService.indices
               .filter(_.startsWith(esLanguageSpecificIndexName))
               .map(registryEntryId -> _)
-          }.map { case (id, indexName) =>
-          (id, delete(id, indexName).right.get.documentsDeleted)
-        }.groupBy(_._1).mapValues(_.map(_._2).sum)
-          .filter(_._2 === 0).map { case(id, _) =>
+          }.flatMap { case (id, indexName) => delete(id, indexName).map(response => id -> response) }
+
+        val instancesToDeleteFromRegistry = deleteResponse.groupBy(_._1)
+          .mapValues(_.map(_._2.documentsDeleted).sum)
+          .filter(_._2 === 0)
+
+        instancesToDeleteFromRegistry.foreach { case (id, _) =>
           instanceRegistryService.markAsDeleted(List(id))
         }
+
+        probeActor.foreach(ref => ref ! instancesToDeleteFromRegistry)
       case m => log.error("Unexpected message in  DeleteInstanceActor :{}", m)
     }
 
-    private[this] def delete(registryEntryId: String, indexName: String): Either[String, DeleteInstanceResponse] = {
+    private[this] def delete(registryEntryId: String, indexName: String): Option[DeleteInstanceResponse] = {
       val res = Try {
         val instance = Index.instanceName(registryEntryId)
         val crud = new EsCrudBase(systemIndexManagementService.elasticClient, indexName)
@@ -42,11 +48,10 @@ object CronDeleteInstanceService extends CronService {
           indexName, delete.getDeleted)
         DeleteInstanceResponse(indexName, instance, delete.getDeleted)
       }.toEither
-        .left.map{ _ =>
-        log.error("Error during delete registry entry {} for in index {}", registryEntryId, indexName)
-        s"Error during delete registry entry $registryEntryId for in index $indexName"
+        .left.map { e =>
+        log.error(e, "Error during delete registry entry {} for in index {}", registryEntryId, indexName)
       }
-      res
+      res.toOption
     }
 
   }
@@ -62,4 +67,11 @@ object CronDeleteInstanceService extends CronService {
         tickMessage)
     }
   }
+
+  object DeleteInstanceActor {
+    def props = Props(new DeleteInstanceActor())
+
+    def props(actorProbe: ActorRef) = Props(new DeleteInstanceActor(Some(actorProbe)))
+  }
+
 }
