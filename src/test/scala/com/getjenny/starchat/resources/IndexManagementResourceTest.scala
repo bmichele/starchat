@@ -10,13 +10,30 @@ class IndexManagementResourceTest extends TestBase {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    val instance = InstanceRegistryService.getInstance("index_getjenny_english_0")
     Post("/language_index_management", createEnglishRequest) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
   }
 
   "StarChat" should {
+
+    "return an HTTP code 400 trying to create an instance that has no language index " in {
+      Post("/index_getjenny_arabic_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "return an HTTP code 400 trying to enable an instance that has no language index " in {
+      Post("/index_getjenny_arabic_0/index_management/enable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
+
+    "return an HTTP code 400 trying to disable an instance that has no language index " in {
+      Post("/index_getjenny_arabic_0/index_management/disable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+      }
+    }
 
     "return an HTTP code 400 trying to enable a non existent instance" in {
       Post("/index_getjenny_english_0/index_management/enable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
@@ -93,6 +110,21 @@ class IndexManagementResourceTest extends TestBase {
         response.status shouldEqual InstanceRegistryStatus.Missing.toString
       }
     }
+
+    "return an HTTP code 200 when create an instance with the same name as a deleted instance" in {
+      Post("/index_getjenny_english_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[IndexManagementResponse]
+        response.message shouldEqual "Created instance index_getjenny_english_0, operation status: OK"
+      }
+
+      Get(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[IndexManagementStatusResponse]
+        response.status shouldEqual InstanceRegistryStatus.Enabled.toString
+      }
+    }
+
   }
 
   override protected def afterAll(): Unit = {
