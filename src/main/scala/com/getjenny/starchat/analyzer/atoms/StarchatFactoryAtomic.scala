@@ -43,7 +43,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "checkTimestampVariable",
     "isServiceOpen",
     "setServiceOpening",
-    "languageGuesser"
+    "languageGuesser",
+    "checkDate"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
@@ -80,6 +81,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "isServiceOpen" => new IsServiceOpenAtomic(argument, restrictedArgs)
     case "setServiceOpening" => new SetServiceOpeningAtomic(argument, restrictedArgs)
     case "languageGuesser" => new LanguageGuesserAtomic(argument, restrictedArgs)
+    case "checkDate" => new CheckDateAtomic(argument, restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }
 }
