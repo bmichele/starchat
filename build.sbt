@@ -57,6 +57,7 @@ libraryDependencies ++= {
 
 scalacOptions += "-deprecation"
 scalacOptions += "-feature"
+scalacOptions += "-Ypartial-unification"
 //scalacOptions += "-Ylog-classpath"
 testOptions in Test += Tests.Argument("-oF")
 

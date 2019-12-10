@@ -3,6 +3,7 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.server.Route
+import com.getjenny.starchat.TestBase
 import com.getjenny.starchat.entities.io._
 
 class UserResourceTest extends TestBase {

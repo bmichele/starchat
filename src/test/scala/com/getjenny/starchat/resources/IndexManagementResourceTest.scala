@@ -1,6 +1,7 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
+import com.getjenny.starchat.TestBase
 import com.getjenny.starchat.entities.io.{CreateLanguageIndexRequest, IndexManagementResponse, IndexManagementStatusResponse}
 import com.getjenny.starchat.services.{InstanceRegistryService, InstanceRegistryStatus}
 

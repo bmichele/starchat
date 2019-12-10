@@ -1,8 +1,7 @@
-package com.getjenny.starchat.resources
+package com.getjenny.starchat
 
 import com.getjenny.starchat.entities.io.CreateLanguageIndexRequest
 import com.getjenny.starchat.services.InstanceRegistryService
-
 
 trait TestEnglishBase extends TestBase {
   val createEnglishRequest = CreateLanguageIndexRequest(List("english"))
