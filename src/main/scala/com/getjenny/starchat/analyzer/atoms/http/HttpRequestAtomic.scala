@@ -2,12 +2,12 @@ package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.getjenny.analyzer.atoms.{AbstractAtomic}
+import com.getjenny.analyzer.atoms.AbstractAtomic
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
 import com.getjenny.starchat.SCActorSystem
 import scalaz.Scalaz._
@@ -61,24 +61,32 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
   }
 
   protected[this] def createRequest(configuration: HttpRequestAtomicConfiguration): HttpRequest = {
-    val authHeader = configuration.auth match {
-      case Some(BasicAuth(username, password)) => Authorization(BasicHttpCredentials(s"$username $password")) :: Nil
-      case Some(BearerAuth(token)) => Authorization(OAuth2BearerToken(token)) :: Nil
-      case _ => Nil
+    val (authHeader, authQueryParam) = configuration.auth match {
+      case Some(BasicAuth(username, password)) =>
+        (Authorization(BasicHttpCredentials(s"$username $password")) :: Nil) -> None
+      case Some(BearerAuth(token)) =>
+        (Authorization(OAuth2BearerToken(token)) :: Nil) -> None
+      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo == StoreOption.HEADER =>
+        (RawHeader(key, token) :: Nil) -> None
+      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo == StoreOption.QUERY => Nil -> s"$key=$token".some
+      case _ => Nil -> None
     }
 
-    val (url, httpBody) = configuration.inputConf match {
+    val url = authQueryParam.map(auth => s"${configuration.urlConf.url}?$auth").getOrElse(configuration.urlConf.url)
+
+    val (finalUrl, httpBody) = configuration.inputConf match {
       case QueryStringConf(queryString) =>
         if (configuration.urlConf.contentType.equals(ContentTypes.`application/x-www-form-urlencoded`)) {
-          configuration.urlConf.url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
+          url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
         } else {
-          s"${configuration.urlConf.url}?$queryString" -> HttpEntity.Empty
+          val querySeparator = if(authQueryParam.isDefined) "&" else "?"
+          s"${configuration.urlConf.url}$querySeparator$queryString" -> HttpEntity.Empty
         }
-      case JsonConf(json) => configuration.urlConf.url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
+      case JsonConf(json) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
     }
 
     HttpRequest(method = configuration.urlConf.method,
-      uri = url,
+      uri = finalUrl,
       headers = authHeader,
       entity = httpBody)
   }

@@ -7,6 +7,9 @@ import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.Authorization
 import scalaz.Scalaz._
 import scalaz.{Failure, NonEmptyList, Success, Validation}
 import Validation.FlatMap._
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.as
+import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
+
 import scala.concurrent.{ExecutionContext, Future}
 
 trait GenericVariableManager extends VariableManager {
@@ -49,8 +52,12 @@ trait GenericVariableManager extends VariableManager {
             .run(configMap)
             .map(_.some)
         case Success(AuthorizationType.BEARER) =>
-          as[String](authToken).run(configMap)
+          as[String](token).run(configMap)
             .map(t => BearerAuth(t))
+            .map(_.some)
+        case Success(AuthorizationType.API_KEY) =>
+          (as[String](key) |@| as[String](token) |@| as[StoreOption](storeTo)) ((k, t, s) => (k |@| t |@| s) (ApiKeyAuth))
+            .run(configMap)
             .map(_.some)
         case Failure(f) => Failure(f)
         case t => Failure(NonEmptyList(s"Undefined authorization type $t"))

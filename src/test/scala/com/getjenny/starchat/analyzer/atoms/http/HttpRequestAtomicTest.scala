@@ -1,9 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.getjenny.analyzer.expressions.AnalyzersDataInternal
-import com.getjenny.starchat.serializers.JsonSupport
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{Matchers, WordSpec}
 import scalaz.Scalaz._
 import scalaz.{Failure, Success}
 
@@ -72,13 +70,62 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       )
       val configuration = Map("http-atom.test.url" -> "www.google.it",
         "http-atom.test.http-method" -> "GET",
-        "http-atom.test.authorization-type" -> "Basic")
+        "http-atom.test.authorization-type" -> "basic")
 
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty)
       validation shouldBe a [Failure[_]]
       validation.fold(_.toSet, _ => Set.empty[String]) should contain allOf
         ("username not found in configuration",
         "password not found in configuration")
+    }
+
+    "fail if bearer auth type present but not token" in {
+      val arguments = List("system.http-atom.test.url",
+        "system.http-atom.test.http-method",
+        "system.http-atom.test.authorization-type"
+      )
+      val configuration = Map("http-atom.test.url" -> "www.google.it",
+        "http-atom.test.http-method" -> "GET",
+        "http-atom.test.authorization-type" -> "bearer")
+
+      val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty)
+      validation shouldBe a [Failure[_]]
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("token not found in configuration")
+    }
+
+    "fail if api key auth type present but not token" in {
+      val arguments = List("system.http-atom.test.url",
+        "system.http-atom.test.http-method",
+        "system.http-atom.test.authorization-type"
+      )
+      val configuration = Map("http-atom.test.url" -> "www.google.it",
+        "http-atom.test.http-method" -> "GET",
+        "http-atom.test.authorization-type" -> "apiKey")
+
+      val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty)
+      validation shouldBe a [Failure[_]]
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("token not found in configuration")
+    }
+
+    "fail if api key auth type present but invalid store to option" in {
+      val arguments = List("system.http-atom.test.url",
+        "system.http-atom.test.http-method",
+        "system.http-atom.test.authorization-type",
+        "system.http-atom.test.token",
+        "system.http-atom.test.store-to",
+        "system.http-atom.test.key",
+      )
+      val configuration = Map("http-atom.test.url" -> "www.google.it",
+        "http-atom.test.http-method" -> "GET",
+        "http-atom.test.authorization-type" -> "apiKey",
+        "http-atom.test.token" -> "asdads",
+        "http-atom.test.store-to" -> "aaa",
+        "http-atom.test.key" -> "aaa",
+      )
+
+      val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty)
+      validation shouldBe a [Failure[_]]
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("Error while extracting key <store-to>: No value found for 'aaa'")
     }
 
     "fail if authorization type not supported" in {

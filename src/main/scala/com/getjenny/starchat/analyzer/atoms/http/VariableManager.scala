@@ -2,10 +2,12 @@ package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse}
 import akka.stream.Materializer
+import com.getjenny.starchat.analyzer.atoms.http
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
+import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.{AuthorizationType, withName}
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.genericVariableNameRegex
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.{ParameterName, queryStringTemplateDelimiterPrefix, queryStringTemplateDelimiterSuffix}
+import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
 import scalaz.{Failure, NonEmptyList, Reader, Success, Validation, ValidationNel}
 
@@ -105,11 +107,19 @@ case class UrlConf(url: String, method: HttpMethod, contentType: ContentType)
 
 object AuthorizationType extends Enumeration {
   type AuthorizationType = Value
-  val BASIC: AuthorizationType = Value("Basic")
-  val BEARER: AuthorizationType = Value("Bearer")
-  val API_KEY: AuthorizationType = Value("ApiKey")
+  val BASIC: AuthorizationType = Value("basic")
+  val BEARER: AuthorizationType = Value("bearer")
+  val API_KEY: AuthorizationType = Value("apiKey")
 
   def fromName(s: String): Validation[Throwable, AuthorizationType] = Try(withName(s)).toValidation
+}
+
+object StoreOption extends Enumeration {
+  type StoreOption = Value
+  val HEADER: StoreOption = Value("header")
+  val QUERY: StoreOption = Value("query")
+
+  def fromName(s: String): Validation[Throwable, StoreOption] = Try(withName(s)).toValidation
 }
 
 trait HttpAtomAuthentication
@@ -117,6 +127,8 @@ trait HttpAtomAuthentication
 case class BasicAuth(username: String, password: String) extends HttpAtomAuthentication
 
 case class BearerAuth(token: String) extends HttpAtomAuthentication
+
+case class ApiKeyAuth(key: String, token: String, storeTo: StoreOption) extends HttpAtomAuthentication
 
 trait InputConf
 
@@ -177,6 +189,13 @@ object AtomVariableReader {
     Reader((request: VariableConfiguration) =>
       keyFromMap(request, key)
         .flatMap(getContentType)
+        .toValidationNel)
+  }
+
+  implicit def asStoreOption(key: String): VariableReader[StoreOption] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .flatMap({StoreOption.fromName(_) |> toMessage[StoreOption](key) })
         .toValidationNel)
   }
 
