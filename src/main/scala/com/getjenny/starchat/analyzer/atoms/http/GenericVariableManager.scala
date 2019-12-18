@@ -1,72 +1,39 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
+import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
 import scalaz.Scalaz._
-import scalaz.{Failure, NonEmptyList, Success}
-
+import scalaz.{Failure, NonEmptyList, Success, Validation}
+import Validation.FlatMap._
 import scala.concurrent.{ExecutionContext, Future}
 
-class GenericVariableManager extends VariableManager {
+trait GenericVariableManager extends VariableManager {
 
   import AtomVariableReader._
   import HttpRequestAtomicConstants.ParameterName._
-  import HttpRequestAtomicConstants.Regex._
+  import HttpRequestAtomicConstants._
 
-  def dictionary: Map[String, String] = {
-    Map(
-      Url -> UrlRegex,
-      HttpMethod -> HttpMethodRegex,
-      InputContentType -> InputContentTypeRegex,
-      AuthorizationType -> AuthorizationTypeRegex,
-      Username -> UsernameRegex,
-      Password -> PasswordRegex,
-      InputQueryTemplate -> InputQueryTemplateRegex,
-      OutputContentType -> OutputContentTypeRegex,
-      OutputStatus -> OutputStatusRegex,
-      OutputData -> OutputDataRegex
-    )
+  def extractInput[T](parameter: String,
+                      configMap: VariableConfiguration,
+                      findProperty: String => Option[String],
+                      delimiterPrefix: String,
+                      delimiterSuffix: String)(buildInput: String => T): AtomValidation[T] = {
+    as[String](parameter).run(configMap)
+      .flatMap(t => substituteTemplate(t, findProperty, delimiterPrefix, delimiterSuffix))
+      .map(buildInput)
   }
 
-  def queryString(configMap: Map[String, List[String]], findProperty: String => Option[String]): AtomValidation[String] = {
-    val template = as[String](InputQueryTemplate)
-      .run(configMap)
-
-    template.map(t => evaluateTemplate(t, findProperty)) match {
-      case Success(queryString) =>
-        if(queryString.contains('{')){
-        Failure(NonEmptyList(s"Unable to found substitution in template: $queryString"))
-      }else {
-        Success(queryString)
-      }
-      case err: Failure[_] => err
-    }
-  }
-
-  private[this] def evaluateTemplate(template: String, findProperty: String => Option[String]): String = {
-    GenericVariableNameRegex.findAllIn(template)
-      .foldLeft(template) { case (acc, variable) =>
-        findProperty(variable).map(v => acc.replaceAll(s"\\{$variable\\}", v)).getOrElse(acc)
-      }
-  }
-
-  def urlConf(configMap: Map[String, List[String]], findProperty: String => Option[String]): AtomValidation[UrlConf] = {
-    (as[String](Url) |@| as[String](HttpMethod) |@| as[String](InputContentType)) {
+  def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf] = {
+    (as[String](url) |@| as[HttpMethod](httpMethod) |@| as[ContentType](inputContentType)) {
       (url, method, ct) => {
-        val formattedUrl = url match {
-          case Success(u) =>
-            val formatted = evaluateTemplate(u, findProperty)
-            if(formatted.contains('{')) {
-              Failure(NonEmptyList(s"Unable to found substitution in template: $u"))
-            } else {
-              Success(formatted)
-            }
-          case e => e
-        }
+        val formattedUrl = url
+          .flatMap(u => substituteTemplate(u, findProperty, queryStringTemplateDelimiterPrefix, queryStringTemplateDelimiterSuffix))
 
         val contentType = (method, ct) match {
-          case (Success(m), Failure(_)) if m === "GET" => Success("")
+          case (Success(m), Failure(_)) if m.toString === HttpMethods.GET.toString =>
+            Success(ContentTypes.NoContentType)
           case _ => ct
         }
         (formattedUrl |@| method |@| contentType) (UrlConf)
@@ -74,26 +41,53 @@ class GenericVariableManager extends VariableManager {
     }.run(configMap)
   }
 
-  def authenticationConf(configMap: Map[String, List[String]]): AtomValidation[Option[HttpAtomAuthentication]] = {
-    if (configMap.getOrElse(AuthorizationType, List.empty).nonEmpty) {
-      (as[String](Username) |@| as[String](Password)) ((u, p) => (u |@| p) (BasicAuth))
-        .run(configMap)
-        .map(Some(_))
+  def authenticationConf(configMap: VariableConfiguration): AtomValidation[Option[HttpAtomAuthentication]] = {
+    if (configMap.get(authorizationType).nonEmpty) {
+      as[AuthorizationType](authorizationType).run(configMap) match {
+        case Success(AuthorizationType.BASIC) =>
+          (as[String](username) |@| as[String](password)) ((u, p) => (u |@| p) (BasicAuth))
+            .run(configMap)
+            .map(_.some)
+        case Success(AuthorizationType.BEARER) =>
+          as[String](authToken).run(configMap)
+            .map(t => BearerAuth(t))
+            .map(_.some)
+        case Failure(f) => Failure(f)
+        case t => Failure(NonEmptyList(s"Undefined authorization type $t"))
+      }
+
     } else {
       None.successNel[String]
     }
   }
 
-  def inputConf(configMap: Map[String, List[String]], findProperty: String => Option[String]): AtomValidation[String] = {
-    if (configMap.getOrElse(InputQueryTemplate, List.empty).isEmpty) {
-      "".successNel[String]
-    } else {
-      queryString(configMap, findProperty)
+  def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[InputConf] = {
+    val isQueryString = configMap.get(inputQueryTemplate).nonEmpty
+    val isJson = configMap.get(inputJson).nonEmpty
+    (isQueryString, isJson) match {
+      case (true, true) => Failure(NonEmptyList("Both json and query string configuration enabled"))
+      case (true, false) => extractInput[QueryStringConf](inputQueryTemplate,
+        configMap,
+        findProperty,
+        queryStringTemplateDelimiterPrefix,
+        queryStringTemplateDelimiterSuffix) {
+        QueryStringConf
+      }
+      case (false, true) =>
+        extractInput[JsonConf](inputJson,
+          configMap,
+          findProperty,
+          jsonTemplateDelimiterPrefix,
+          jsonTemplateDelimiterSuffix) {
+          JsonConf
+        }
+      case _ => Failure(NonEmptyList("Unable to find input configuration"))
     }
+
   }
 
-  def outputConf(configMap: Map[String, List[String]]): AtomValidation[HttpAtomOutputConf] = {
-    (as[String](OutputContentType) |@| as[String](OutputStatus) |@| as[String](OutputData)) {
+  def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
+    (as[String](outputContentType) |@| as[String](outputStatus) |@| as[String](outputData)) {
       (ct, os, od) => (ct |@| os |@| od) (GenericHttpOutputConf)
     }.run(configMap)
   }

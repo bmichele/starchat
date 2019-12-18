@@ -2,12 +2,12 @@ package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
-import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.getjenny.analyzer.atoms.AbstractAtomic
+import com.getjenny.analyzer.atoms.{AbstractAtomic}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
 import com.getjenny.starchat.SCActorSystem
 import scalaz.Scalaz._
@@ -15,7 +15,8 @@ import scalaz.{Failure, Success}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor}
-
+import scala.util.Try
+import scala.language.postfixOps
 
 class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   this: VariableManager =>
@@ -26,52 +27,60 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
   private[this] implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   private[this] val http: HttpExt = Http()
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass)
+  private[this] val timeout: FiniteDuration = restrictedArgs.getOrElse("http-atom.default-timeout", "10").toInt seconds
 
 
   override def evaluate(query: String, analyzerData: AnalyzersDataInternal): Result = {
-    serviceCall(query, analyzerData.data).map { outputData =>
-      Result(1, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
-    }.getOrElse(Result(0, analyzerData))
+    validateAndBuild(arguments, restrictedArgs, analyzerData.data) match {
+      case Success(conf) =>
+        serviceCall(query, conf)
+          .map { outputData =>
+            Result(1, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
+          }.getOrElse(Result(0, analyzerData))
+      case Failure(errors) =>
+        log.error(s"Error in parameter list: ${errors.toList.mkString("; ")}")
+        Result(0, analyzerData)
+    }
   }
 
-  private[this] def serviceCall(query: String, data: Map[String, Any]): Option[Map[String, String]] = {
-    val configuration: HttpRequestAtomicConfiguration = validateAndBuild(arguments, restrictedArgs, data) match {
-        case Success(conf) => conf
-        case Failure(errors) =>
-          throw new IllegalArgumentException(s"Error in parameter list: ${errors.toList.mkString("; ")}")
-      }
+  private[this] def serviceCall(query: String, configuration: HttpRequestAtomicConfiguration): Option[Map[String, String]] = Try {
     val request = createRequest(configuration)
-    val response = http.singleRequest(request)
-      .map { response => configuration.outputConf.toMap(response) }
-      .flatten
+
+    val futureOutput = (http.singleRequest(request) flatMap configuration.outputConf.toMap)
       .map(_.some)
-      .recover { case error =>
-        log.error(error, "Error during api call: ")
-        None
+      .recover {
+        case error => log.error(error, "http error: ")
+          None
       }
-    Await.result(response, 10 seconds)
+
+    Await.result(futureOutput, timeout)
+  }.toValidation match {
+    case Success(out) => out
+    case Failure(error) => log.error(error, "Error during service call: ")
+      None
   }
 
   protected[this] def createRequest(configuration: HttpRequestAtomicConfiguration): HttpRequest = {
-    import HttpCharsets._
-    import HttpMethods._
-    import MediaTypes._
-
     val authHeader = configuration.auth match {
       case Some(BasicAuth(username, password)) => Authorization(BasicHttpCredentials(s"$username $password")) :: Nil
-      case None => Nil
+      case Some(BearerAuth(token)) => Authorization(OAuth2BearerToken(token)) :: Nil
+      case _ => Nil
     }
 
-    val body = if (configuration.urlConf.contentType === "application/x-www-form-urlencoded") {
-      HttpEntity(`application/x-www-form-urlencoded`, ByteString(configuration.queryString))
-    } else {
-      HttpEntity(`text/plain` withCharset `UTF-8`, ByteString(""))
+    val (url, httpBody) = configuration.inputConf match {
+      case QueryStringConf(queryString) =>
+        if (configuration.urlConf.contentType.equals(ContentTypes.`application/x-www-form-urlencoded`)) {
+          configuration.urlConf.url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
+        } else {
+          s"${configuration.urlConf.url}?$queryString" -> HttpEntity.Empty
+        }
+      case JsonConf(json) => configuration.urlConf.url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
     }
 
-    HttpRequest(method = HttpMethods.getForKey(configuration.urlConf.method).getOrElse(GET),
-      uri = configuration.urlConf.url,
+    HttpRequest(method = configuration.urlConf.method,
+      uri = url,
       headers = authHeader,
-      entity = body)
+      entity = httpBody)
   }
 
   override val isEvaluateNormalized: Boolean = true

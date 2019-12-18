@@ -1,31 +1,37 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse}
 import akka.stream.Materializer
-import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName.{System, Temp}
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
+import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.genericVariableNameRegex
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.{ParameterName, queryStringTemplateDelimiterPrefix, queryStringTemplateDelimiterSuffix}
 import scalaz.Scalaz._
-import scalaz.{Failure, Reader, Success, Validation, ValidationNel}
+import scalaz.{Failure, NonEmptyList, Reader, Success, Validation, ValidationNel}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 trait VariableManager {
+
   type AtomValidation[T] = ValidationNel[String, T]
 
-  def dictionary: Map[String, String]
+  def urlConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf]
 
-  def urlConf(configuration: Map[String, List[String]], findProperty: String => Option[String]): AtomValidation[UrlConf]
+  def authenticationConf(configuration: VariableConfiguration): AtomValidation[Option[HttpAtomAuthentication]]
 
-  def authenticationConf(configuration: Map[String, List[String]]): AtomValidation[Option[HttpAtomAuthentication]]
+  def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[InputConf]
 
-  def inputConf(configuration: Map[String, List[String]], findProperty: String => Option[String]): AtomValidation[String]
+  def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf]
 
-  def outputConf(configMap: Map[String, List[String]]): AtomValidation[HttpAtomOutputConf]
+  def additionalArguments: List[String] = Nil
 
   def validateAndBuild(arguments: List[String],
                        restrictedArgs: Map[String, String],
                        analyzerData: Map[String, Any]): AtomValidation[HttpRequestAtomicConfiguration] = {
     val findProperty: String => Option[String] = findIn(systemConfiguration = restrictedArgs, analyzerData)
-    val configuration = configurationFromArguments(arguments, findProperty)
+    val allArguments = arguments ++ additionalArguments
+    val configuration = configurationFromArguments(allArguments, findProperty)
 
     (urlConf(configuration, findProperty) |@|
       authenticationConf(configuration) |@|
@@ -37,38 +43,86 @@ trait VariableManager {
   }
 
   def configurationFromArguments(arguments: List[String],
-                                 findProperty: String => Option[String]): Map[String, List[String]] = {
-    dictionary
-      .mapValues(regex => arguments.filter(_.matches(regex)))
-      .mapValues(variableName => variableName.flatMap(x => findProperty(x)))
+                                 findProperty: String => Option[String]): VariableConfiguration = {
+    arguments
+      .map(variable => variable.substring(variable.lastIndexOf('.') + 1, variable.length) -> findProperty(variable))
+      .collect { case (key, Some(value)) => (key, value) }
+      .toMap
   }
 
   protected final def clearVariableName(variableName: String): String = {
     variableName
-      .replace(System, "")
+      .replace(ParameterName.system, "")
   }
 
   protected final def findIn(systemConfiguration: Map[String, String], analyzerData: Map[String, Any])
                             (key: String): Option[String] = {
-    if (key.contains(System)) {
+    if (key.contains(ParameterName.system)) {
       systemConfiguration.get(clearVariableName(key))
     } else {
       analyzerData.get(clearVariableName(key)).map(_.toString)
     }
   }
 
+  private[this] def evaluateTemplate(template: String,
+                                       findProperty: String => Option[String],
+                                       delimiterPrefix: String,
+                                       delimiterSuffix: String
+                                      ): String = {
+    genericVariableNameRegex.findAllIn(template)
+      .foldLeft(template) { case (acc, variable) =>
+        findProperty(variable)
+          .map { v =>
+            val regex = s"\\$delimiterPrefix$variable\\$delimiterSuffix"
+            acc.replaceAll(regex, v)
+          }
+          .getOrElse(acc)
+      }
+  }
+
+  protected def substituteTemplate(template: String,
+                         findProperty: String => Option[String],
+                         delimiterPrefix: String = queryStringTemplateDelimiterPrefix,
+                         delimiterSuffix: String = queryStringTemplateDelimiterSuffix
+                        ): AtomValidation[String] = {
+    val formatted = evaluateTemplate(template, findProperty, delimiterPrefix, delimiterSuffix)
+    if (formatted.contains(delimiterPrefix)) {
+      Failure(NonEmptyList(s"Unable to found substitution in template: $template"))
+    } else {
+      Success(formatted)
+    }
+  }
+
+
 }
 
 case class HttpRequestAtomicConfiguration(urlConf: UrlConf,
                                           auth: Option[HttpAtomAuthentication],
-                                          queryString: String,
+                                          inputConf: InputConf,
                                           outputConf: HttpAtomOutputConf)
 
-case class UrlConf(url: String, method: String, contentType: String)
+case class UrlConf(url: String, method: HttpMethod, contentType: ContentType)
+
+object AuthorizationType extends Enumeration {
+  type AuthorizationType = Value
+  val BASIC: AuthorizationType = Value("Basic")
+  val BEARER: AuthorizationType = Value("Bearer")
+  val API_KEY: AuthorizationType = Value("ApiKey")
+
+  def fromName(s: String): Validation[Throwable, AuthorizationType] = Try(withName(s)).toValidation
+}
 
 trait HttpAtomAuthentication
 
 case class BasicAuth(username: String, password: String) extends HttpAtomAuthentication
+
+case class BearerAuth(token: String) extends HttpAtomAuthentication
+
+trait InputConf
+
+case class QueryStringConf(queryString: String) extends InputConf
+
+case class JsonConf(json: String) extends InputConf
 
 trait HttpAtomOutputConf {
   def toMap(response: HttpResponse)
@@ -76,13 +130,16 @@ trait HttpAtomOutputConf {
 }
 
 object AtomVariableReader {
-  type VariableReader[T] = Reader[Map[String, List[String]], ValidationNel[String, T]]
+  import Validation.FlatMap._
+  import scalaz.syntax.std.option._
 
-  type VariableConfiguration = Map[String, List[String]]
+  type VariableConfiguration = Map[String, String]
 
-  def keyFromMap(configMap: Map[String, List[String]], key: String): Validation[String, List[String]] = {
+  type VariableReader[T] = Reader[VariableConfiguration, ValidationNel[String, T]]
+
+  def keyFromMap(configMap: VariableConfiguration, key: String): Validation[String, String] = {
     configMap.get(key)
-      .map(x => if (x.isEmpty) Failure(s"$key not found in configuration") else Success(x))
+      .map(Success(_))
       .getOrElse(Failure(s"$key not found in configuration"))
   }
 
@@ -93,15 +150,38 @@ object AtomVariableReader {
   implicit def asString(key: String): VariableReader[String] = {
     Reader((request: VariableConfiguration) =>
       keyFromMap(request, key)
-        .map(list => list.head)
         .toValidationNel)
   }
 
-  implicit def asStringList(key: String): VariableReader[List[String]] = {
+  implicit def asAuthorizationType(key: String): VariableReader[AuthorizationType] = {
     Reader((request: VariableConfiguration) =>
       keyFromMap(request, key)
-        .map(list => list)
+        .flatMap({AuthorizationType.fromName(_) |> toMessage[AuthorizationType](key) })
         .toValidationNel)
+  }
+
+  implicit def asHttpMethod(key: String): VariableReader[HttpMethod] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .flatMap(x => {HttpMethods.getForKey(x)
+          .toSuccess(s"Error while extracting key <$key>: $x is an invalid method")
+        })
+        .toValidationNel)
+  }
+
+  private[this] def getContentType(contentType: String): Validation[String, ContentType] = {
+      ContentType.parse(contentType).leftMap(_.map(_.summary).mkString(";")).validation
+  }
+
+  implicit def asContentType(key: String): VariableReader[ContentType] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .flatMap(getContentType)
+        .toValidationNel)
+  }
+
+  def toMessage[S](key: String)(v: Validation[Throwable, S]): Validation[String, S] = {
+    ((f: Throwable) => s"Error while extracting key <$key>: ${f.getMessage}")  <-: v
   }
 }
 
