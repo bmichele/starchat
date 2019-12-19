@@ -1,6 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import org.scalatest.{Matchers, WordSpec}
 import scalaz.Scalaz._
 import scalaz.{Failure, Success}
@@ -54,13 +55,13 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.http-method" -> "GET",
         "http-atom.test.username" -> "user",
         "http-atom.test.password" -> "pwd",
-        "http-atom.test.input-query-template" -> "{http-atom.test.query-param}={http-atom.test.query-value}",
+        "http-atom.test.input-query-template" -> "<http-atom.test.query-param>=<http-atom.test.query-value>",
         "http-atom.test.query-param" -> "a")
 
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty)
       validation.isFailure shouldBe true
       validation.fold(_.toSet, _ => Set.empty[String]) should contain
-      ("Unable to found substitution in template: {http-atom.test.query-param}={http-atom.test.query-value}")
+      ("Unable to found substitution in template: <http-atom.test.query-param>=<http-atom.test.query-value>")
     }
 
     "fail if basic auth type present but not username and password" in {
@@ -166,7 +167,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       "http-atom.test.http-method" -> "GET",
       "http-atom.test.username" -> "user",
       "http-atom.test.password" -> "pwd",
-      "http-atom.test.input-query-template" -> "{system.http-atom.test.param}={system.http-atom.test.value}",
+      "http-atom.test.input-query-template" -> "<system.http-atom.test.param>=<system.http-atom.test.value>",
       "http-atom.test.param" -> "aaa",
       "http-atom.test.value" -> "bbb",
       "http-atom.test.output-content-type" -> "test.content-type",
@@ -198,7 +199,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
     }
 
     "format template url" in {
-      val newConf = configuration + ("http-atom.test.url" -> "www.google.it/{system.http-atom.test.url-parameter}",
+      val newConf = configuration + ("http-atom.test.url" -> "www.google.it/<system.http-atom.test.url-parameter>",
         "http-atom.test.url-parameter" -> "aaaa")
 
      val conf: HttpRequestAtomicConfiguration = variableManager.validateAndBuild(arguments, newConf, Map.empty) match {
@@ -224,7 +225,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.http-method" -> "GET",
         "http-atom.test.username" -> "user",
         "http-atom.test.password" -> "pwd",
-        "http-atom.test.input-query-template" -> "{system.http-atom.test.param}={system.http-atom.test.value}",
+        "http-atom.test.input-query-template" -> "<system.http-atom.test.param>=<system.http-atom.test.value>",
         "http-atom.test.param" -> "aaa",
         "http-atom.test.value" -> "bbb",
       )
@@ -254,7 +255,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "A__temp__.http-atom.test.http-method" -> "GET",
         "http-atom.test.username" -> "user",
         "A__temp__.http-atom.test.password" -> "pwd",
-        "http-atom.test.input-query-template" -> "{http-atom.test.param}={A__temp__.http-atom.test.value}",
+        "http-atom.test.input-query-template" -> "<http-atom.test.param>=<A__temp__.http-atom.test.value>",
         "http-atom.test.param" -> "aaa",
         "A__temp__.http-atom.test.value" -> "bbb")
 
@@ -296,7 +297,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       validation shouldBe a [Success[_]]
     }
 
-    /*"test call to hubspot" in {
+   /* "test call to hubspot" in {
       val portalId = "4040542"
       val formGuid = "c1b44d8c-629f-49fe-9036-d32af2bfdc21"
 

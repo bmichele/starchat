@@ -31,9 +31,7 @@ object HttpRequestAtomicConstants {
     val genericVariableNameRegex: Regex = s"$baseRegex[a-z0-9_-]{1,40}".r
   }
 
-  val jsonTemplateDelimiterPrefix = "<"
-  val jsonTemplateDelimiterSuffix = ">"
-  val queryStringTemplateDelimiterPrefix = "{"
-  val queryStringTemplateDelimiterSuffix = "}"
+  val templateDelimiterPrefix = "<"
+  val templateDelimiterSuffix = ">"
 
 }

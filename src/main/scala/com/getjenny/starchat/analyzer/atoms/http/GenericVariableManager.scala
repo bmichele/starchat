@@ -20,11 +20,9 @@ trait GenericVariableManager extends VariableManager {
 
   def extractInput[T](parameter: String,
                       configMap: VariableConfiguration,
-                      findProperty: String => Option[String],
-                      delimiterPrefix: String,
-                      delimiterSuffix: String)(buildInput: String => T): AtomValidation[T] = {
+                      findProperty: String => Option[String])(buildInput: String => T): AtomValidation[T] = {
     as[String](parameter).run(configMap)
-      .flatMap(t => substituteTemplate(t, findProperty, delimiterPrefix, delimiterSuffix))
+      .flatMap(t => substituteTemplate(t, findProperty))
       .map(buildInput)
   }
 
@@ -32,7 +30,7 @@ trait GenericVariableManager extends VariableManager {
     (as[String](url) |@| as[HttpMethod](httpMethod) |@| as[ContentType](inputContentType)) {
       (url, method, ct) => {
         val formattedUrl = url
-          .flatMap(u => substituteTemplate(u, findProperty, queryStringTemplateDelimiterPrefix, queryStringTemplateDelimiterSuffix))
+          .flatMap(u => substituteTemplate(u, findProperty))
 
         val contentType = (method, ct) match {
           case (Success(m), Failure(_)) if m.toString === HttpMethods.GET.toString =>
@@ -75,17 +73,13 @@ trait GenericVariableManager extends VariableManager {
       case (true, true) => Failure(NonEmptyList("Both json and query string configuration enabled"))
       case (true, false) => extractInput[QueryStringConf](inputQueryTemplate,
         configMap,
-        findProperty,
-        queryStringTemplateDelimiterPrefix,
-        queryStringTemplateDelimiterSuffix) {
+        findProperty) {
         QueryStringConf
       }
       case (false, true) =>
         extractInput[JsonConf](inputJson,
           configMap,
-          findProperty,
-          jsonTemplateDelimiterPrefix,
-          jsonTemplateDelimiterSuffix) {
+          findProperty) {
           JsonConf
         }
       case _ => Failure(NonEmptyList("Unable to find input configuration"))

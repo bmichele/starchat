@@ -2,11 +2,10 @@ package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse}
 import akka.stream.Materializer
-import com.getjenny.starchat.analyzer.atoms.http
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.{AuthorizationType, withName}
+import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants._
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.genericVariableNameRegex
-import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.{ParameterName, queryStringTemplateDelimiterPrefix, queryStringTemplateDelimiterSuffix}
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
 import scalaz.{Failure, NonEmptyList, Reader, Success, Validation, ValidationNel}
@@ -67,15 +66,12 @@ trait VariableManager {
   }
 
   private[this] def evaluateTemplate(template: String,
-                                       findProperty: String => Option[String],
-                                       delimiterPrefix: String,
-                                       delimiterSuffix: String
-                                      ): String = {
+                                       findProperty: String => Option[String]): String = {
     genericVariableNameRegex.findAllIn(template)
       .foldLeft(template) { case (acc, variable) =>
         findProperty(variable)
           .map { v =>
-            val regex = s"\\$delimiterPrefix$variable\\$delimiterSuffix"
+            val regex = s"\\$templateDelimiterPrefix$variable\\$templateDelimiterSuffix"
             acc.replaceAll(regex, v)
           }
           .getOrElse(acc)
@@ -83,12 +79,9 @@ trait VariableManager {
   }
 
   protected def substituteTemplate(template: String,
-                         findProperty: String => Option[String],
-                         delimiterPrefix: String = queryStringTemplateDelimiterPrefix,
-                         delimiterSuffix: String = queryStringTemplateDelimiterSuffix
-                        ): AtomValidation[String] = {
-    val formatted = evaluateTemplate(template, findProperty, delimiterPrefix, delimiterSuffix)
-    if (formatted.contains(delimiterPrefix)) {
+                         findProperty: String => Option[String]): AtomValidation[String] = {
+    val formatted = evaluateTemplate(template, findProperty)
+    if (formatted.contains(templateDelimiterPrefix)) {
       Failure(NonEmptyList(s"Unable to found substitution in template: $template"))
     } else {
       Success(formatted)
