@@ -88,21 +88,26 @@ trait GenericVariableManager extends VariableManager {
   }
 
   def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
-    (as[String](outputContentType) |@| as[String](outputStatus) |@| as[String](outputData)) {
-      (ct, os, od) => (ct |@| os |@| od) (GenericHttpOutputConf)
+    (as[String](outputContentType) |@|
+      as[String](outputStatus) |@|
+      as[String](outputData) |@|
+      as[String](outputScore)) {
+      (ct, os, od, score) => (ct |@| os |@| od |@| score) (GenericHttpOutputConf)
     }.run(configMap)
   }
 
 }
 
-case class GenericHttpOutputConf(contentType: String, statusCode: String, data: String) extends HttpAtomOutputConf {
+case class GenericHttpOutputConf(contentType: String, statusCode: String, data: String, override val score: String)
+  extends HttpAtomOutputConf {
   override def toMap(response: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
     Unmarshaller.stringUnmarshaller(response.entity)
       .map(body =>
         Map(
           contentType -> response.entity.contentType.toString(),
           statusCode -> response.status.toString,
-          data -> body
+          data -> body,
+          score -> "1"
         )
       )
   }

@@ -18,6 +18,7 @@ object HttpRequestAtomicConstants {
     val outputContentType = "output-content-type"
     val outputStatus = "output-status"
     val outputData = "output-data"
+    val outputScore = "output-score"
     val inputQueryTemplate = "input-query-template"
     val inputJson = "input-json"
 

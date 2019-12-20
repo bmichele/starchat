@@ -66,7 +66,7 @@ trait VariableManager {
   }
 
   private[this] def evaluateTemplate(template: String,
-                                       findProperty: String => Option[String]): String = {
+                                     findProperty: String => Option[String]): String = {
     genericVariableNameRegex.findAllIn(template)
       .foldLeft(template) { case (acc, variable) =>
         findProperty(variable)
@@ -79,7 +79,7 @@ trait VariableManager {
   }
 
   protected def substituteTemplate(template: String,
-                         findProperty: String => Option[String]): AtomValidation[String] = {
+                                   findProperty: String => Option[String]): AtomValidation[String] = {
     val formatted = evaluateTemplate(template, findProperty)
     if (formatted.contains(templateDelimiterPrefix)) {
       Failure(NonEmptyList(s"Unable to found substitution in template: $template"))
@@ -89,6 +89,75 @@ trait VariableManager {
   }
 
 
+}
+
+object AtomVariableReader {
+
+  import Validation.FlatMap._
+  import scalaz.syntax.std.option._
+
+  type VariableConfiguration = Map[String, String]
+
+  type VariableReader[T] = Reader[VariableConfiguration, ValidationNel[String, T]]
+
+  def keyFromMap(configMap: VariableConfiguration, key: String): Validation[String, String] = {
+    configMap.get(key)
+      .map(Success(_))
+      .getOrElse(Failure(s"$key not found in configuration"))
+  }
+
+  def as[T](key: String)(implicit to: String => VariableReader[T]): VariableReader[T] = {
+    to(key)
+  }
+
+  implicit def asString(key: String): VariableReader[String] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .toValidationNel)
+  }
+
+  implicit def asAuthorizationType(key: String): VariableReader[AuthorizationType] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .flatMap({
+          AuthorizationType.fromName(_) |> toMessage[AuthorizationType](key)
+        })
+        .toValidationNel)
+  }
+
+  implicit def asHttpMethod(key: String): VariableReader[HttpMethod] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .flatMap(x => {
+          HttpMethods.getForKey(x)
+            .toSuccess(s"Error while extracting key <$key>: $x is an invalid method")
+        })
+        .toValidationNel)
+  }
+
+  private[this] def getContentType(contentType: String): Validation[String, ContentType] = {
+    ContentType.parse(contentType).leftMap(_.map(_.summary).mkString(";")).validation
+  }
+
+  implicit def asContentType(key: String): VariableReader[ContentType] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .flatMap(getContentType)
+        .toValidationNel)
+  }
+
+  implicit def asStoreOption(key: String): VariableReader[StoreOption] = {
+    Reader((request: VariableConfiguration) =>
+      keyFromMap(request, key)
+        .flatMap({
+          StoreOption.fromName(_) |> toMessage[StoreOption](key)
+        })
+        .toValidationNel)
+  }
+
+  def toMessage[S](key: String)(v: Validation[Throwable, S]): Validation[String, S] = {
+    ((f: Throwable) => s"Error while extracting key <$key>: ${f.getMessage}") <-: v
+  }
 }
 
 case class HttpRequestAtomicConfiguration(urlConf: UrlConf,
@@ -130,72 +199,20 @@ case class QueryStringConf(queryString: String) extends InputConf
 case class JsonConf(json: String) extends InputConf
 
 trait HttpAtomOutputConf {
+  val score: String
+
   def toMap(response: HttpResponse)
            (implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]]
-}
 
-object AtomVariableReader {
-  import Validation.FlatMap._
-  import scalaz.syntax.std.option._
-
-  type VariableConfiguration = Map[String, String]
-
-  type VariableReader[T] = Reader[VariableConfiguration, ValidationNel[String, T]]
-
-  def keyFromMap(configMap: VariableConfiguration, key: String): Validation[String, String] = {
-    configMap.get(key)
-      .map(Success(_))
-      .getOrElse(Failure(s"$key not found in configuration"))
+  def exists(extractedVariables: Map[String, String]): Boolean = {
+    extractedVariables.contains(score)
   }
 
-  def as[T](key: String)(implicit to: String => VariableReader[T]): VariableReader[T] = {
-    to(key)
-  }
-
-  implicit def asString(key: String): VariableReader[String] = {
-    Reader((request: VariableConfiguration) =>
-      keyFromMap(request, key)
-        .toValidationNel)
-  }
-
-  implicit def asAuthorizationType(key: String): VariableReader[AuthorizationType] = {
-    Reader((request: VariableConfiguration) =>
-      keyFromMap(request, key)
-        .flatMap({AuthorizationType.fromName(_) |> toMessage[AuthorizationType](key) })
-        .toValidationNel)
-  }
-
-  implicit def asHttpMethod(key: String): VariableReader[HttpMethod] = {
-    Reader((request: VariableConfiguration) =>
-      keyFromMap(request, key)
-        .flatMap(x => {HttpMethods.getForKey(x)
-          .toSuccess(s"Error while extracting key <$key>: $x is an invalid method")
-        })
-        .toValidationNel)
-  }
-
-  private[this] def getContentType(contentType: String): Validation[String, ContentType] = {
-      ContentType.parse(contentType).leftMap(_.map(_.summary).mkString(";")).validation
-  }
-
-  implicit def asContentType(key: String): VariableReader[ContentType] = {
-    Reader((request: VariableConfiguration) =>
-      keyFromMap(request, key)
-        .flatMap(getContentType)
-        .toValidationNel)
-  }
-
-  implicit def asStoreOption(key: String): VariableReader[StoreOption] = {
-    Reader((request: VariableConfiguration) =>
-      keyFromMap(request, key)
-        .flatMap({StoreOption.fromName(_) |> toMessage[StoreOption](key) })
-        .toValidationNel)
-  }
-
-  def toMessage[S](key: String)(v: Validation[Throwable, S]): Validation[String, S] = {
-    ((f: Throwable) => s"Error while extracting key <$key>: ${f.getMessage}")  <-: v
+  def getScoreValue(extractedVariables: Map[String, String]): String = {
+    extractedVariables.getOrElse(score, "0")
   }
 }
+
 
 
 

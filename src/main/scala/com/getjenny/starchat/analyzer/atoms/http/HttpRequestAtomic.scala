@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.getjenny.analyzer.atoms.AbstractAtomic
+import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
 import com.getjenny.starchat.SCActorSystem
 import scalaz.Scalaz._
@@ -31,15 +31,22 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
 
 
   override def evaluate(query: String, analyzerData: AnalyzersDataInternal): Result = {
+    val extractedVariables = analyzerData.extractedVariables
     validateAndBuild(arguments, restrictedArgs, analyzerData.data) match {
       case Success(conf) =>
-        serviceCall(query, conf)
-          .map { outputData =>
-            Result(1, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
-          }.getOrElse(Result(0, analyzerData))
+        if (conf.outputConf.exists(extractedVariables)) {
+          Result(conf.outputConf.getScoreValue(extractedVariables).toDouble, analyzerData)
+        } else {
+          serviceCall(query, conf)
+            .map { outputData =>
+              Result(1, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
+            }.getOrElse(Result(0, analyzerData
+            .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> "0"))
+          ))
+        }
       case Failure(errors) =>
         log.error(s"Error in parameter list: ${errors.toList.mkString("; ")}")
-        Result(0, analyzerData)
+        throw ExceptionAtomic(s"Error in atom configuration: $errors")
     }
   }
 
@@ -66,9 +73,10 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
         (Authorization(BasicHttpCredentials(s"$username $password")) :: Nil) -> None
       case Some(BearerAuth(token)) =>
         (Authorization(OAuth2BearerToken(token)) :: Nil) -> None
-      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo == StoreOption.HEADER =>
+      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo.toString == StoreOption.HEADER.toString =>
         (RawHeader(key, token) :: Nil) -> None
-      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo == StoreOption.QUERY => Nil -> s"$key=$token".some
+      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo.toString == StoreOption.QUERY.toString =>
+        Nil -> s"$key=$token".some
       case _ => Nil -> None
     }
 
@@ -79,8 +87,8 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
         if (configuration.urlConf.contentType.equals(ContentTypes.`application/x-www-form-urlencoded`)) {
           url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
         } else {
-          val querySeparator = if(authQueryParam.isDefined) "&" else "?"
-          s"${configuration.urlConf.url}$querySeparator$queryString" -> HttpEntity.Empty
+          val querySeparator = if (authQueryParam.isDefined) "&" else "?"
+          s"$url$querySeparator$queryString" -> HttpEntity.Empty
         }
       case JsonConf(json) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
     }

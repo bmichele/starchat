@@ -17,7 +17,7 @@ trait SubmitHubspotVariableManager extends GenericVariableManager {
   }
 
   override def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
-    Success(GenericHttpOutputConf("submithubspot.content-type", "submithubspot.status", "submithubspot.data"))
+    Success(GenericHttpOutputConf("submithubspot.content-type", "submithubspot.status", "submithubspot.data", "submithubspot.score"))
   }
 
 }
