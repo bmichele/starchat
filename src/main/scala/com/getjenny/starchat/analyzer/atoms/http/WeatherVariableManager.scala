@@ -1,19 +1,13 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
-import akka.http.scaladsl.unmarshalling.Unmarshaller
-import akka.stream.Materializer
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import scalaz.Scalaz._
-import scalaz.Success
-import spray.json._
-
-import scala.concurrent.{ExecutionContext, Future}
 
 trait WeatherVariableManager extends GenericVariableManager {
 
   override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf] = {
-    val url = "https://api.openweathermap.org/data/2.5/forecast"
+    val url = "https://api.openweathermap.org/data/2.5/weather"
     UrlConf(url, HttpMethods.GET, ContentTypes.NoContentType).successNel
   }
 

@@ -308,7 +308,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
 
     /*"test weather api call and do not execute call if done before" in {
       val analyzerData = Map(
-        "http-atom.weather.location" -> "Torino"
+        "http-atom.weather.location" -> "Torino,IT"
       )
       val atom = new HttpRequestAtomic(List.empty, Map.empty) with WeatherVariableManager
 
@@ -328,16 +328,11 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result2.data.extractedVariables.foreach(println)
       result2.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
       result2.data.extractedVariables.getOrElse("weather.status", "") shouldBe "200 OK"
-    }*/
+    }
 
-   /* "test call to hubspot" in {
-      val portalId = "4040542"
-      val formGuid = "c1b44d8c-629f-49fe-9036-d32af2bfdc21"
+    "test call to hubspot" in {
 
-      val analyzerData = Map( "http-atom.submithubspot.portal-id" -> portalId,
-        "http-atom.submithubspot.form-guid" -> formGuid,
-        "http-atom.submithubspot.input-query-email" -> "test@getjenny.com"
-      )
+      val analyzerData = Map("http-atom.submithubspot.input-email" -> "emanuele@getjenny.com")
 
       val atom = new HttpRequestAtomic(List.empty, Map.empty) with SubmitHubspotVariableManager
 

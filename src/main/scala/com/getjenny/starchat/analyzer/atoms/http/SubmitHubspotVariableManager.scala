@@ -1,19 +1,23 @@
 package com.getjenny.starchat.analyzer.atoms.http
+
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import scalaz.Success
+import scalaz.Scalaz._
+
 trait SubmitHubspotVariableManager extends GenericVariableManager {
 
   override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf] = {
-    val urlTemplate = "https://forms.hubspot.com/uploads/form/v2/<http-atom.submithubspot.portal-id>/<http-atom.submithubspot.form-guid>"
-    substituteTemplate(urlTemplate, findProperty)
-      .map(url => UrlConf(url, HttpMethods.POST, ContentTypes.`application/x-www-form-urlencoded`))
+    val portalId = "4040542"
+    val formGuid = "c1b44d8c-629f-49fe-9036-d32af2bfdc21"
+    val url = s"https://forms.hubspot.com/uploads/form/v2/$portalId/$formGuid"
+    UrlConf(url, HttpMethods.POST, ContentTypes.`application/x-www-form-urlencoded`).successNel
   }
 
   override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[InputConf] = {
-    val queryStringTemplate = "email=<http-atom.submithubspot.input-query-email>"
+    val queryStringTemplate = "email=<http-atom.submithubspot.input-email>"
     substituteTemplate(queryStringTemplate, findProperty)
-        .map(queryString => QueryStringConf(queryString))
+      .map(queryString => QueryStringConf(queryString))
   }
 
   override def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
