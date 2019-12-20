@@ -163,7 +163,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       "system.http-atom.test.input-query-template",
       "system.http-atom.test.output-content-type",
       "system.http-atom.test.output-status",
-      "system.http-atom.test.output-data"
+      "system.http-atom.test.output-data",
+      "system.http-atom.test.output-score"
     )
     val configuration = Map("http-atom.test.url" -> "www.google.it",
       "http-atom.test.http-method" -> "GET",
@@ -174,7 +175,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       "http-atom.test.value" -> "bbb",
       "http-atom.test.output-content-type" -> "test.content-type",
       "http-atom.test.output-status" -> "test.status",
-      "http-atom.test.output-data" -> "test.data"
+      "http-atom.test.output-data" -> "test.data",
+      "http-atom.test.output-score" -> "test.score"
     )
 
     "validate atom if configuration is correct" in {
@@ -220,7 +222,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "system.http-atom.test.input-query-template",
         "http-atom.test.output-content-type",
         "http-atom.test.output-status",
-        "http-atom.test.output-data"
+        "http-atom.test.output-data",
+        "http-atom.test.output-score"
       )
 
       val systemConf = Map("http-atom.test.url" -> "www.google.it",
@@ -233,6 +236,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       )
       val analyzerData = Map( "http-atom.test.output-content-type" -> "test.content-type",
         "http-atom.test.output-status" -> "test.status",
+        "http-atom.test.output-score" -> "test.score",
         "http-atom.test.output-data" -> "test.data")
 
       val validation = variableManager.validateAndBuild(arguments, systemConf, analyzerData)
@@ -247,12 +251,14 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.input-query-template",
         "http-atom.test.output-content-type",
         "http-atom.test.output-status",
-        "http-atom.test.output-data"
+        "http-atom.test.output-data",
+        "http-atom.test.output-score"
       )
 
       val analyzerData = Map( "http-atom.test.output-content-type" -> "test.content-type",
         "http-atom.test.output-status" -> "test.status",
         "http-atom.test.output-data" -> "test.data",
+        "http-atom.test.output-score" -> "test.score",
         "http-atom.test.url" -> "www.google.it",
         "A__temp__.http-atom.test.http-method" -> "GET",
         "http-atom.test.username" -> "user",
@@ -293,7 +299,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.param" -> "aaa",
         "http-atom.test.output-content-type" -> "test.content-type",
         "http-atom.test.output-status" -> "test.status",
-        "http-atom.test.output-data" -> "test.data"
+        "http-atom.test.output-data" -> "test.data",
+        "http-atom.test.output-score" -> "test.score"
       )
       val validation = variableManager.validateAndBuild(withJsonArguments, jsonConfiguration, Map.empty)
       validation shouldBe a [Success[_]]
