@@ -201,8 +201,8 @@ case class JsonConf(json: String) extends InputConf
 trait HttpAtomOutputConf {
   val score: String
 
-  def toMap(response: HttpResponse)
-           (implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]]
+  def responseExtraction(response: HttpResponse)
+                        (implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]]
 
   def exists(extractedVariables: Map[String, String]): Boolean = {
     extractedVariables.contains(score)

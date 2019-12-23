@@ -53,7 +53,7 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
   private[this] def serviceCall(query: String, configuration: HttpRequestAtomicConfiguration): Option[Map[String, String]] = Try {
     val request = createRequest(configuration)
 
-    val futureOutput = (http.singleRequest(request) flatMap configuration.outputConf.toMap)
+    val futureOutput = (http.singleRequest(request) flatMap configuration.outputConf.responseExtraction)
       .map(_.some)
       .recover {
         case error => log.error(error, "http error: ")

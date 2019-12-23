@@ -39,7 +39,7 @@ case class WeatherOutput(override val score: String = "weather.score",
                          cloudPerc: String = "weather.cloud-perc"
                         ) extends HttpAtomOutputConf {
 
-  override def toMap(response: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
+  override def responseExtraction(response: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
     Unmarshaller.stringUnmarshaller(response.entity)
       .map { body =>
         val json = body.parseJson.asJsObject

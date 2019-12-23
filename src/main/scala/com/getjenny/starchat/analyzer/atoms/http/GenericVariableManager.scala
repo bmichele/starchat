@@ -100,7 +100,7 @@ trait GenericVariableManager extends VariableManager {
 
 case class GenericHttpOutputConf(contentType: String, statusCode: String, data: String, override val score: String)
   extends HttpAtomOutputConf {
-  override def toMap(response: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
+  override def responseExtraction(response: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
     Unmarshaller.stringUnmarshaller(response.entity)
       .map(body =>
         Map(
