@@ -56,7 +56,7 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
     val futureOutput = (http.singleRequest(request) flatMap configuration.outputConf.responseExtraction)
       .map(_.some)
       .recover {
-        case error => log.error(error, "http error: ")
+        case error: Throwable => log.error(error, "http error: ")
           None
       }
 
