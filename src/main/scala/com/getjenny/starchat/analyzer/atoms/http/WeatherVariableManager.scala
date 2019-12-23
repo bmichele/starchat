@@ -23,7 +23,7 @@ trait WeatherVariableManager extends GenericVariableManager {
   override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[InputConf] = {
     val queryStringTemplate = "q=<http-atom.weather.location>&units=metric"
     substituteTemplate(queryStringTemplate, findProperty)
-        .map(queryString => QueryStringConf(queryString))
+      .map(queryString => QueryStringConf(queryString))
   }
 
   override def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
@@ -44,18 +44,12 @@ case class WeatherOutput(override val score: String = "weather.score",
       .map { body =>
         val json = body.parseJson.asJsObject
         val weatherDescription: String = json.getFields("weather").headOption.flatMap {
-          case JsArray(elements) => elements.headOption
-            .flatMap(e => e.asJsObject.fields.get("description"))
+          case JsArray(elements) => elements.headOption.flatMap(e => e.asJsObject.fields.get("description"))
+          case _ => None
         }.map(_.convertTo[String]).getOrElse("")
-        val weatherTemperature = json.getFields("main").headOption.map { case obj: JsObject =>
-          obj.fields("temp").convertTo[Double]
-        }.getOrElse(0)
-        val weatherHumidity = json.getFields("main").headOption.map { case obj: JsObject =>
-          obj.fields("humidity").convertTo[Double]
-        }.getOrElse(0)
-        val weatherCloudPerc = json.getFields("clouds").headOption.map { case obj: JsObject =>
-          obj.fields("all").convertTo[Double]
-        }.getOrElse(0)
+        val weatherTemperature = extractField(json, "main", "temp")
+        val weatherHumidity = extractField(json, "main", "humidity")
+        val weatherCloudPerc = extractField(json, "clouds", "all")
         Map(
           description -> weatherDescription,
           temperature -> weatherTemperature.toString,
@@ -65,5 +59,12 @@ case class WeatherOutput(override val score: String = "weather.score",
           status -> response.status.toString
         )
       }
+  }
+
+  private[this] def extractField(json: JsObject, obj: String, field: String) = {
+    json.getFields(obj).headOption.map {
+      case obj: JsObject => obj.fields(field).convertTo[Double]
+      case _ => 0
+    }.getOrElse(0)
   }
 }
