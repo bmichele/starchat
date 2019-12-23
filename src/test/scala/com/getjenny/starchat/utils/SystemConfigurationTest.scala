@@ -7,7 +7,7 @@ class SystemConfigurationTest extends WordSpec with Matchers with ScalatestRoute
 
   "System configuration" should {
     "create hashmap containing configuration in a path" in {
-      val conf = SystemConfiguration.mapFromSystemConfiguration("starchat.atom-values")
+      val conf = SystemConfiguration.createMapFromPath("starchat.atom-values")
       conf.foreach{case (k, v) => println(s"$k -> $v")}
       conf.contains("http-atom.default-timeout") shouldBe true
     }

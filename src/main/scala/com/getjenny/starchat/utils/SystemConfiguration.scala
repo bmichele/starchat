@@ -14,7 +14,7 @@ object SystemConfiguration {
   private[this] val config: Config = ConfigFactory.load()
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass)
 
-  def mapFromSystemConfiguration(path: String): Map[String, String] = {
+  def createMapFromPath(path: String): Map[String, String] = {
     Try {
       config.getConfig(path)
         .root

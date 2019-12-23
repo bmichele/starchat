@@ -121,7 +121,7 @@ object AnalyzerService extends AbstractDataService {
       val buildAnalyzerResult: BuildAnalyzerResult =
         if (analyzerDeclaration =/= "") {
           val restrictedArgs: Map[String, String] = SystemConfiguration
-            .mapFromSystemConfiguration(atomConfigurationBasePath) + ("index_name" -> indexName)
+            .createMapFromPath(atomConfigurationBasePath) + ("index_name" -> indexName)
           val inPlaceAnalyzer: DecisionTableRuntimeItem =
             inPlaceIndexAnalyzers.analyzerMap.getOrElse(stateId, DecisionTableRuntimeItem())
           if (incremental && inPlaceAnalyzer.version > 0 && inPlaceAnalyzer.version === version) {
@@ -224,7 +224,7 @@ object AnalyzerService extends AbstractDataService {
 
   def evaluateAnalyzer(indexName: String, analyzerRequest: AnalyzerEvaluateRequest): Option[AnalyzerEvaluateResponse] = {
     val restrictedArgs: Map[String, String] = SystemConfiguration
-      .mapFromSystemConfiguration(atomConfigurationBasePath) + ("index_name" -> indexName)
+      .createMapFromPath(atomConfigurationBasePath) + ("index_name" -> indexName)
 
     Try(new StarChatAnalyzer(analyzerRequest.analyzer, restrictedArgs)) match {
       case Failure(exception) =>
