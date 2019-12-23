@@ -73,9 +73,9 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
         (Authorization(BasicHttpCredentials(s"$username $password")) :: Nil) -> None
       case Some(BearerAuth(token)) =>
         (Authorization(OAuth2BearerToken(token)) :: Nil) -> None
-      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo.toString == StoreOption.HEADER.toString =>
+      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo.toString === StoreOption.HEADER.toString =>
         (RawHeader(key, token) :: Nil) -> None
-      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo.toString == StoreOption.QUERY.toString =>
+      case Some(ApiKeyAuth(key, token, storeTo)) if storeTo.toString === StoreOption.QUERY.toString =>
         Nil -> s"$key=$token".some
       case _ => Nil -> None
     }

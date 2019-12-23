@@ -8,13 +8,11 @@ import scalaz.Scalaz._
 import scalaz.{Failure, NonEmptyList, Success, Validation}
 import Validation.FlatMap._
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
-
+import AtomVariableReader._
+import HttpRequestAtomicConstants.ParameterName._
 import scala.concurrent.{ExecutionContext, Future}
 
 trait GenericVariableManager extends VariableManager {
-
-  import AtomVariableReader._
-  import HttpRequestAtomicConstants.ParameterName._
 
   def extractInput[T](parameter: String,
                       configMap: VariableConfiguration,
@@ -56,7 +54,7 @@ trait GenericVariableManager extends VariableManager {
             .run(configMap)
             .map(_.some)
         case Failure(f) => Failure(f)
-        case t => Failure(NonEmptyList(s"Undefined authorization type $t"))
+        case t: Any => Failure(NonEmptyList(s"Undefined authorization type $t"))
       }
 
     } else {

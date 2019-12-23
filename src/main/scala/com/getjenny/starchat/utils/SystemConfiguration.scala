@@ -20,7 +20,7 @@ object SystemConfiguration {
         .root
         .unwrapped()
         .asScala
-        .flatMap(x => iterateOverNestedMaps(List.empty, x._1, x._2))
+        .flatMap {case (k, v) => iterateOverNestedMaps(List.empty, k, v)}
         .foldLeft(Map.empty[String, String])(_ ++ _)
     } match {
       case Success(map) => map

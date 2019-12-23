@@ -9,7 +9,7 @@ import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Rege
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
 import scalaz.{Failure, NonEmptyList, Reader, Success, Validation, ValidationNel}
-
+import Validation.FlatMap._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -93,7 +93,6 @@ trait VariableManager {
 
 object AtomVariableReader {
 
-  import Validation.FlatMap._
   import scalaz.syntax.std.option._
 
   type VariableConfiguration = Map[String, String]
