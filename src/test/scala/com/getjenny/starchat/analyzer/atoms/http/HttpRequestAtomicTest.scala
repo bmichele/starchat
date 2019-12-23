@@ -317,6 +317,10 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result.data.extractedVariables.foreach(println)
       result.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
       result.data.extractedVariables.getOrElse("weather.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.contains("weather.description") shouldBe true
+      result.data.extractedVariables.contains("weather.humidity") shouldBe true
+      result.data.extractedVariables.contains("weather.temperature") shouldBe true
+      result.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
 
       val atom2 = new HttpRequestAtomic(List.empty, Map.empty) with WeatherVariableManager {
         override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf] = {
@@ -328,17 +332,21 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result2.data.extractedVariables.foreach(println)
       result2.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
       result2.data.extractedVariables.getOrElse("weather.status", "") shouldBe "200 OK"
-    }
-
-    "test call to hubspot" in {
-
-      val analyzerData = Map("http-atom.submithubspot.input-email" -> "emanuele@getjenny.com")
-
-      val atom = new HttpRequestAtomic(List.empty, Map.empty) with SubmitHubspotVariableManager
-
-      val result = atom.evaluate("", AnalyzersDataInternal(data = analyzerData))
-      result.data.extractedVariables.foreach(println)
+      result2.data.extractedVariables.contains("weather.description") shouldBe true
+      result2.data.extractedVariables.contains("weather.humidity") shouldBe true
+      result2.data.extractedVariables.contains("weather.temperature") shouldBe true
+      result2.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
     }*/
+
+    /*  "test call to hubspot" in {
+
+        val analyzerData = Map("http-atom.submithubspot.input-email" -> "emanuele@getjenny.com")
+
+        val atom = new HttpRequestAtomic(List.empty, Map.empty) with SubmitHubspotVariableManager
+
+        val result = atom.evaluate("", AnalyzersDataInternal(data = analyzerData))
+        result.data.extractedVariables.foreach(println)
+      }*/
   }
 
 }

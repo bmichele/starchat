@@ -1,8 +1,13 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
+import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.stream.Materializer
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import scalaz.Scalaz._
+import spray.json._
+import spray.json.DefaultJsonProtocol._
+import scala.concurrent.{ExecutionContext, Future}
 
 trait WeatherVariableManager extends GenericVariableManager {
 
@@ -16,12 +21,49 @@ trait WeatherVariableManager extends GenericVariableManager {
   }
 
   override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[InputConf] = {
-    val queryStringTemplate = "q=<http-atom.weather.location>"
+    val queryStringTemplate = "q=<http-atom.weather.location>&units=metric"
     substituteTemplate(queryStringTemplate, findProperty)
         .map(queryString => QueryStringConf(queryString))
   }
 
   override def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
-    GenericHttpOutputConf("weather.content-type", "weather.status", "weather.data", "weather.score").successNel
+    WeatherOutput().successNel
+  }
+}
+
+case class WeatherOutput(override val score: String = "weather.score",
+                         status: String = "weather.status",
+                         description: String = "weather.description",
+                         temperature: String = "weather.temperature",
+                         umidity: String = "weather.humidity",
+                         cloudPerc: String = "weather.cloud-perc"
+                        ) extends HttpAtomOutputConf {
+
+  override def toMap(response: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
+    Unmarshaller.stringUnmarshaller(response.entity)
+      .map { body =>
+        val json = body.parseJson.asJsObject
+        val weatherDescription: String = json.getFields("weather").headOption.flatMap {
+          case JsArray(elements) => elements.headOption
+            .flatMap(e => e.asJsObject.fields.get("description"))
+        }.map(_.convertTo[String]).getOrElse("")
+        val weatherTemperature = json.getFields("main").headOption.map { case obj: JsObject =>
+          obj.fields("temp").convertTo[Double]
+        }.getOrElse(0)
+        val weatherHumidity = json.getFields("main").headOption.map { case obj: JsObject =>
+          obj.fields("humidity").convertTo[Double]
+        }.getOrElse(0)
+        val weatherCloudPerc = json.getFields("clouds").headOption.map { case obj: JsObject =>
+          obj.fields("all").convertTo[Double]
+        }.getOrElse(0)
+        Map(
+          description -> weatherDescription,
+          temperature -> weatherTemperature.toString,
+          umidity -> weatherHumidity.toString,
+          cloudPerc -> weatherCloudPerc.toString,
+          score -> "1",
+          status -> response.status.toString
+        )
+      }
   }
 }
