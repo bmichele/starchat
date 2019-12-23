@@ -7,7 +7,6 @@ import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.Authorization
 import scalaz.Scalaz._
 import scalaz.{Failure, NonEmptyList, Success, Validation}
 import Validation.FlatMap._
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.as
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,7 +15,6 @@ trait GenericVariableManager extends VariableManager {
 
   import AtomVariableReader._
   import HttpRequestAtomicConstants.ParameterName._
-  import HttpRequestAtomicConstants._
 
   def extractInput[T](parameter: String,
                       configMap: VariableConfiguration,
@@ -87,13 +85,13 @@ trait GenericVariableManager extends VariableManager {
 
   }
 
-  def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
+  def outputConf(configuration: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
     (as[String](outputContentType) |@|
       as[String](outputStatus) |@|
       as[String](outputData) |@|
       as[String](outputScore)) {
       (ct, os, od, score) => (ct |@| os |@| od |@| score) (GenericHttpOutputConf)
-    }.run(configMap)
+    }.run(configuration)
   }
 
 }

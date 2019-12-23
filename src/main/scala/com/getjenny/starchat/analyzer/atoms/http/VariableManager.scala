@@ -23,7 +23,7 @@ trait VariableManager {
 
   def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf]
 
-  def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf]
+  def outputConf(configuration: VariableConfiguration): AtomValidation[HttpAtomOutputConf]
 
   def additionalArguments: List[String] = Nil
 

@@ -26,7 +26,7 @@ trait WeatherVariableManager extends GenericVariableManager {
       .map(queryString => QueryStringConf(queryString))
   }
 
-  override def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
+  override def outputConf(configuration: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
     WeatherOutput().successNel
   }
 }
