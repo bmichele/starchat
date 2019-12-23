@@ -91,6 +91,7 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
           s"$url$querySeparator$queryString" -> HttpEntity.Empty
         }
       case JsonConf(json) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
+      case _ => url -> HttpEntity.Empty
     }
 
     HttpRequest(method = configuration.urlConf.method,
