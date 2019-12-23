@@ -17,11 +17,11 @@ trait VariableManager {
 
   type AtomValidation[T] = ValidationNel[String, T]
 
-  def urlConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf]
+  def urlConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf]
 
-  def authenticationConf(configuration: VariableConfiguration): AtomValidation[Option[HttpAtomAuthentication]]
+  def authenticationConf(configuration: VariableConfiguration): AtomValidation[Option[HttpAtomAuthConf]]
 
-  def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[InputConf]
+  def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf]
 
   def outputConf(configMap: VariableConfiguration): AtomValidation[HttpAtomOutputConf]
 
@@ -160,12 +160,12 @@ object AtomVariableReader {
   }
 }
 
-case class HttpRequestAtomicConfiguration(urlConf: UrlConf,
-                                          auth: Option[HttpAtomAuthentication],
-                                          inputConf: InputConf,
+case class HttpRequestAtomicConfiguration(urlConf: HttpAtomUrlConf,
+                                          auth: Option[HttpAtomAuthConf],
+                                          inputConf: HttpAtomInputConf,
                                           outputConf: HttpAtomOutputConf)
 
-case class UrlConf(url: String, method: HttpMethod, contentType: ContentType)
+case class HttpAtomUrlConf(url: String, method: HttpMethod, contentType: ContentType)
 
 object AuthorizationType extends Enumeration {
   type AuthorizationType = Value
@@ -184,19 +184,19 @@ object StoreOption extends Enumeration {
   def fromName(s: String): Validation[Throwable, StoreOption] = Try(withName(s)).toValidation
 }
 
-trait HttpAtomAuthentication
+trait HttpAtomAuthConf
 
-case class BasicAuth(username: String, password: String) extends HttpAtomAuthentication
+case class BasicAuth(username: String, password: String) extends HttpAtomAuthConf
 
-case class BearerAuth(token: String) extends HttpAtomAuthentication
+case class BearerAuth(token: String) extends HttpAtomAuthConf
 
-case class ApiKeyAuth(key: String, token: String, storeTo: StoreOption) extends HttpAtomAuthentication
+case class ApiKeyAuth(key: String, token: String, storeTo: StoreOption) extends HttpAtomAuthConf
 
-trait InputConf
+trait HttpAtomInputConf
 
-case class QueryStringConf(queryString: String) extends InputConf
+case class QueryStringConf(queryString: String) extends HttpAtomInputConf
 
-case class JsonConf(json: String) extends InputConf
+case class JsonConf(json: String) extends HttpAtomInputConf
 
 trait HttpAtomOutputConf {
   val score: String

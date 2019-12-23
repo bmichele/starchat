@@ -26,7 +26,7 @@ trait GenericVariableManager extends VariableManager {
       .map(buildInput)
   }
 
-  def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf] = {
+  def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
     (as[String](url) |@| as[HttpMethod](httpMethod) |@| as[ContentType](inputContentType)) {
       (url, method, ct) => {
         val formattedUrl = url
@@ -37,12 +37,12 @@ trait GenericVariableManager extends VariableManager {
             Success(ContentTypes.NoContentType)
           case _ => ct
         }
-        (formattedUrl |@| method |@| contentType) (UrlConf)
+        (formattedUrl |@| method |@| contentType) (HttpAtomUrlConf)
       }
     }.run(configMap)
   }
 
-  def authenticationConf(configMap: VariableConfiguration): AtomValidation[Option[HttpAtomAuthentication]] = {
+  def authenticationConf(configMap: VariableConfiguration): AtomValidation[Option[HttpAtomAuthConf]] = {
     if (configMap.get(authorizationType).nonEmpty) {
       as[AuthorizationType](authorizationType).run(configMap) match {
         case Success(AuthorizationType.BASIC) =>
@@ -66,7 +66,7 @@ trait GenericVariableManager extends VariableManager {
     }
   }
 
-  def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[InputConf] = {
+  def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
     val isQueryString = configMap.get(inputQueryTemplate).nonEmpty
     val isJson = configMap.get(inputJson).nonEmpty
     (isQueryString, isJson) match {
