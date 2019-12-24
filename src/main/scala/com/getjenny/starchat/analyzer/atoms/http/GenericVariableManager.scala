@@ -3,13 +3,14 @@ package com.getjenny.starchat.analyzer.atoms.http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
-import scalaz.Scalaz._
-import scalaz.{Failure, NonEmptyList, Success, Validation}
-import Validation.FlatMap._
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName._
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
-import AtomVariableReader._
-import HttpRequestAtomicConstants.ParameterName._
+import scalaz.Scalaz._
+import scalaz.Validation.FlatMap._
+import scalaz.{Failure, NonEmptyList, Success}
+
 import scala.concurrent.{ExecutionContext, Future}
 
 trait GenericVariableManager extends VariableManager {

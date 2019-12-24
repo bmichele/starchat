@@ -87,7 +87,10 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
         if (configuration.urlConf.contentType.equals(ContentTypes.`application/x-www-form-urlencoded`)) {
           url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
         } else {
-          val querySeparator = if (authQueryParam.isDefined) "&" else "?"
+          val querySeparator = authQueryParam match {
+            case Some(_) => "&"
+            case _ => "?"
+          }
           s"$url$querySeparator$queryString" -> HttpEntity.Empty
         }
       case JsonConf(json) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))

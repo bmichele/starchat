@@ -1,6 +1,5 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-
 import scala.util.matching.Regex
 
 object HttpRequestAtomicConstants {
@@ -27,8 +26,7 @@ object HttpRequestAtomicConstants {
   }
 
   object Regex {
-    import ParameterName._
-    val baseRegex = s"(?:$temp)?(?:$system)?http-atom.[a-z0-9]{1,40}."
+    val baseRegex = s"(?:${ParameterName.temp})?(?:${ParameterName.system})?http-atom.[a-z0-9]{1,40}."
     val genericVariableNameRegex: Regex = s"$baseRegex[a-z0-9_-]{1,40}".r
   }
 
