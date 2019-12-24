@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter
 
 import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, Permissions, User}
 
 class CheckDateAtomicResourceTest extends TestEnglishBase {
