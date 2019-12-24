@@ -2,6 +2,7 @@ package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io._
 
 class LanguageGuesserResourceTest extends TestEnglishBase {

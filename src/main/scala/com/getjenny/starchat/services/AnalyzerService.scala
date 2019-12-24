@@ -14,6 +14,7 @@ import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents.{DecisionTableEntityManager, TextTerms}
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
+import com.getjenny.starchat.utils.SystemConfiguration
 import org.elasticsearch.index.query.QueryBuilders
 import scalaz.Scalaz._
 
@@ -57,6 +58,7 @@ object AnalyzerService extends AbstractDataService {
   private[this] val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
   private[this] val nodeDtLoadingStatusService: NodeDtLoadingStatusService.type = NodeDtLoadingStatusService
   val dtMaxTables: Long = elasticClient.config.getLong("es.dt_max_tables")
+  private[this] val atomConfigurationBasePath = "starchat.atom-values"
 
   def getAnalyzers(indexName: String): mutable.LinkedHashMap[String, DecisionTableRuntimeItem] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
@@ -118,7 +120,8 @@ object AnalyzerService extends AbstractDataService {
       val evaluationClass: String = runtimeItem.evaluationClass
       val buildAnalyzerResult: BuildAnalyzerResult =
         if (analyzerDeclaration =/= "") {
-          val restrictedArgs: Map[String, String] = Map("index_name" -> indexName)
+          val restrictedArgs: Map[String, String] = SystemConfiguration
+            .createMapFromPath(atomConfigurationBasePath) + ("index_name" -> indexName)
           val inPlaceAnalyzer: DecisionTableRuntimeItem =
             inPlaceIndexAnalyzers.analyzerMap.getOrElse(stateId, DecisionTableRuntimeItem())
           if (incremental && inPlaceAnalyzer.version > 0 && inPlaceAnalyzer.version === version) {
@@ -220,7 +223,8 @@ object AnalyzerService extends AbstractDataService {
   }
 
   def evaluateAnalyzer(indexName: String, analyzerRequest: AnalyzerEvaluateRequest): Option[AnalyzerEvaluateResponse] = {
-    val restrictedArgs: Map[String, String] = Map("index_name" -> indexName)
+    val restrictedArgs: Map[String, String] = SystemConfiguration
+      .createMapFromPath(atomConfigurationBasePath) + ("index_name" -> indexName)
 
     Try(new StarChatAnalyzer(analyzerRequest.analyzer, restrictedArgs)) match {
       case Failure(exception) =>

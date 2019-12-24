@@ -2,6 +2,7 @@ package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.BayesOperatorCacheService

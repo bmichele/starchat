@@ -6,6 +6,7 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms._
 import com.getjenny.analyzer.interfaces._
+import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic, SubmitHubspotVariableManager, WeatherVariableManager}
 
 class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAtomic, Map[String, String]] {
 
@@ -81,6 +82,9 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "isServiceOpen" => new IsServiceOpenAtomic(argument, restrictedArgs)
     case "setServiceOpening" => new SetServiceOpeningAtomic(argument, restrictedArgs)
     case "languageGuesser" => new LanguageGuesserAtomic(argument, restrictedArgs)
+    case "httpRequest" => new HttpRequestAtomic(argument, restrictedArgs) with GenericVariableManager
+    case "submitHubspot" => new HttpRequestAtomic(argument, restrictedArgs) with SubmitHubspotVariableManager
+    case "weather" => new HttpRequestAtomic(argument, restrictedArgs) with WeatherVariableManager
     case "checkDate" => new CheckDateAtomic(argument, restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }

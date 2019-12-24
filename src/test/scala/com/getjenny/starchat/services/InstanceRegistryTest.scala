@@ -1,8 +1,8 @@
-package com.getjenny.starchat.resources
+package com.getjenny.starchat.services
 
+import com.getjenny.starchat.TestBase
 import com.getjenny.starchat.entities.io.CreateLanguageIndexRequest
 import com.getjenny.starchat.services.InstanceRegistryStatus._
-import com.getjenny.starchat.services.{InstanceRegistryDocument, InstanceRegistryService, InstanceRegistryStatus}
 import scalaz.Scalaz._
 
 class InstanceRegistryTest extends TestBase {

@@ -10,8 +10,8 @@ crossScalaVersions := Seq("2.12.10")
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
 libraryDependencies ++= {
-  val AkkaHttpVersion	= "10.1.10"
-  val AkkaVersion	= "2.5.25"
+  val AkkaHttpVersion	= "10.1.11"
+  val AkkaVersion	= "2.5.26"
   val AnalyzerVersion = "3.0.0"
   val BreezeVersion	= "0.13.2"
   val CourierVersion = "1.0.0"
@@ -57,6 +57,7 @@ libraryDependencies ++= {
 
 scalacOptions += "-deprecation"
 scalacOptions += "-feature"
+scalacOptions += "-Ypartial-unification"
 //scalacOptions += "-Ylog-classpath"
 testOptions in Test += Tests.Argument("-oF")
 

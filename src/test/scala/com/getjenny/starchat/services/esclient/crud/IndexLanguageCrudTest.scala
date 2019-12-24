@@ -1,10 +1,9 @@
-package com.getjenny.starchat.resources
+package com.getjenny.starchat.services.esclient.crud
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.starchat.entities.persistents.EsEntityManager
 import com.getjenny.starchat.serializers.JsonSupport
 import com.getjenny.starchat.services.esclient.IndexManagementElasticClient
-import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.get.GetResponse

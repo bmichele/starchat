@@ -1,6 +1,6 @@
-package com.getjenny.starchat.resources
+package com.getjenny.starchat.services
 
-import com.getjenny.starchat.services.BayesOperatorCacheService
+import com.getjenny.starchat.TestBase
 
 class BayesOperatorCacheTest extends TestBase {
 

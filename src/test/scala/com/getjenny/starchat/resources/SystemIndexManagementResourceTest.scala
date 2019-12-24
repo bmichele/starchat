@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit._
+import com.getjenny.starchat.TestFixtures
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.serializers.JsonSupport
 import com.getjenny.starchat.utils.Index

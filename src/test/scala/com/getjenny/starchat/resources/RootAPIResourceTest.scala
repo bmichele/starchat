@@ -1,6 +1,7 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
+import com.getjenny.starchat.TestBase
 
 class RootAPIResourceTest extends TestBase {
 
