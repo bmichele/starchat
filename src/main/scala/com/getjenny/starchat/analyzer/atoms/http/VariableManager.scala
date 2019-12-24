@@ -4,13 +4,15 @@ import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpRespo
 import akka.stream.Materializer
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
-import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants._
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.genericVariableNameRegex
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants._
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
+import scalaz.Validation.FlatMap._
 import scalaz.{Failure, NonEmptyList, Reader, Success, Validation, ValidationNel}
-import Validation.FlatMap._
+
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.implicitConversions
 import scala.util.Try
 
 trait VariableManager {
