@@ -15,10 +15,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait GenericVariableManager extends VariableManager {
 
-  def extractInput[T](parameter: String,
+  def extractInput[T](varName: String,
                       configMap: VariableConfiguration,
                       findProperty: String => Option[String])(buildInput: String => T): AtomValidation[T] = {
-    as[String](parameter).run(configMap)
+    as[String](varName)
+      .run(configMap)
       .flatMap(t => substituteTemplate(t, findProperty))
       .map(buildInput)
   }
