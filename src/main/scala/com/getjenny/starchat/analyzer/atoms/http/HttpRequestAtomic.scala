@@ -14,9 +14,9 @@ import scalaz.Scalaz._
 import scalaz.{Failure, Success}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContextExecutor}
-import scala.util.Try
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.language.postfixOps
+import scala.util.Try
 
 class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   this: VariableManager =>
@@ -50,14 +50,19 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
     }
   }
 
-  private[this] def serviceCall(query: String, configuration: HttpRequestAtomicConfiguration): Option[Map[String, String]] = Try {
+  private[this] def serviceCall(query: String,
+                                configuration: HttpRequestAtomicConfiguration): Option[Map[String, String]] = Try {
     val request = createRequest(configuration)
 
     val futureOutput = (http.singleRequest(request) flatMap configuration.outputConf.responseExtraction)
       .map(_.some)
-      .recover {
-        case error: Throwable => log.error(error, "http error: ")
-          None
+      .recoverWith {
+        case error: Throwable =>
+          log.error(error, "http error: ")
+          Future{None}
+        case _ =>
+          log.error("unknown http call error")
+          Future{None}
       }
 
     Await.result(futureOutput, timeout)
