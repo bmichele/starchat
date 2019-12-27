@@ -414,30 +414,27 @@ object DecisionTableService extends AbstractDataService {
     }
   }
 
-
   def indexCSVFileIntoDecisionTable(indexName: String, file: File,
                                     skipLines: Int = 1, separator: Char = ','): IndexDocumentListResult = {
     val documents: IndexedSeq[DTDocumentCreate] = FileToDocuments.getDTDocumentsFromCSV(log = log, file = file,
       skipLines = skipLines, separator = separator)
 
-    createAll(indexName, documents)
+    bulkCreate(indexName, documents)
   }
 
   def indexJSONFileIntoDecisionTable(indexName: String, file: File): IndexDocumentListResult = {
     val documents: IndexedSeq[DTDocumentCreate] = FileToDocuments.getDTDocumentsFromJSON(log = log, file = file)
 
-   createAll(indexName, documents)
+   bulkCreate(indexName, documents)
   }
 
-  private[this] def createAll(indexName: String, documents: IndexedSeq[DTDocumentCreate]): IndexDocumentListResult = {
+  def bulkCreate(indexName: String, documents: IndexedSeq[DTDocumentCreate]): IndexDocumentListResult = {
     val indexDocumentListResult = documents.map(dtDocument => {
       create(indexName, dtDocument, 0)
     }).toList
 
     IndexDocumentListResult(data = indexDocumentListResult)
   }
-
-
 
   def wordFrequenciesInQueries(indexName: String): Map[String, Double] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)

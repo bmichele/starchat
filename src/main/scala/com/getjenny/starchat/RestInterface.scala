@@ -45,63 +45,64 @@ trait RestInterface extends RootAPIResource
   lazy val priorDataService: PriorDataService.type = PriorDataService
 
   val routes: Route = rootAPIsRoutes ~
-    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerStreamRoutes) ~
-    LoggingEntities.logRequestAndResult(kbQuestionAnswerSearchRoutes) ~
-    LoggingEntities.logRequestAndResult(kbTotalTermsRoutes) ~
-    LoggingEntities.logRequestAndResult(kbDictSizeRoutes) ~
-    LoggingEntities.logRequestAndResult(kbTermsCountRoutes) ~
-    LoggingEntities.logRequestAndResult(kbUpdateTermsRoutes) ~
-    LoggingEntities.logRequestAndResult(kbCountersCacheSizeRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerConversationsRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerAnalyticsRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerStreamRoutes) ~
-    LoggingEntities.logRequestAndResult(pdQuestionAnswerSearchRoutes) ~
-    LoggingEntities.logRequestAndResult(pdTotalTermsRoutes) ~
-    LoggingEntities.logRequestAndResult(pdDictSizeRoutes) ~
-    LoggingEntities.logRequestAndResult(pdTermsCountRoutes) ~
-    LoggingEntities.logRequestAndResult(pdUpdateTermsRoutes) ~
-    LoggingEntities.logRequestAndResult(pdCountersCacheSizeRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerConversationsRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerAnalyticsRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerStreamRoutes) ~
-    LoggingEntities.logRequestAndResult(clQuestionAnswerSearchRoutes) ~
-    LoggingEntities.logRequestAndResult(clTotalTermsRoutes) ~
-    LoggingEntities.logRequestAndResult(clDictSizeRoutes) ~
-    LoggingEntities.logRequestAndResult(clTermsCountRoutes) ~
-    LoggingEntities.logRequestAndResult(clUpdateTermsRoutes)~
+    LoggingEntities.logRequestAndResult(analyzersPlaygroundRoutes) ~
     LoggingEntities.logRequestAndResult(clCountersCacheSizeRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerConversationsRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerAnalyticsRoutes) ~
-    LoggingEntities.logRequestAndResult(termsExtractionRoutes) ~
-    LoggingEntities.logRequestAndResult(synExtractionRoutes) ~
-    LoggingEntities.logRequestAndResult(freqExtractionRoutes) ~
+    LoggingEntities.logRequestAndResult(clDictSizeRoutes) ~
+    LoggingEntities.logRequestAndResult(clQuestionAnswerSearchRoutes) ~
+    LoggingEntities.logRequestAndResult(clTermsCountRoutes) ~
+    LoggingEntities.logRequestAndResult(clTotalTermsRoutes) ~
+    LoggingEntities.logRequestAndResult(clUpdateTermsRoutes)~
+    LoggingEntities.logRequestAndResult(decisionTableAnalyzerRoutes) ~
+    LoggingEntities.logRequestAndResult(decisionTableAsyncReloadRoutes) ~
+    LoggingEntities.logRequestAndResult(decisionTableCacheLoad) ~
+    LoggingEntities.logRequestAndResult(decisionTableResponseRequestRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableRoutesAllRoutes) ~
-    LoggingEntities.logRequestAndResult(decisionTableUploadFilesRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableSearchRoutes) ~
-    LoggingEntities.logRequestAndResult(decisionTableAsyncReloadRoutes) ~
-    LoggingEntities.logRequestAndResult(decisionTableResponseRequestRoutes) ~
-    LoggingEntities.logRequestAndResult(decisionTableAnalyzerRoutes) ~
-    LoggingEntities.logRequestAndResult(decisionTableCacheLoad) ~
-    LoggingEntities.logRequestAndResult(postIndexManagementCreateRoutes) ~
-    LoggingEntities.logRequestAndResult(systemIndexManagementRoutes) ~
-    LoggingEntities.logRequestAndResult(systemGetIndexesRoutes) ~
-    LoggingEntities.logRequestAndResult(languageGuesserRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(termRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(termStreamRoutes) ~
+    LoggingEntities.logRequestAndResult(decisionTableUploadFilesRoutes) ~
+    LoggingEntities.logRequestAndResult(delUserRoutes) ~
     LoggingEntities.logRequestAndResult(esTokenizersRoutes) ~
-    LoggingEntities.logRequestAndResult(analyzersPlaygroundRoutes) ~
-    LoggingEntities.logRequestAndResult(spellcheckRoutes) ~
+    LoggingEntities.logRequestAndResult(freqExtractionRoutes) ~
+    LoggingEntities.logRequestAndResult(genUserRoutes) ~
+    LoggingEntities.logRequestAndResult(getUserRoutes) ~
+    LoggingEntities.logRequestAndResult(kbCountersCacheSizeRoutes) ~
+    LoggingEntities.logRequestAndResult(kbDictSizeRoutes) ~
+    LoggingEntities.logRequestAndResult(kbQuestionAnswerSearchRoutes) ~
+    LoggingEntities.logRequestAndResult(kbTermsCountRoutes) ~
+    LoggingEntities.logRequestAndResult(kbTotalTermsRoutes) ~
+    LoggingEntities.logRequestAndResult(kbUpdateTermsRoutes) ~
+    LoggingEntities.logRequestAndResult(languageGuesserRoutes) ~
+    LoggingEntities.logRequestAndResult(pdCountersCacheSizeRoutes) ~
+    LoggingEntities.logRequestAndResult(pdDictSizeRoutes) ~
+    LoggingEntities.logRequestAndResult(pdQuestionAnswerSearchRoutes) ~
+    LoggingEntities.logRequestAndResult(pdTermsCountRoutes) ~
+    LoggingEntities.logRequestAndResult(pdTotalTermsRoutes) ~
+    LoggingEntities.logRequestAndResult(pdUpdateTermsRoutes) ~
+    LoggingEntities.logRequestAndResult(postIndexManagementCreateRoutes) ~
     LoggingEntities.logRequestAndResult(postUserRoutes) ~
     LoggingEntities.logRequestAndResult(putUserRoutes) ~
-    LoggingEntities.logRequestAndResult(getUserRoutes) ~
-    LoggingEntities.logRequestAndResult(delUserRoutes) ~
-    LoggingEntities.logRequestAndResult(genUserRoutes) ~
+    LoggingEntities.logRequestAndResult(spellcheckRoutes) ~
+    LoggingEntities.logRequestAndResult(synExtractionRoutes) ~
+    LoggingEntities.logRequestAndResult(systemGetIndexesRoutes) ~
+    LoggingEntities.logRequestAndResult(systemIndexManagementRoutes) ~
+    LoggingEntities.logRequestAndResult(termsExtractionRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerAnalyticsRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerConversationsRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(clQuestionAnswerStreamRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clusterNodesRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(decisionTableBulkCreateRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerAnalyticsRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerConversationsRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerStreamRoutes) ~
     LoggingEntities.logRequestAndResultReduced(nodeDtLoadingStatusRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerAnalyticsRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerConversationsRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerStreamRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(termRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(termStreamRoutes) ~
     LoggingEntities.logRequestAndResultReduced(languageIndexManagementRoutes)
 
 }

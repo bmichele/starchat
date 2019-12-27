@@ -86,7 +86,8 @@ trait DecisionTableResource extends StarChatResource {
                           t
                         })
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableUploadCSVRoutes", request.method, request.uri), e)
+                        log.error(logTemplate(user.id, indexName, "decisionTableUploadCSVRoutes",
+                          request.method, request.uri), e)
                         if (file.exists()) {
                           file.delete()
                         }
@@ -95,6 +96,39 @@ trait DecisionTableResource extends StarChatResource {
                             ReturnMessageData(code = 106, message = e.getMessage)
                           })
                     }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  def decisionTableBulkCreateRoutes: Route = handleExceptions(routesExceptionHandler) {
+    pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bulk") { indexName =>
+      pathEnd {
+        post {
+          authenticateBasicAsync(realm = authRealm,
+            authenticator = authenticator.authenticator) { user =>
+            authorizeAsync(_ =>
+              authenticator.hasPermissions(user, indexName, Permissions.read)) {
+              extractRequest { request =>
+                entity(as[IndexedSeq[DTDocumentCreate]]) { documents =>
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                  onCompleteWithBreakerFuture(breaker)(decisionTableService.bulkCreate(indexName, documents)) {
+                    case Success(t) =>
+                      completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
+                        t
+                      })
+                    case Failure(e) =>
+                      log.error(logTemplate(user.id, indexName, "decisionTableBulkCreateRoutes",
+                        request.method, request.uri), e)
+                      completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          ReturnMessageData(code = 107, message = e.getMessage)
+                        })
+                  }
                 }
               }
             }
@@ -120,10 +154,11 @@ trait DecisionTableResource extends StarChatResource {
                       t
                     })
                   case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, "decisionTableAsyncReloadRoutes", request.method, request.uri), e)
+                    log.error(logTemplate(user.id, indexName, "decisionTableAsyncReloadRoutes",
+                      request.method, request.uri), e)
                     completeResponse(StatusCodes.BadRequest,
                       Option {
-                        ReturnMessageData(code = 107, message = e.getMessage)
+                        ReturnMessageData(code = 108, message = e.getMessage)
                       })
                 }
               }
@@ -150,10 +185,11 @@ trait DecisionTableResource extends StarChatResource {
                       t
                     })
                   case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes", request.method, request.uri), e)
+                    log.error(logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes",
+                      request.method, request.uri), e)
                     completeResponse(StatusCodes.BadRequest,
                       Option {
-                        ReturnMessageData(code = 108, message = e.getMessage)
+                        ReturnMessageData(code = 109, message = e.getMessage)
                       })
                 }
               }
@@ -176,10 +212,11 @@ trait DecisionTableResource extends StarChatResource {
                           t
                         })
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes", request.method, request.uri), e)
+                        log.error(logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes",
+                          request.method, request.uri), e)
                         completeResponse(StatusCodes.BadRequest,
                           Option {
-                            ReturnMessageData(code = 109, message = e.getMessage)
+                            ReturnMessageData(code = 110, message = e.getMessage)
                           })
                     }
                   }
@@ -208,10 +245,11 @@ trait DecisionTableResource extends StarChatResource {
                         t
                       })
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, "decisionTableSearchRoutes", request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, "decisionTableSearchRoutes",
+                        request.method, request.uri), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
-                          ReturnMessageData(code = 110, message = e.getMessage)
+                          ReturnMessageData(code = 111, message = e.getMessage)
                         })
                   }
                 }
@@ -242,7 +280,7 @@ trait DecisionTableResource extends StarChatResource {
                             completeResponse(StatusCodes.ResetContent,
                               Option {
                                 ResponseRequestOutOperationResult(
-                                  ReturnMessageData(code = 111, message = rsDtNotLoadedE.getMessage),
+                                  ReturnMessageData(code = 112, message = rsDtNotLoadedE.getMessage),
                                   Option {
                                     List.empty[ResponseRequestOut]
                                   })
@@ -259,7 +297,7 @@ trait DecisionTableResource extends StarChatResource {
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(
-                                  ReturnMessageData(code = 112, message = message),
+                                  ReturnMessageData(code = 113, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]
                                   })
@@ -272,7 +310,7 @@ trait DecisionTableResource extends StarChatResource {
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(
-                                  ReturnMessageData(code = 113, message = message),
+                                  ReturnMessageData(code = 114, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]
                                   })
@@ -285,7 +323,7 @@ trait DecisionTableResource extends StarChatResource {
                             completeResponse(StatusCodes.RequestTimeout,
                               Option {
                                 io.ResponseRequestOutOperationResult(
-                                  ReturnMessageData(code = 114, message = message),
+                                  ReturnMessageData(code = 115, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]
                                   })
@@ -298,7 +336,7 @@ trait DecisionTableResource extends StarChatResource {
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(
-                                  ReturnMessageData(code = 115, message = message),
+                                  ReturnMessageData(code = 116, message = message),
                                   Option {
                                     List.empty[ResponseRequestOut]
                                   })

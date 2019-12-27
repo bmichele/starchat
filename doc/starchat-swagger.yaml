@@ -1253,6 +1253,40 @@ paths:
             schema:
               $ref: '#/components/schemas/DTDocumentSearch'
         description: DecisionTable document with the query parameters
+  '/<index_name>/decisiontable/bulk':
+    post:
+      tags:
+        - customer
+      operationId: post_decisiontable_bulk_create
+      summary: Bulk creation
+      description: >-
+        bulk create operation
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/DTDocument'
+        description: The array of states to create.
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexDocumentListResult'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
   '/<index_name>/decisiontable/upload/<format>':
     post:
       tags:
