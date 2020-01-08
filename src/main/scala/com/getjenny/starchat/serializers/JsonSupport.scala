@@ -62,7 +62,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
       case _ => throw DeserializationException("QAAggregationsTypesFormat string expected")
     }
   }
-
+  implicit val printer = PrettyPrinter
   implicit val qaAggregatedAnalyticsRequestFormat = jsonFormat6(QAAggregatedAnalyticsRequest)
   implicit val scoreHistogramFormat = jsonFormat2(ScoreHistogramItem)
   implicit val conversationsHistogramFormat = jsonFormat3(CountOverTimeHistogramItem)
