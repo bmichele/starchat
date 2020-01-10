@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpRespo
 import akka.stream.Materializer
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
-import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.genericVariableNameRegex
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.templateRegex
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants._
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
@@ -32,10 +32,18 @@ trait VariableManager {
 
   def validateAndBuild(arguments: List[String],
                        restrictedArgs: Map[String, String],
-                       analyzerData: Map[String, Any]): AtomValidation[HttpRequestAtomicConfiguration] = {
-    val findProperty: String => Option[String] = findIn(systemConfiguration = restrictedArgs, analyzerData)
+                       extractedVariables: Map[String, String]): AtomValidation[HttpRequestAtomicConfiguration] = {
     val allArguments = arguments ++ additionalArguments
-    val configuration = configurationFromArguments(allArguments, findProperty)
+    val keyValueSeparator = "="
+    val additionalConfiguration = allArguments
+      .filter(_.contains(keyValueSeparator))
+      .map { x =>
+        val keyValue = x.split(keyValueSeparator)
+        keyValue(0) -> keyValue(1)
+      }.toMap
+    val runtimeConfiguration = additionalConfiguration ++ extractedVariables
+    val findProperty: String => Option[String] = findIn(systemConfiguration = restrictedArgs, runtimeConfiguration)
+    val configuration = configurationFromArguments(arguments.map(_.split(keyValueSeparator)(0)), findProperty)
 
     (urlConf(configuration, findProperty) |@|
       authenticationConf(configuration) |@|
@@ -59,18 +67,18 @@ trait VariableManager {
       .replace(ParameterName.system, "")
   }
 
-  protected final def findIn(systemConfiguration: Map[String, String], analyzerData: Map[String, Any])
+  protected final def findIn(systemConfiguration: Map[String, String], runtimeConfiguration: Map[String, Any])
                             (key: String): Option[String] = {
     if (key.contains(ParameterName.system)) {
       systemConfiguration.get(clearVariableName(key))
     } else {
-      analyzerData.get(clearVariableName(key)).map(_.toString)
+      runtimeConfiguration.get(clearVariableName(key)).map(_.toString)
     }
   }
 
   private[this] def evaluateTemplate(template: String,
                                      findProperty: String => Option[String]): String = {
-    genericVariableNameRegex.findAllIn(template)
+    templateRegex.findAllIn(template)
       .foldLeft(template) { case (acc, variable) =>
         findProperty(variable)
           .map { v =>

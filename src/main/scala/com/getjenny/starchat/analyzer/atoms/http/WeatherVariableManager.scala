@@ -21,7 +21,7 @@ trait WeatherVariableManager extends GenericVariableManager {
   }
 
   override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
-    val queryStringTemplate = "q=<http-atom.weather.location>&units=metric"
+    val queryStringTemplate = "q=<location>&units=metric"
     substituteTemplate(queryStringTemplate, findProperty)
       .map(queryString => QueryStringConf(queryString))
   }

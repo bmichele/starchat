@@ -28,6 +28,7 @@ object HttpRequestAtomicConstants {
   object Regex {
     val baseRegex = s"(?:${ParameterName.temp})?(?:${ParameterName.system})?http-atom.[a-z0-9]{1,40}."
     val genericVariableNameRegex: Regex = s"$baseRegex[a-z0-9_-]{1,40}".r
+    val templateRegex: Regex = "(?<=\\<)(.*?)(?=\\>)".r
   }
 
   val templateDelimiterPrefix = "<"

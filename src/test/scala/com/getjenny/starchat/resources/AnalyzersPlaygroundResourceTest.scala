@@ -27,15 +27,17 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "",
           analyzer = """vOneKeyword("test")""",
-          data = Option{AnalyzersData()}
+          data = Option {
+            AnalyzersData()
+          }
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (0.0)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(0.0)
       }
     }
   }
@@ -46,15 +48,17 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "this is a test",
           analyzer = """vOneKeyword("test")""",
-          data = Option{AnalyzersData()}
+          data = Option {
+            AnalyzersData()
+          }
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (0.25)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(0.25)
       }
     }
   }
@@ -65,17 +69,17 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """hasTravState("one")""",
-          data = Option{
-            AnalyzersData(traversedStates=Vector("one", "two"), extractedVariables = Map.empty[String, String])
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
           }
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (1)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1)
       }
     }
   }
@@ -86,17 +90,17 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """bnot(hasTravState("three"))""",
-          data = Option{
-            AnalyzersData(traversedStates=Vector("one", "two"), extractedVariables = Map.empty[String, String])
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
           }
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (1)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1)
       }
     }
   }
@@ -107,17 +111,17 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """lastTravStateIs("two")""",
-          data = Option{
-            AnalyzersData(traversedStates=Vector("one", "two"), extractedVariables = Map.empty[String, String])
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
           }
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (1)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1)
       }
     }
   }
@@ -128,17 +132,17 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """prevTravStateIs("one")""",
-          data = Option{
-            AnalyzersData(traversedStates=Vector("one", "two"), extractedVariables = Map.empty[String, String])
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
           }
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (1)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1)
       }
     }
   }
@@ -150,8 +154,8 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "on 31-11-1900",
           analyzer =
             """band(prevTravStateIs("one"),binarize(vOneKeyword("on")),matchPatternRegex("[day,month,year](?:(0[1-9]|[12][0-9]|3[01])(?:[- \/\.])(0[1-9]|1[012])(?:[- \/\.])((?:19|20)\d\d))"))""",
-          data = Option{
-            AnalyzersData(traversedStates=Vector("one", "two"),
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"),
               extractedVariables = Map.empty[String, String])
           }
         )
@@ -159,13 +163,13 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (1.0)
-        response.data.nonEmpty should be (true)
-        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("month.0", "11")) should be (true)
-        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("day.0", "31")) should be (true)
-        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("year.0", "1900")) should be (true)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+        response.data.nonEmpty should be(true)
+        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("month.0", "11")) should be(true)
+        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("day.0", "31")) should be(true)
+        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("year.0", "1900")) should be(true)
       }
     }
   }
@@ -177,8 +181,8 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "",
           analyzer =
             """existsVariable("month.0")""",
-          data = Option{
-            AnalyzersData(traversedStates=Vector("one", "two"),
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"),
               extractedVariables =
                 Map[String, String](
                   "month.0" -> "11",
@@ -191,9 +195,9 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (1)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1)
       }
     }
   }
@@ -205,7 +209,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "",
           analyzer =
             """hasTravStateInPosition("two","2")""",
-          data = Option{
+          data = Option {
             AnalyzersData(traversedStates = Vector("one", "two", "three", "four", "five"))
           }
         )
@@ -214,7 +218,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "",
           analyzer =
             """hasTravStateInPosition("one", "0")""",
-          data = Option{
+          data = Option {
             AnalyzersData(traversedStates = Vector("one", "two", "three", "four", "five"))
           }
         )
@@ -222,17 +226,17 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (1)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1)
       }
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest2) ~>
         addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be (true)
-        response.buildMessage should be ("success")
-        response.value should be (0)
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(0)
       }
     }
   }
@@ -291,41 +295,65 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be (Vector("one", "two"))
-        response.data.getOrElse(fail).extractedVariables("lang") should be ("en")
-        response.value should be (1)
+        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).extractedVariables("lang") should be("en")
+        response.value should be(1)
       }
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest.copy(
-      analyzer = """languageGuesser("guessed_language", "0.8")""")) ~>
-      addCredentials(testUserCredentials) ~> routes ~> check {
+        analyzer = """languageGuesser("guessed_language", "0.8")""")) ~>
+        addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be (Vector("one", "two"))
-        response.data.getOrElse(fail).extractedVariables("guessed_language") should be ("en")
-        response.value should be (1)
+        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).extractedVariables("guessed_language") should be("en")
+        response.value should be(1)
       }
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest.copy(
-      query = "indovina la lingua di questa frase")) ~>
-      addCredentials(testUserCredentials) ~> routes ~> check {
+        query = "indovina la lingua di questa frase")) ~>
+        addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be (Vector("one", "two"))
-        response.data.getOrElse(fail).extractedVariables("lang") should be ("it")
-        response.value should be (0)
+        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).extractedVariables("lang") should be("it")
+        response.value should be(0)
       }
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest.copy(
-      analyzer = """languageGuesser("lng", "1")""")) ~>
-      addCredentials(testUserCredentials) ~> routes ~> check {
+        analyzer = """languageGuesser("lng", "1")""")) ~>
+        addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be (Vector("one", "two"))
-        response.data.getOrElse(fail).extractedVariables("lng") should be ("en")
-        response.value should be (0)
+        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).extractedVariables("lng") should be("en")
+        response.value should be(0)
       }
+
+
     }
+
+    /*"call weather open api an return weather info" in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "",
+          analyzer = """weather("location=torino", "units=metric")""",
+          data = Option {
+            AnalyzersData(
+              traversedStates = Vector("one", "two")
+            )
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~>
+        addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.value shouldEqual 1.0
+        response.data should not be empty
+      }
+    }*/
+
   }
 
 }

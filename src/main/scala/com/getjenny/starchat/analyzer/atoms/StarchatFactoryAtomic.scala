@@ -45,7 +45,10 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "isServiceOpen",
     "setServiceOpening",
     "languageGuesser",
-    "checkDate"
+    "checkDate",
+    "weather",
+    "submitHubspot",
+    "httpRequest"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
