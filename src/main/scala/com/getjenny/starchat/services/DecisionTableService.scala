@@ -317,15 +317,20 @@ object DecisionTableService extends AbstractDataService {
   }
 
   def resultsToMap(results: SearchDTDocumentsResults): Map[String, Any] = {
-    Map("dt_queries_search_result" ->
-      results.hits.map {
+    Map(
+      "dt_queries_search_result" -> results.hits.map {
         doc => (doc.document.state, (doc.score, doc))
       }.toMap
     )
   }
 
-  def create(indexName: String, document: DTDocumentCreate, refresh: Int): IndexDocumentResult = {
+  def create(indexName: String, document: DTDocumentCreate, check: Boolean = true,
+             refresh: Int = 0): IndexDocumentResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
+
+    if (check) {
+    //TODO: to be implemented
+    }
 
     val response = indexLanguageCrud.update(document, upsert = true,
       new SearchDTDocumentEntityManager(simpleQueryExtractor),
@@ -340,8 +345,12 @@ object DecisionTableService extends AbstractDataService {
     docResult
   }
 
-  def update(indexName: String, document: DTDocumentUpdate, refresh: Int): UpdateDocumentResult = {
+  def update(indexName: String, document: DTDocumentUpdate, check: Boolean, refresh: Int): UpdateDocumentResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
+
+    if (check) {
+
+    }
 
     val response = indexLanguageCrud.update(document,
       refresh = refresh,
@@ -425,12 +434,13 @@ object DecisionTableService extends AbstractDataService {
   def indexJSONFileIntoDecisionTable(indexName: String, file: File): IndexDocumentListResult = {
     val documents: IndexedSeq[DTDocumentCreate] = FileToDocuments.getDTDocumentsFromJSON(log = log, file = file)
 
-   bulkCreate(indexName, documents)
+    bulkCreate(indexName = indexName, documents = documents, check = false)
   }
 
-  def bulkCreate(indexName: String, documents: IndexedSeq[DTDocumentCreate]): IndexDocumentListResult = {
+  def bulkCreate(indexName: String, documents: IndexedSeq[DTDocumentCreate],
+                 check: Boolean = true): IndexDocumentListResult = {
     val indexDocumentListResult = documents.map(dtDocument => {
-      create(indexName, dtDocument, 0)
+      create(indexName = indexName, document = dtDocument, check = check)
     }).toList
 
     IndexDocumentListResult(data = indexDocumentListResult)

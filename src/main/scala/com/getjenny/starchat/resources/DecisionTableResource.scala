@@ -114,20 +114,21 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.read)) {
               extractRequest { request =>
-                entity(as[IndexedSeq[DTDocumentCreate]]) { documents =>
-                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                  onCompleteWithBreakerFuture(breaker)(decisionTableService.bulkCreate(indexName, documents)) {
-                    case Success(t) =>
-                      completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
-                        t
-                      })
-                    case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, "decisionTableBulkCreateRoutes",
-                        request.method, request.uri), e)
-                      completeResponse(StatusCodes.BadRequest,
-                        Option {
-                          ReturnMessageData(code = 107, message = e.getMessage)
-                        })
+                parameters("check".as[Boolean] ? true) { (check) =>
+                  entity(as[IndexedSeq[DTDocumentCreate]]) { documents =>
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                    onCompleteWithBreakerFuture(breaker)(
+                      decisionTableService.bulkCreate(indexName = indexName, documents = documents, check = check)) {
+                      case Success(t) =>
+                        completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
+                      case Failure(e) =>
+                        log.error(logTemplate(user.id, indexName, "decisionTableBulkCreateRoutes",
+                          request.method, request.uri), e)
+                        completeResponse(StatusCodes.BadRequest,
+                          Option {
+                            ReturnMessageData(code = 107, message = e.getMessage)
+                          })
+                    }
                   }
                 }
               }
@@ -368,10 +369,14 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                parameters("refresh".as[Int] ? 0) { refresh =>
+                parameters("check".as[Boolean] ? true, "refresh".as[Int] ? 0) { (check, refresh) =>
                   entity(as[DTDocumentCreate]) { document =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(decisionTableService.create(indexName, document, refresh)) {
+                    onCompleteWithBreakerFuture(breaker)(decisionTableService.create(
+                      indexName = indexName,
+                      document = document,
+                      check = check,
+                      refresh = refresh)) {
                       case Success(t) =>
                         completeResponse(StatusCodes.Created, StatusCodes.BadRequest, t)
                       case Failure(e) =>
@@ -458,14 +463,14 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                entity(as[DTDocumentUpdate]) { update =>
-                  parameters("refresh".as[Int] ? 0) { refresh =>
+                entity(as[DTDocumentUpdate]) { document =>
+                  parameters("check".as[Boolean] ? true, "refresh".as[Int] ? 0) { (check, refresh) =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(decisionTableService.update(indexName, update, refresh)) {
+                    onCompleteWithBreakerFuture(breaker)(
+                      decisionTableService.update(indexName = indexName,
+                        document = document, check = check, refresh = refresh)) {
                       case Success(t) =>
-                        completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
-                          t
-                        })
+                        completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>
                         log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
                         completeResponse(StatusCodes.BadRequest,
