@@ -40,7 +40,7 @@ trait GenericVariableManager extends VariableManager {
     }.run(configMap)
   }
 
-  def authenticationConf(configMap: VariableConfiguration): AtomValidation[Option[HttpAtomAuthConf]] = {
+  def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
     if (configMap.get(authorizationType).nonEmpty) {
       as[AuthorizationType](authorizationType).run(configMap) match {
         case Success(AuthorizationType.BASIC) =>
@@ -85,7 +85,7 @@ trait GenericVariableManager extends VariableManager {
 
   }
 
-  def outputConf(configuration: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
+  def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     (as[String](outputContentType) |@|
       as[String](outputStatus) |@|
       as[String](outputData) |@|
@@ -98,15 +98,13 @@ trait GenericVariableManager extends VariableManager {
 
 case class GenericHttpOutputConf(contentType: String, statusCode: String, data: String, override val score: String)
   extends HttpAtomOutputConf {
-  override def responseExtraction(response: HttpResponse)(implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
-    Unmarshaller.stringUnmarshaller(response.entity)
-      .map(body =>
-        Map(
-          contentType -> response.entity.contentType.toString(),
-          statusCode -> response.status.toString,
-          data -> body,
-          score -> "1"
-        )
-      )
+
+  override def bodyParser(body: String, contentType: String, status: String): Map[String, String] = {
+    Map(
+      contentType -> contentType,
+      statusCode -> status,
+      data -> body,
+      score -> "1"
+    )
   }
 }
