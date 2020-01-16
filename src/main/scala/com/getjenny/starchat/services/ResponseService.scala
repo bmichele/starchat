@@ -214,18 +214,21 @@ object ResponseService extends AbstractDataService {
 
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
-      if(splittedBubble.length > 1){
-        val r = new scala.util.Random
-        val randomIdx = r.nextInt(splittedBubble.length)
-        splittedBubble(randomIdx)
-      } else {
+    if(splittedBubble.length > 1){
+      val r = new scala.util.Random
+      val randomIdx = r.nextInt(splittedBubble.length)
+      splittedBubble(randomIdx)
+    } else {
       bubble
     }
   }
 
-  private[this] def replaceActionInput(actionInput: Map[String, String], values: Map[String, String]): Map[String, String] = {
-    values.foldLeft(actionInput) {
-      case (acc, (key, value)) => acc.mapValues(_.replaceAll("%" + key + "%", value))
+  private[this] def replaceActionInput(actionInput: Seq[Map[String, String]],
+                                       values: Map[String, String]): Seq[Map[String, String]] = {
+    actionInput.map { input =>
+      input.mapValues { inputValue =>
+        values.foldLeft(inputValue) { case(acc, (key, value)) => acc.replaceAll("%" + key + "%", value) }
+      }
     }
   }
 
