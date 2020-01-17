@@ -1,17 +1,20 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse}
-import akka.http.scaladsl.unmarshalling.Unmarshaller
-import akka.stream.Materializer
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.{VariableConfiguration, as}
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-
-import scala.concurrent.{ExecutionContext, Future}
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName._
 
 trait WeatherVariableManager extends GenericVariableManager {
+
+
+  override def additionalArguments: List[String] = {
+    List("http-atom.weather.token")
+  }
 
   override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
     val url = "https://api.openweathermap.org/data/2.5/weather"
@@ -19,7 +22,11 @@ trait WeatherVariableManager extends GenericVariableManager {
   }
 
   override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
-    Some(ApiKeyAuth(key = "APPID", token = "750dc7a5473ac93110d1dc9fb35adaa8", storeTo = StoreOption.QUERY)).successNel
+    as[String](token)
+      .run(configMap)
+        .map{token =>
+          Some(ApiKeyAuth(key = "APPID", token = token, storeTo = StoreOption.QUERY))
+        }
   }
 
   override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
@@ -34,7 +41,7 @@ trait WeatherVariableManager extends GenericVariableManager {
 }
 
 case class WeatherOutput(override val score: String = "weather.score",
-                         status: String = "weather.status",
+                         weatherStatus: String = "weather.status",
                          description: String = "weather.description",
                          temperature: String = "weather.temperature",
                          umidity: String = "weather.humidity",
@@ -56,7 +63,7 @@ case class WeatherOutput(override val score: String = "weather.score",
       umidity -> weatherHumidity.toString,
       cloudPerc -> weatherCloudPerc.toString,
       score -> "1",
-      status -> status
+      weatherStatus -> status
     )
   }
 

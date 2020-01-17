@@ -44,7 +44,7 @@ trait VariableManager {
       }.toMap
     val runtimeConfiguration = additionalConfiguration ++ extractedVariables
     val findProperty: String => Option[String] = findIn(systemConfiguration = restrictedArgs, runtimeConfiguration)
-    val configuration = configurationFromArguments(arguments.map(_.split(keyValueSeparator)(0)), findProperty)
+    val configuration = configurationFromArguments(allArguments.map(_.split(keyValueSeparator)(0)), findProperty)
 
     (urlConf(configuration, findProperty) |@|
       authenticationConf(configuration, findProperty) |@|

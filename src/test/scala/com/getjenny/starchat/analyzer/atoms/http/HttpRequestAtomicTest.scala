@@ -4,6 +4,8 @@ import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
+import com.getjenny.starchat.analyzer.atoms.http.custom.WeatherVariableManager
+import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.{Matchers, WordSpec}
 import scalaz.Scalaz._
 import scalaz.{Failure, Success}
@@ -308,11 +310,13 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
 
     /*"test weather api call and do not execute call if done before" in {
       val analyzerData = Map(
-        "http-atom.weather.location" -> "Torino,IT"
+        "location" -> "Torino,IT"
       )
-      val atom = new HttpRequestAtomic(List.empty, Map.empty) with WeatherVariableManager
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List.empty, systemConf) with WeatherVariableManager
 
-      val result = atom.evaluate("", AnalyzersDataInternal(data = analyzerData))
+      val result = atom.evaluate("", AnalyzersDataInternal(extractedVariables = analyzerData))
 
       result.data.extractedVariables.foreach(println)
       result.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
@@ -322,9 +326,9 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result.data.extractedVariables.contains("weather.temperature") shouldBe true
       result.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
 
-      val atom2 = new HttpRequestAtomic(List.empty, Map.empty) with WeatherVariableManager {
-        override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[UrlConf] = {
-          UrlConf("wrongurl", HttpMethods.GET, ContentTypes.NoContentType).successNel
+      val atom2 = new HttpRequestAtomic(List.empty, systemConf) with WeatherVariableManager {
+        override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
+          HttpAtomUrlConf("wrongurl", HttpMethods.GET, ContentTypes.NoContentType).successNel
         }
       }
 
