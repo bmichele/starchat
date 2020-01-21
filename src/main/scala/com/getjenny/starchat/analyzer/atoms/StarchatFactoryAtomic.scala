@@ -50,11 +50,12 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "weather",
     "submitHubspot",
     "httpRequest",
-    "parseDate"
+    "parseDate",
+    "checkMultipleDaysOfWeek"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
-                  AbstractAtomic = name.filter(c => !c.isWhitespace ) match {
+  AbstractAtomic = name.filter(c => !c.isWhitespace) match {
     case "keyword" => new KeywordAtomic2(argument, restrictedArgs)
     case "vOneKeyword" => new KeywordAtomic(argument, restrictedArgs)
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
@@ -92,6 +93,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "weather" => new HttpRequestAtomic(argument, restrictedArgs) with WeatherVariableManager
     case "checkDate" => new CheckDateAtomic(argument, restrictedArgs)
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
+    case "checkMultipleDaysOfWeek" => new CheckMultipleDaysOfWeekAtomic(argument, restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }
 }
