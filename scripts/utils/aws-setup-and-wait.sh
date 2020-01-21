@@ -5,7 +5,7 @@
 #      * the /starchat folder to be present and writable
 
 if [ -n "$ES_CERTIFICATE" ]; then
-  echo -n "$ES_CERTIFICATE" | base64 -D > /starchat/es.p12
+  echo -n "$ES_CERTIFICATE" | base64 -d > /starchat/es.p12
 fi
 
 "$(dirname $0)"/wait-for-it.sh "$@"
