@@ -13,7 +13,7 @@
             "failureValue" : "",
             "successValue" : "",
             "action" : "",
-            "actionInput" : {},
+            "actionInput" : [{}],
             "executionOrder" : 1,
             "stateData" : {}
          }
@@ -34,7 +34,7 @@
             "stateData" : {},
             "action" : "",
             "successValue" : "",
-            "actionInput" : {}
+            "actionInput" : [{}]
          },
          "score" : 0
       },
@@ -51,7 +51,7 @@
             "stateData" : {},
             "successValue" : "",
             "action" : "",
-            "actionInput" : {}
+            "actionInput" : [{}]
          }
       },
       {
@@ -64,7 +64,7 @@
             "analyzer" : "bor(vOneKeyword(\"contribute\"))",
             "stateData" : {},
             "executionOrder" : 1,
-            "actionInput" : {},
+            "actionInput" : [{}],
             "action" : "",
             "successValue" : ""
          },
@@ -78,7 +78,7 @@
             "state" : "create_es_indexes",
             "analyzer" : "band(vOneKeyword(\"create\"), bor(vOneKeyword(\"index.*\"), vOneKeyword(\"indic.*\")))",
             "failureValue" : "",
-            "actionInput" : {},
+            "actionInput" : [{}],
             "action" : "",
             "successValue" : "",
             "executionOrder" : 1,
@@ -91,7 +91,7 @@
          "document" : {
             "executionOrder" : 1,
             "stateData" : {},
-            "actionInput" : {},
+            "actionInput" : [{}],
             "action" : "",
             "successValue" : "",
             "failureValue" : "",
@@ -112,7 +112,7 @@
             "failureValue" : "",
             "action" : "",
             "successValue" : "",
-            "actionInput" : {},
+            "actionInput" : [{}],
             "executionOrder" : 1,
             "stateData" : {}
          },
@@ -121,7 +121,7 @@
       {
          "score" : 0,
          "document" : {
-            "actionInput" : {},
+            "actionInput" : [{}],
             "successValue" : "",
             "action" : "",
             "executionOrder" : 1,
@@ -146,7 +146,7 @@
             "stateData" : {},
             "action" : "",
             "successValue" : "",
-            "actionInput" : {}
+            "actionInput" : [{}]
          },
          "score" : 0
       },
@@ -165,13 +165,13 @@
             "stateData" : {
                "verification" : "did you mean you can't access to your account?"
             },
-            "actionInput" : {
+            "actionInput" : [{
                "None of the above" : "start",
                "I want to call an operator" : "call_operator",
                "Account locked" : "account_locked",
                "Specify your problem" : "specify_problem",
                "Forgot Password" : "forgot_password"
-            },
+            }],
             "successValue" : "eval(show_buttons)",
             "action" : "show_buttons"
          },
@@ -187,7 +187,7 @@
             "failureValue" : "",
             "action" : "",
             "successValue" : "",
-            "actionInput" : {},
+            "actionInput" : [{}],
             "executionOrder" : 1,
             "stateData" : {}
          },
@@ -204,7 +204,7 @@
             "failureValue" : "",
             "action" : "",
             "successValue" : "",
-            "actionInput" : {},
+            "actionInput" : [{}],
             "stateData" : {},
             "executionOrder" : 1
          }
@@ -214,7 +214,7 @@
          "document" : {
             "executionOrder" : 1,
             "stateData" : {},
-            "actionInput" : {},
+            "actionInput" : [{}],
             "action" : "",
             "successValue" : "",
             "failureValue" : "",
@@ -238,7 +238,7 @@
             "stateData" : {},
             "successValue" : "",
             "action" : "",
-            "actionInput" : {}
+            "actionInput" : [{}]
          }
       },
       {
@@ -251,7 +251,7 @@
             "analyzer" : "bor(band(vOneKeyword(\"open\"), vOneKeyword(\"source\")), vOneKeyword(\"opensource\"), vOneKeyword(\"licence\"))",
             "executionOrder" : 1,
             "stateData" : {},
-            "actionInput" : {},
+            "actionInput" : [{}],
             "action" : "",
             "successValue" : ""
          },
@@ -267,7 +267,7 @@
             "analyzer" : "band(vOneKeyword(\"load.*\"), bor(vOneKeyword(\"config.*\"), band(vOneKeyword(\"decision\"), vOneKeyword(\"table\"))), vOneKeyword(\"file.*\"))",
             "executionOrder" : 1,
             "stateData" : {},
-            "actionInput" : {},
+            "actionInput" : [{}],
             "action" : "",
             "successValue" : ""
          },
@@ -278,7 +278,7 @@
          "document" : {
             "successValue" : "",
             "action" : "",
-            "actionInput" : {},
+            "actionInput" : [{}],
             "executionOrder" : 1,
             "stateData" : {},
             "analyzer" : "band(bor(vOneKeyword(\"start\"), vOneKeyword(\"quickstart\")), vOneKeyword(\"starchat\"))",
@@ -292,10 +292,10 @@
       {
          "score" : 0,
          "document" : {
-            "actionInput" : {
+            "actionInput" : [{
                "Terrible" : "terrible_feedback",
                "Excellent" : "excellent_feedback"
-            },
+            }],
             "successValue" : "eval(show_buttons)",
             "action" : "show_buttons",
             "stateData" : {},
@@ -310,7 +310,7 @@
       },
       {
          "document" : {
-            "actionInput" : {},
+            "actionInput" : [{}],
             "successValue" : "",
             "action" : "",
             "executionOrder" : 1,

@@ -16,7 +16,11 @@ import scala.concurrent.duration._
 object SendEmailSmtp extends DtAction {
   override def apply(indexName: String, stateName: String, actionInput: Seq[Map[String, String]]): DtActionResult = {
 
-    val parameters = actionInputToMap(actionInput)
+    val parameters = actionInput.headOption match {
+      case Some(p) => p
+      case _ => throw DtActionException("arguments map not provided")
+    }
+
     val host: String = parameters.get("host") match {
       case Some(v) => v
       case _ => throw DtActionException("Field missing on SendEmailSmtp Action: host")

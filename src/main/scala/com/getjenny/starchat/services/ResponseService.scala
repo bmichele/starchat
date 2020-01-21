@@ -226,8 +226,12 @@ object ResponseService extends AbstractDataService {
   private[this] def replaceActionInput(actionInput: Seq[Map[String, String]],
                                        values: Map[String, String]): Seq[Map[String, String]] = {
     actionInput.map { input =>
-      input.mapValues { inputValue =>
-        values.foldLeft(inputValue) { case(acc, (key, value)) => acc.replaceAll("%" + key + "%", value) }
+      input.map { case(mapInputKey, mapInputValue) =>
+        values.foldLeft((mapInputKey, mapInputValue)) {
+          case((accKey, accVal), (replKey, replValue)) =>
+            (accKey.replaceAll("%" + replKey + "%", replValue),
+              accVal.replaceAll("%" + replKey + "%", replValue))
+        }
       }
     }
   }

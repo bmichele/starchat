@@ -28,7 +28,10 @@ object SendEmailGJ extends DtAction {
       throw DtActionException("Action SendEmailGJ is disabled")
     }
 
-    val parameters = actionInputToMap(actionInput)
+    val parameters = actionInput.headOption match {
+      case Some(p) => p
+      case _ => throw DtActionException("arguments map not provided")
+    }
 
     val mailer = Mailer(host, port)
       .auth(true)

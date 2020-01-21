@@ -180,11 +180,8 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
 
     val actionInputBuilder: XContentBuilder = builder.startArray("action_input")
     document.actionInput.foreach { actionInputItem =>
-      val key = actionInputItem.get("key")
-      val value = actionInputItem.get("value")
       val obj = actionInputBuilder.startObject()
-      obj.field("key", key)
-      obj.field("value", value)
+      actionInputItem.map{ case(key, value) => obj.field(key, value) }
       obj.endObject()
     }
     actionInputBuilder.endArray()
