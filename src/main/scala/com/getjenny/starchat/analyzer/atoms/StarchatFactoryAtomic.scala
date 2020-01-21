@@ -48,7 +48,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "checkDate",
     "weather",
     "submitHubspot",
-    "httpRequest"
+    "httpRequest",
+    "checkMultipleDaysOfWeek"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
@@ -89,6 +90,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "submitHubspot" => new HttpRequestAtomic(argument, restrictedArgs) with SubmitHubspotVariableManager
     case "weather" => new HttpRequestAtomic(argument, restrictedArgs) with WeatherVariableManager
     case "checkDate" => new CheckDateAtomic(argument, restrictedArgs)
+    case "checkMultipleDaysOfWeek" => new CheckMultipleDaysOfWeekAtomic(argument,restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }
 }
