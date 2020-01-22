@@ -4,6 +4,7 @@ import com.getjenny.analyzer.expressions.AnalyzersData
 import com.getjenny.analyzer.util.Time
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, Permissions, User}
+import scalaz.Scalaz._
 
 class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
 
@@ -61,23 +62,6 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
   }
 
   "CheckMultipleDaysOfWeek Atomic" should {
-    "fail when daylist argument contains out of range items" in {
-      val evaluateRequest: AnalyzerEvaluateRequest =
-        AnalyzerEvaluateRequest(
-          query = "user query unused",
-          analyzer = """band(checkMultipleDaysOfWeek("[1,10]","CET"))""",
-          data = Option {
-            AnalyzersData()
-          }
-        )
-
-      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-      }
-    }
-  }
-
-  "CheckMultipleDaysOfWeek Atomic" should {
     "fail when daylist is not well formatted" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
@@ -115,7 +99,7 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
     "return 0.0 when the current weekday is not included in the daylist" in {
       val allWeekDays: List[Int] = 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: Nil
       // remove current weekday from the list
-      val allWeekDaysExcludedToday = allWeekDays.filter(day => day != Time.dayOfWeekInt("CET"))
+      val allWeekDaysExcludedToday = allWeekDays.filter(day => day =/= Time.dayOfWeekInt("CET"))
       val analyzer = """band(checkMultipleDaysOfWeek("[""" + allWeekDaysExcludedToday.mkString(",") + """]","CET"))"""
 
       val evaluateRequest: AnalyzerEvaluateRequest =
