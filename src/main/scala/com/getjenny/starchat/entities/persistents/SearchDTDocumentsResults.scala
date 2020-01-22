@@ -98,7 +98,7 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
 
     val actionInput: Seq[Map[String, String]] = source.get("action_input") match {
       case Some(t) => t.asInstanceOf[util.List[util.HashMap[String, String]]]
-        .asScala.asInstanceOf[Seq[Map[String, String]]]
+        .asScala.map(_.asScala.toMap)
       case Some(null) | None => Seq[Map[String, String]]()
     }
 

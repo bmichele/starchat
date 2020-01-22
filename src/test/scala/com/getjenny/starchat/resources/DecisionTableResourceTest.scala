@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCode
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
+import com.getjenny.starchat.services.DecisionTableService
 
 class DecisionTableResourceTest extends TestEnglishBase {
 
@@ -51,7 +52,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         queries = List(),
         bubble = "",
         action = "",
-        actionInput = Seq.empty[Map[String, String]],
+        actionInput = List.empty[Map[String, String]],
         stateData = Map(),
         successValue = "",
         failureValue = "",
@@ -67,7 +68,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         queries = List(),
         bubble = "Never tell your password to anyone!",
         action = "",
-        actionInput = Seq.empty[Map[String, String]],
+        actionInput = List.empty[Map[String, String]],
         stateData = Map(),
         successValue = "",
         failureValue = "",
@@ -106,7 +107,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
           "don't remember the password"),
         bubble = "Hello %name%, how can I help you?",
         action = "show_button",
-        actionInput = Seq(Map("text to be shown on button" -> "password_recovery")),
+        actionInput = List(Map("text to be shown on button" -> "password_recovery")),
         stateData = Map("url" -> "www.getjenny.com"),
         successValue = "eval(show_buttons)",
         failureValue = "dont_understand",
@@ -438,7 +439,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
           "don't remember the password"),
         bubble = "Hello %name%, how can I help you?|Hello %name%, ask me anything!",
         action = "show_button",
-        actionInput = Seq(Map("text to be shown on button" -> "password_recovery")),
+        actionInput = List(Map("text to be shown on button" -> "password_recovery")),
         stateData = Map("url" -> "www.getjenny.com"),
         successValue = "eval(show_buttons)",
         failureValue = "dont_understand",
@@ -473,6 +474,97 @@ class DecisionTableResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "preserve actionInput order" in {
+      val decisionTableRequest = DTDocumentCreate(
+        state = "forgot_password",
+        executionOrder = 0,
+        maxStateCount = 0,
+        analyzer = "reinfConjunction(bor(vOneKeyword(\"forgot\"), vOneKeyword(\"don't remember\")), bor(vOneKeyword(\"password\")))",
+        queries = List("I forgot my password",
+          "my password is wrong",
+          "don't remember the password"),
+        bubble = "Hello how can I help you?",
+        action = "show_button",
+        actionInput = List(Map("action1" -> "action1"), Map("action2" -> "action2")),
+        stateData = Map("url" -> "www.getjenny.com"),
+        successValue = "eval(show_buttons)",
+        failureValue = "dont_understand",
+        evaluationClass = Some("default"),
+        version = None
+      )
+
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val request = ResponseRequestIn(conversationId = "conv_12131",
+        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
+        )),
+        state = None,
+        data = Some(Map("number" -> "5", "action" -> "test")),
+        threshold = Some(0),
+        evaluationClass = None,
+        maxResults = Some(1),
+        searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
+      )
+
+      Post("/index_getjenny_english_0/get_next_response", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[ResponseRequestOut]]
+        val headResponseRequestOut: ResponseRequestOut = response.headOption.getOrElse(fail)
+        headResponseRequestOut.actionInput.head shouldEqual Map("action1" -> "action1")
+        headResponseRequestOut.actionInput.tail.head shouldEqual Map("action2" -> "action2")
+      }
+    }
+  }
+
+  it should {
+    "return an HTTP code 200  and returning a replaced dictionary" in {
+      val decisionTableRequest = DTDocumentCreate(
+        state = "forgot_password",
+        executionOrder = 0,
+        maxStateCount = 0,
+        analyzer = "reinfConjunction(bor(vOneKeyword(\"forgot\"), vOneKeyword(\"don't remember\")), bor(vOneKeyword(\"password\")))",
+        queries = List("I forgot my password",
+          "my password is wrong",
+          "don't remember the password"),
+        bubble = "Hello how can I help you?",
+        action = "show_button",
+        actionInput = List(Map("text to be shown on button number: %number%" -> "test action %action%")),
+        stateData = Map("url" -> "www.getjenny.com"),
+        successValue = "eval(show_buttons)",
+        failureValue = "dont_understand",
+        evaluationClass = Some("default"),
+        version = None
+      )
+
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val request = ResponseRequestIn(conversationId = "conv_12131",
+        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
+        )),
+        state = None,
+        data = Some(Map("number" -> "5", "action" -> "test")),
+        threshold = Some(0),
+        evaluationClass = None,
+        maxResults = Some(1),
+        searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
+      )
+
+      Post("/index_getjenny_english_0/get_next_response", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[ResponseRequestOut]]
+        val headResponseRequestOut: ResponseRequestOut = response.headOption.getOrElse(fail)
+        headResponseRequestOut.actionInput.head shouldEqual Map("text to be shown on button number: 5" -> "test action test")
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 when deleting a document" in {
       Delete("/index_getjenny_english_0/decisiontable?id=forgot_password&refresh=1") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -481,7 +573,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         headDeleteDocumentResult.index should be ("index_english.state")
         headDeleteDocumentResult.id should be ("forgot_password")
         headDeleteDocumentResult.found should be (true)
-        headDeleteDocumentResult.version should be (5)
+        headDeleteDocumentResult.version should be (7)
       }
     }
   }
