@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, ReadS3DataVariableManager, WeatherVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.{Matchers, WordSpec}
 import scalaz.Scalaz._
@@ -359,6 +359,19 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       val atom = new HttpRequestAtomic(List("query=July 22nd, 1947"), systemConf) with ParseDateVariableManager
 
       val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
+
+    }*/
+
+   /* "test s3 atom" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List("s3-folder-id=demo","item-id=pippo"), systemConf) with ReadS3DataVariableManager
+
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
       result.data.extractedVariables.foreach(println)
     }*/
   }

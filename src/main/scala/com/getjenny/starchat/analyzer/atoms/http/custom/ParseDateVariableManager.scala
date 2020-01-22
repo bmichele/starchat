@@ -1,12 +1,17 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods, StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http._
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName._
 import scalaz.Scalaz._
 import spray.json._
 
+/**
+  * parseDate("query=July 22nd, 1947")
+  *
+  * If no date is found, score is 0
+  */
 
 trait ParseDateVariableManager extends GenericVariableManager {
 
@@ -27,10 +32,10 @@ trait ParseDateVariableManager extends GenericVariableManager {
         }
   }
 
-  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
+  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
     val queryStringTemplate = """{"text": "<query>"}"""
     substituteTemplate(queryStringTemplate, findProperty)
-      .map(queryString => JsonConf(queryString))
+      .map(queryString => Some(JsonConf(queryString)))
   }
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
@@ -40,22 +45,32 @@ trait ParseDateVariableManager extends GenericVariableManager {
 
 case class ParseDateOutput(
                              override val score: String = "extracted_date.score",
-                             status: String = "extracted_date.status",
+                             responseStatus: String = "extracted_date.status",
                              date: String = "extracted_date.date"
                            ) extends HttpAtomOutputConf {
 
-  override def bodyParser(body: String, contentType: String, status: String): Map[String, String] = {
-    val json = body.parseJson.asJsObject
-    val dateList = json.fields.get("dates").map {
-      case JsArray(dates) => dates.map(_.toString()).toArray
-      case _ => Array.empty[String]
-    }.getOrElse(Array.empty[String])
+  override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
+    if(StatusCodes.OK.equals(status)){
+      val json = body.parseJson.asJsObject
+      val dateList = json.fields.get("dates").map {
+        case JsArray(dates) => dates.map(_.toString()).toArray
+        case _ => Array.empty[String]
+      }.getOrElse(Array.empty[String])
 
-    Map(
-      date -> dateList.headOption.getOrElse(""),
-      score -> "1",
-      status -> status
-    )
+      val s = if (dateList.size > 0) "1" else "0"
+
+      Map(
+        date -> dateList.headOption.getOrElse(""),
+        score -> s,
+        responseStatus -> status.toString
+      )
+    } else {
+      Map(
+        score -> "0",
+        responseStatus -> status.toString
+      )
+    }
+
   }
 
 }

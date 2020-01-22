@@ -1,6 +1,6 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods, StatusCode}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.{VariableConfiguration, as}
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
@@ -29,10 +29,10 @@ trait WeatherVariableManager extends GenericVariableManager {
         }
   }
 
-  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
+  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
     val queryStringTemplate = "q=<location>&units=metric"
     substituteTemplate(queryStringTemplate, findProperty)
-      .map(queryString => QueryStringConf(queryString))
+      .map(queryString => Some(QueryStringConf(queryString)))
   }
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
@@ -48,7 +48,7 @@ case class WeatherOutput(override val score: String = "weather.score",
                          cloudPerc: String = "weather.cloud-perc"
                         ) extends HttpAtomOutputConf {
 
-  override def bodyParser(body: String, contentType: String, status: String): Map[String, String] = {
+  override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     val json = body.parseJson.asJsObject
     val weatherDescription: String = json.getFields("weather").headOption.flatMap {
       case JsArray(elements) => elements.headOption.flatMap(e => e.asJsObject.fields.get("description"))
@@ -63,7 +63,7 @@ case class WeatherOutput(override val score: String = "weather.score",
       umidity -> weatherHumidity.toString,
       cloudPerc -> weatherCloudPerc.toString,
       score -> "1",
-      weatherStatus -> status
+      weatherStatus -> status.toString
     )
   }
 

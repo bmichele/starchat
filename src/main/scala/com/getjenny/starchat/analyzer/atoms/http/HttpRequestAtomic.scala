@@ -39,7 +39,8 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
         } else {
           serviceCall(query, conf)
             .map { outputData =>
-              Result(1, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
+              val score = outputData.getOrElse(conf.outputConf.score, "0").toInt
+              Result(score, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
             }.getOrElse(Result(0, analyzerData
             .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> "0"))
           ))
@@ -88,7 +89,7 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
     val url = authQueryParam.map(auth => s"${configuration.urlConf.url}?$auth").getOrElse(configuration.urlConf.url)
 
     val (finalUrl, httpBody) = configuration.inputConf match {
-      case QueryStringConf(queryString) =>
+      case Some(QueryStringConf(queryString)) =>
         if (configuration.urlConf.contentType.equals(ContentTypes.`application/x-www-form-urlencoded`)) {
           url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
         } else {
@@ -98,7 +99,7 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
           }
           s"$url$querySeparator$queryString" -> HttpEntity.Empty
         }
-      case JsonConf(json) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
+      case Some(JsonConf(json)) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
       case _ => url -> HttpEntity.Empty
     }
 

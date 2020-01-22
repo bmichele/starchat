@@ -60,7 +60,7 @@ trait GenericVariableManager extends VariableManager {
     }
   }
 
-  def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
+  def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
     val isQueryString = configMap.get(inputQueryTemplate).nonEmpty
     val isJson = configMap.get(inputJson).nonEmpty
     (isQueryString, isJson) match {
@@ -69,14 +69,14 @@ trait GenericVariableManager extends VariableManager {
         configMap,
         findProperty) {
         QueryStringConf
-      }
+      }.map(_.some)
       case (false, true) =>
         extractInput[JsonConf](inputJson,
           configMap,
           findProperty) {
           JsonConf
-        }
-      case _ => Failure(NonEmptyList("Unable to find input configuration"))
+        }.map(_.some)
+      case _ => None.successNel[String]
     }
 
   }
@@ -95,10 +95,10 @@ trait GenericVariableManager extends VariableManager {
 case class GenericHttpOutputConf(contentType: String, statusCode: String, data: String, override val score: String)
   extends HttpAtomOutputConf {
 
-  override def bodyParser(body: String, contentType: String, status: String): Map[String, String] = {
+  override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     Map(
       contentType -> contentType,
-      statusCode -> status,
+      statusCode -> status.toString,
       data -> body,
       score -> "1"
     )

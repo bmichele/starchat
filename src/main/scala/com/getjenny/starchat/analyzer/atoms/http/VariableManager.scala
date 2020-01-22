@@ -1,6 +1,6 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse}
+import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse, StatusCode}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
@@ -25,7 +25,7 @@ trait VariableManager {
 
   def authenticationConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]]
 
-  def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf]
+  def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]]
 
   def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf]
 
@@ -162,7 +162,7 @@ object AtomVariableReader {
 
 case class HttpRequestAtomicConfiguration(urlConf: HttpAtomUrlConf,
                                           auth: Option[HttpAtomAuthConf],
-                                          inputConf: HttpAtomInputConf,
+                                          inputConf: Option[HttpAtomInputConf],
                                           outputConf: HttpAtomOutputConf)
 
 case class HttpAtomUrlConf(url: String, method: HttpMethod, contentType: ContentType)
@@ -204,10 +204,10 @@ trait HttpAtomOutputConf {
   def responseExtraction(response: HttpResponse)
                         (implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
     Unmarshaller.stringUnmarshaller(response.entity)
-      .map(bodyParser(_, response.entity.contentType.toString(), response.status.toString))
+      .map(bodyParser(_, response.entity.contentType.toString(), response.status))
   }
 
-  def bodyParser(body: String, contentType: String, status: String): Map[String, String]
+  def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String]
 
   def exists(extractedVariables: Map[String, String]): Boolean = {
     extractedVariables.contains(score)
