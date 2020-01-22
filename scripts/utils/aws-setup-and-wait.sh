@@ -5,7 +5,7 @@
 #      * the /starchat folder to be present and writable
 
 if [ -n "$ES_CERTIFICATE" ]; then
-  echo -n "$ES_CERTIFICATE" | base64 -D > /starchat/es.cert
+  echo -n "$ES_CERTIFICATE" | base64 -d > /starchat/es.p12
   keytool -import -trustcacerts -file /starchat/es.crt -keystore $JAVA_HOME/lib/security/cacerts -storepass changeit -alias "elastic"
 fi
 

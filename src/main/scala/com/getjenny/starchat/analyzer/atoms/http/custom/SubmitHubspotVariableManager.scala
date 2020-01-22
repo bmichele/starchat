@@ -1,9 +1,10 @@
-package com.getjenny.starchat.analyzer.atoms.http
+package com.getjenny.starchat.analyzer.atoms.http.custom
 
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import scalaz.Success
+import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
+import scalaz.Success
 
 trait SubmitHubspotVariableManager extends GenericVariableManager {
 
@@ -20,7 +21,7 @@ trait SubmitHubspotVariableManager extends GenericVariableManager {
       .map(queryString => QueryStringConf(queryString))
   }
 
-  override def outputConf(configuration: VariableConfiguration): AtomValidation[HttpAtomOutputConf] = {
+  override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     Success(GenericHttpOutputConf("submithubspot.content-type", "submithubspot.status", "submithubspot.data", "submithubspot.score"))
   }
 

@@ -21,12 +21,11 @@ object HttpRequestAtomicConstants {
     val inputQueryTemplate = "input-query-template"
     val inputJson = "input-json"
 
-    val system = "system."
     val temp = "A__temp__."
   }
 
   object Regex {
-    val baseRegex = s"(?:${ParameterName.temp})?(?:${ParameterName.system})?http-atom.[a-z0-9]{1,40}."
+    val baseRegex = s"(?:${ParameterName.temp})?http-atom.[a-z0-9]{1,40}."
     val genericVariableNameRegex: Regex = s"$baseRegex[a-z0-9_-]{1,40}".r
     val templateRegex: Regex = "(?<=\\<)(.*?)(?=\\>)".r
   }

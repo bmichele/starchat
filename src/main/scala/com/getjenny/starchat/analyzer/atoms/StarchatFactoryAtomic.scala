@@ -6,7 +6,8 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms._
 import com.getjenny.analyzer.interfaces._
-import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{SubmitHubspotVariableManager, WeatherVariableManager, ParseDateVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic}
 
 class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAtomic, Map[String, String]] {
 
@@ -48,11 +49,13 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "checkDate",
     "weather",
     "submitHubspot",
-    "httpRequest"
+    "httpRequest",
+    "parseDate",
+    "checkMultipleDaysOfWeek"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
-                  AbstractAtomic = name.filter(c => !c.isWhitespace ) match {
+  AbstractAtomic = name.filter(c => !c.isWhitespace) match {
     case "keyword" => new KeywordAtomic2(argument, restrictedArgs)
     case "vOneKeyword" => new KeywordAtomic(argument, restrictedArgs)
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
@@ -89,6 +92,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "submitHubspot" => new HttpRequestAtomic(argument, restrictedArgs) with SubmitHubspotVariableManager
     case "weather" => new HttpRequestAtomic(argument, restrictedArgs) with WeatherVariableManager
     case "checkDate" => new CheckDateAtomic(argument, restrictedArgs)
+    case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
+    case "checkMultipleDaysOfWeek" => new CheckMultipleDaysOfWeekAtomic(argument, restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }
 }
