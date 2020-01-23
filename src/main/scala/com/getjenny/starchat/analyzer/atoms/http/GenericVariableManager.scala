@@ -11,6 +11,8 @@ import scalaz.{Failure, NonEmptyList, Success}
 
 trait GenericVariableManager extends VariableManager {
 
+  override def configurationPrefix: Option[String] = None
+
   def extractInput[T](varName: String,
                       configMap: VariableConfiguration,
                       findProperty: String => Option[String])(buildInput: String => T): AtomValidation[T] = {

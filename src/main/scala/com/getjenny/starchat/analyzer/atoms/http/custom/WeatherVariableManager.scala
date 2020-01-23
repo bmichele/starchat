@@ -15,16 +15,7 @@ import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Para
 
 trait WeatherVariableManager extends GenericVariableManager {
 
-  override def confParamsList: List[String] = {
-    List("http-atom.weather.token",
-      "http-atom.weather.url",
-      "http-atom.weather.http-method",
-      "http-atom.weather.authorization-type",
-      "http-atom.weather.store-to",
-      "http-atom.weather.key",
-      "http-atom.weather.input-query-template"
-    )
-  }
+  override def configurationPrefix: Option[String] = Some("http-atom.weather")
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     WeatherOutput().successNel
