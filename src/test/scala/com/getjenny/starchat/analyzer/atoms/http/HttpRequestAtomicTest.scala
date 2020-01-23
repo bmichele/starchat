@@ -340,7 +340,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       validation shouldBe a [Success[_]]
     }
 
-    "test weather api call and do not execute call if done before" in {
+   /* "test weather api call and do not execute call if done before" in {
       val analyzerData = Map(
         "location" -> "Torino,IT"
       )
@@ -372,7 +372,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result2.data.extractedVariables.contains("weather.humidity") shouldBe true
       result2.data.extractedVariables.contains("weather.temperature") shouldBe true
       result2.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
-    }
+    }*/
 
     "create a valid weather atom configuration" in {
       val variableManager = new WeatherVariableManager {}
