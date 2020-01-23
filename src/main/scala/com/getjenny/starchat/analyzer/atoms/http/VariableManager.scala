@@ -7,6 +7,7 @@ import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConf
 import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.templateRegex
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants._
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName.parameterConstantList
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -17,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import scala.util.Try
 
-trait VariableManager {
+trait  VariableManager {
 
   type AtomValidation[T] = ValidationNel[String, T]
 
@@ -32,7 +33,11 @@ trait VariableManager {
 
   def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf]
 
-  def confParamsList: List[String] = Nil
+  def confParamsList: List[String] = configurationPrefix.map{
+    prefix => parameterConstantList.map(p => s"$prefix.$p")
+  }.getOrElse(Nil)
+
+  def configurationPrefix: Option[String]
 
   def validateAndBuild(arguments: List[String],
                        restrictedArgs: Map[String, String],

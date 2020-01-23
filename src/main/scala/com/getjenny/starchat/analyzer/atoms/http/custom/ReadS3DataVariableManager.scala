@@ -38,10 +38,7 @@ trait ReadS3DataVariableManager extends GenericVariableManager {
     *
     */
 
-
-  override def confParamsList: List[String] = List(
-    "http-atom.readS3Data.url",
-    "http-atom.readS3Data.http-method")
+  override def configurationPrefix: Option[String] = Some("http-atom.readS3Data")
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     val itemId = findProperty("item-id")

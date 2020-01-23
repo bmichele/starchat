@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, ReadS3DataVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.{Matchers, WordSpec}
 import scalaz.Scalaz._
@@ -340,7 +340,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       validation shouldBe a [Success[_]]
     }
 
-    /*"test weather api call and do not execute call if done before" in {
+    "test weather api call and do not execute call if done before" in {
       val analyzerData = Map(
         "location" -> "Torino,IT"
       )
@@ -372,7 +372,47 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result2.data.extractedVariables.contains("weather.humidity") shouldBe true
       result2.data.extractedVariables.contains("weather.temperature") shouldBe true
       result2.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
-    }*/
+    }
+
+    "create a valid weather atom configuration" in {
+      val variableManager = new WeatherVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val configuration = variableManager.validateAndBuild(List("location=Torino,IT"), systemConf, Map.empty, "")
+      configuration shouldBe a [Success[_]]
+      configuration.map(println)
+    }
+
+    "crate a valid date parser atom configuration " in {
+      val variableManager = new ParseDateVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val configuration = variableManager.validateAndBuild(List.empty, systemConf, Map.empty, "July 22nd, 1947")
+      configuration shouldBe a [Success[_]]
+      configuration.map(println)
+    }
+
+    "create a valid read s3 atom configuration" in {
+      val variableManager = new ReadS3DataVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val configuration = variableManager.validateAndBuild(List("s3-folder-id=demo","item-id=pippo"), systemConf, Map.empty, "")
+      configuration shouldBe a [Success[_]]
+      configuration.map(println)
+    }
+
+    "create a valid husbot atom configuration" in {
+      val variableManager = new SubmitHubspotVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val analyzerData = Map("http-atom.submithubspot.input-email" -> "emanuele@getjenny.com")
+
+      val configuration = variableManager.validateAndBuild(List.empty, systemConf, analyzerData, "")
+      configuration shouldBe a [Success[_]]
+      configuration.map(println)
+    }
 
     /*  "test call to hubspot" in {
 

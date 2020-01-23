@@ -11,10 +11,7 @@ import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Para
 
 trait WeatherVariableManager extends GenericVariableManager {
 
-
-  override def confParamsList: List[String] = {
-    List("http-atom.weather.token")
-  }
+  override def configurationPrefix: Option[String] = Some("http-atom.weather")
 
   override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
     val url = "https://api.openweathermap.org/data/2.5/weather"

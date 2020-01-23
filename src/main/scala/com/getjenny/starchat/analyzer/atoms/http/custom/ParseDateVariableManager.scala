@@ -15,18 +15,7 @@ import spray.json._
 
 trait ParseDateVariableManager extends GenericVariableManager {
 
-  override def confParamsList: List[String] = {
-    List("http-atom.parsedate.token",
-      "http-atom.parsedate.url",
-      "http-atom.parsedate.http-method",
-      "http-atom.parsedate.authorization-type",
-      "http-atom.parsedate.input-content-type",
-      "http-atom.parsedate.store-to",
-      "http-atom.parsedate.key",
-      "http-atom.parsedate.header",
-      "http-atom.parsedate.input-json"
-    )
-  }
+  override def configurationPrefix: Option[String] = Some("http-atom.parsedate")
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     ParseDateOutput().successNel
