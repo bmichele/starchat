@@ -12,7 +12,7 @@ import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Para
 trait WeatherVariableManager extends GenericVariableManager {
 
 
-  override def additionalArguments: List[String] = {
+  override def confParamsList: List[String] = {
     List("http-atom.weather.token")
   }
 

@@ -29,12 +29,12 @@ trait VariableManager {
 
   def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf]
 
-  def additionalArguments: List[String] = Nil
+  def confParamsList: List[String] = Nil
 
   def validateAndBuild(arguments: List[String],
                        restrictedArgs: Map[String, String],
                        extractedVariables: Map[String, String]): AtomValidation[HttpRequestAtomicConfiguration] = {
-    val allArguments = arguments ++ additionalArguments
+    val allArguments = arguments ++ confParamsList
     val keyValueSeparator = "="
     val additionalConfiguration = allArguments
       .filter(_.contains(keyValueSeparator))

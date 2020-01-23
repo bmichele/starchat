@@ -15,13 +15,12 @@ import spray.json._
 
 trait ParseDateVariableManager extends GenericVariableManager {
 
-  override def additionalArguments: List[String] = {
-    List("http-atom.parsedate.token")
-  }
-
-  override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
-    val url = "https://dateparser-0.getjenny.com/dateparser/search_dates"
-    HttpAtomUrlConf(url, HttpMethods.POST, ContentTypes.`application/json`).successNel
+  override def confParamsList: List[String] = {
+    List("http-atom.parsedate.token",
+      "http-atom.parsedate.url",
+      "http-atom.parsedate.http-method",
+      "http-atom.parsedate.input-content-type"
+    )
   }
 
   override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
@@ -32,6 +31,7 @@ trait ParseDateVariableManager extends GenericVariableManager {
         }
   }
 
+  //FIXME: shoudn't be called bodyConf ?
   override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
     val queryStringTemplate = """{"text": "<query>"}"""
     substituteTemplate(queryStringTemplate, findProperty)
@@ -57,7 +57,7 @@ case class ParseDateOutput(
         case _ => Array.empty[String]
       }.getOrElse(Array.empty[String])
 
-      val s = if (dateList.size > 0) "1" else "0"
+      val s = if(dateList.isEmpty) "0" else "1"
 
       Map(
         date -> dateList.headOption.getOrElse(""),

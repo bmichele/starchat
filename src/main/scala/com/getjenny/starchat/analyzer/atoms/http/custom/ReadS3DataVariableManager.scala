@@ -19,6 +19,8 @@ trait ReadS3DataVariableManager extends GenericVariableManager {
     *
     * s3-folder-id:   demoDishwasherProductIds
     * item-id:       XYZ1
+    * read-access-key-id:  AKIA...
+    * secret-access-key:   0jQL...
     *
     * Will provide the information {"price": "350.00", "model": "Foo"}
     *

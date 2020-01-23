@@ -351,17 +351,17 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         val result = atom.evaluate("", AnalyzersDataInternal(data = analyzerData))
         result.data.extractedVariables.foreach(println)
       }*/
-    /*"test dateParser" in {
+    "test dateParser" in {
 
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
 
-      val atom = new HttpRequestAtomic(List("query=July 22nd, 1947"), systemConf) with ParseDateVariableManager
+      val atom = new HttpRequestAtomic(List(), systemConf) with ParseDateVariableManager
 
-      val result = atom.evaluate("", AnalyzersDataInternal())
+      val result = atom.evaluate("July 22nd, 1947", AnalyzersDataInternal())
       println(result)
 
-    }*/
+    }
 
    /* "test s3 atom" in {
 
