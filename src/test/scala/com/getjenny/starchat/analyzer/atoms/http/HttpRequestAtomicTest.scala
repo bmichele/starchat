@@ -340,7 +340,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       validation shouldBe a [Success[_]]
     }
 
-    /*"test weather api call and do not execute call if done before" in {
+    "test weather api call and do not execute call if done before" in {
       val analyzerData = Map(
         "location" -> "Torino,IT"
       )
@@ -372,7 +372,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result2.data.extractedVariables.contains("weather.humidity") shouldBe true
       result2.data.extractedVariables.contains("weather.temperature") shouldBe true
       result2.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
-    }*/
+    }
 
     /*  "test call to hubspot" in {
 
@@ -384,7 +384,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         result.data.extractedVariables.foreach(println)
       }*/
 
-    /*"test dateParser" in {
+    "test dateParser" in {
 
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
@@ -394,7 +394,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       val result = atom.evaluate("July 22nd, 1947", AnalyzersDataInternal())
       println(result)
 
-    }*/
+    }
 
     /*"test s3 atom" in {
 

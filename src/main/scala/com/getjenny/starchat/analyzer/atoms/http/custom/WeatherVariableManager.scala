@@ -9,30 +9,21 @@ import spray.json._
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName._
 
+/**
+  * weather("location=London")
+  */
+
 trait WeatherVariableManager extends GenericVariableManager {
 
-
   override def confParamsList: List[String] = {
-    List("http-atom.weather.token")
-  }
-
-  override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
-    val url = "https://api.openweathermap.org/data/2.5/weather"
-    HttpAtomUrlConf(url, HttpMethods.GET, ContentTypes.NoContentType).successNel
-  }
-
-  override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
-    as[String](token)
-      .run(configMap)
-        .map{token =>
-          Some(ApiKeyAuth(key = "APPID", token = token, storeTo = StoreOption.QUERY))
-        }
-  }
-
-  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
-    val queryStringTemplate = "q=<location>&units=metric"
-    substituteTemplate(queryStringTemplate, findProperty)
-      .map(queryString => Some(QueryStringConf(queryString)))
+    List("http-atom.weather.token",
+      "http-atom.weather.url",
+      "http-atom.weather.http-method",
+      "http-atom.weather.authorization-type",
+      "http-atom.weather.store-to",
+      "http-atom.weather.key",
+      "http-atom.weather.input-query-template"
+    )
   }
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {

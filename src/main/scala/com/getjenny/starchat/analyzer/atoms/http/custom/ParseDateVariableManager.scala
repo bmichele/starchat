@@ -8,9 +8,11 @@ import scalaz.Scalaz._
 import spray.json._
 
 /**
-  * parseDate("query=July 22nd, 1947")
+  * parseDate()
   *
-  * If no date is found, score is 0
+  * If no date is found, score is 0.
+  *
+  * TODO ATM we are using the conf template which does not allow change of input-json. It should accept also other parameter (eg timezone, prefix)
   */
 
 trait ParseDateVariableManager extends GenericVariableManager {
