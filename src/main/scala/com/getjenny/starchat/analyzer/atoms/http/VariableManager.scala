@@ -21,6 +21,9 @@ trait VariableManager {
 
   type AtomValidation[T] = ValidationNel[String, T]
 
+  private[this] val keyValueSeparator = "="
+  private [this] val queryKeyword = "query"
+
   def urlConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf]
 
   def authenticationConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]]
@@ -33,18 +36,13 @@ trait VariableManager {
 
   def validateAndBuild(arguments: List[String],
                        restrictedArgs: Map[String, String],
-                       extractedVariables: Map[String, String]): AtomValidation[HttpRequestAtomicConfiguration] = {
-    val allArguments = arguments ++ confParamsList
-    val keyValueSeparator = "="
-    val additionalConfiguration = allArguments
-      .filter(_.contains(keyValueSeparator))
-      .map { x =>
-        val keyValue = x.split(keyValueSeparator)
-        keyValue(0) -> keyValue(1)
-      }.toMap
-    val runtimeConfiguration = additionalConfiguration ++ extractedVariables
+                       extractedVariables: Map[String, String],
+                       query: String): AtomValidation[HttpRequestAtomicConfiguration] = {
+    val allVariables = arguments ++ confParamsList
+    val argumentConfiguration = createArgumentConfiguration(allVariables)
+    val runtimeConfiguration = (argumentConfiguration ++ extractedVariables) + (queryKeyword -> query)
     val findProperty: String => Option[String] = findIn(systemConfiguration = restrictedArgs, runtimeConfiguration)
-    val configuration = configurationFromArguments(allArguments.map(_.split(keyValueSeparator)(0)), findProperty)
+    val configuration = variableConfiguration(allVariables.map(_.split(keyValueSeparator)(0)), findProperty)
 
     (urlConf(configuration, findProperty) |@|
       authenticationConf(configuration, findProperty) |@|
@@ -55,8 +53,17 @@ trait VariableManager {
     }
   }
 
-  def configurationFromArguments(arguments: List[String],
-                                 findProperty: String => Option[String]): VariableConfiguration = {
+  private[this] def createArgumentConfiguration(arguments: List[String]): Map[String, String] = {
+    arguments
+      .filter(_.contains(keyValueSeparator))
+      .map { x =>
+        val keyValue = x.split(keyValueSeparator)
+        keyValue(0) -> keyValue(1)
+      }.toMap
+  }
+
+  def variableConfiguration(arguments: List[String],
+                            findProperty: String => Option[String]): VariableConfiguration = {
     arguments
       .map(variable => variable.substring(variable.lastIndexOf('.') + 1, variable.length) -> findProperty(variable))
       .collect { case (key, Some(value)) => (key, value) }

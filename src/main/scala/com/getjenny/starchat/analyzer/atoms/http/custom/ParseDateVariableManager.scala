@@ -19,23 +19,13 @@ trait ParseDateVariableManager extends GenericVariableManager {
     List("http-atom.parsedate.token",
       "http-atom.parsedate.url",
       "http-atom.parsedate.http-method",
-      "http-atom.parsedate.input-content-type"
+      "http-atom.parsedate.authorization-type",
+      "http-atom.parsedate.input-content-type",
+      "http-atom.parsedate.store-to",
+      "http-atom.parsedate.key",
+      "http-atom.parsedate.header",
+      "http-atom.parsedate.input-json"
     )
-  }
-
-  override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
-    as[String](token)
-      .run(configMap)
-        .map{token =>
-          Some(ApiKeyAuth(key = "key", token = token, storeTo = StoreOption.HEADER))
-        }
-  }
-
-  //FIXME: shoudn't be called bodyConf ?
-  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
-    val queryStringTemplate = """{"text": "<query>"}"""
-    substituteTemplate(queryStringTemplate, findProperty)
-      .map(queryString => Some(JsonConf(queryString)))
   }
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {

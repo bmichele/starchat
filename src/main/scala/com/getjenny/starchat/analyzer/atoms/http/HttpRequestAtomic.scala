@@ -34,7 +34,7 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
     val extractedVariables = analyzerData.extractedVariables
 
 
-    validateAndBuild(arguments, restrictedArgs, extractedVariables) match {
+    validateAndBuild(arguments, restrictedArgs, extractedVariables, query) match {
       case Success(conf) =>
         if (conf.outputConf.exists(extractedVariables)) {
           Result(conf.outputConf.getScoreValue(extractedVariables).toDouble, analyzerData)

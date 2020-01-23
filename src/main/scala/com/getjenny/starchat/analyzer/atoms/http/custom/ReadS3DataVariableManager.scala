@@ -38,17 +38,10 @@ trait ReadS3DataVariableManager extends GenericVariableManager {
     *
     */
 
-  override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
-    val urlTemplate = "https://retrieve-data-atomic-mario.s3.eu-central-1.amazonaws.com/<s3-folder-id>/<item-id>"
-    substituteTemplate(urlTemplate, findProperty).map(x =>
-      HttpAtomUrlConf(x, HttpMethods.GET, ContentTypes.NoContentType)
-    )
-  }
 
-
-  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
-    None.successNel
-  }
+  override def confParamsList: List[String] = List(
+    "http-atom.readS3Data.url",
+    "http-atom.readS3Data.http-method")
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     val itemId = findProperty("item-id")
