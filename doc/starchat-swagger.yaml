@@ -3034,11 +3034,11 @@ components:
           example: {"url": "www.getjenny.com"}
         successValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function succeed
-          example: "eval(show_buttons)"
+          description: a state name for the client to set the next state in case the evaluated function succeed
+          example: "ask_feedback"
         failureValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function fail
+          description: a state name for the client to set the next state in case the evaluated function fail
           example: "dont_understand"
         evaluationClass:
           type: string
@@ -3098,11 +3098,11 @@ components:
           example: {"url": "www.getjenny.com"}
         successValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function succeed
-          example: "eval(show_buttons)"
+          description: a state name for the client to set the next state in case the evaluated function succeed
+          example: "show_buttons"
         failureValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function fail
+          description: a state name for the client to set the next state in case the evaluated function fail
           example: "dont_understand"
         evaluationClass:
           type: string
@@ -3360,11 +3360,11 @@ components:
           example: {"url": "www.getjenny.com"}
         successValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function succeed
-          example: "eval(show_buttons)"
+          description: a state name for the client to set the next state in case the evaluated function succeed
+          example: "ask_feedback"
         failureValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function fail
+          description: a state name for the client to set the next state in case the evaluated function fail
           example: "dont_understand"
         score:
           type: number
