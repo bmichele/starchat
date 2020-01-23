@@ -1,6 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse}
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
@@ -22,11 +23,11 @@ trait VariableManager {
 
   def urlConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf]
 
-  def authenticationConf(configuration: VariableConfiguration): AtomValidation[Option[HttpAtomAuthConf]]
+  def authenticationConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]]
 
   def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf]
 
-  def outputConf(configuration: VariableConfiguration): AtomValidation[HttpAtomOutputConf]
+  def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf]
 
   def additionalArguments: List[String] = Nil
 
@@ -43,12 +44,12 @@ trait VariableManager {
       }.toMap
     val runtimeConfiguration = additionalConfiguration ++ extractedVariables
     val findProperty: String => Option[String] = findIn(systemConfiguration = restrictedArgs, runtimeConfiguration)
-    val configuration = configurationFromArguments(arguments.map(_.split(keyValueSeparator)(0)), findProperty)
+    val configuration = configurationFromArguments(allArguments.map(_.split(keyValueSeparator)(0)), findProperty)
 
     (urlConf(configuration, findProperty) |@|
-      authenticationConf(configuration) |@|
+      authenticationConf(configuration, findProperty) |@|
       inputConf(configuration, findProperty) |@|
-      outputConf(configuration)
+      outputConf(configuration, findProperty)
       ) {
       (url, auth, qs, out) => HttpRequestAtomicConfiguration(url, auth, qs, out)
     }
@@ -62,18 +63,10 @@ trait VariableManager {
       .toMap
   }
 
-  protected final def clearVariableName(variableName: String): String = {
-    variableName
-      .replace(ParameterName.system, "")
-  }
-
-  protected final def findIn(systemConfiguration: Map[String, String], runtimeConfiguration: Map[String, Any])
+  protected final def findIn(systemConfiguration: Map[String, String], runtimeConfiguration: Map[String, String])
                             (key: String): Option[String] = {
-    if (key.contains(ParameterName.system)) {
-      systemConfiguration.get(clearVariableName(key))
-    } else {
-      runtimeConfiguration.get(clearVariableName(key)).map(_.toString)
-    }
+    systemConfiguration.get(key)
+      .orElse(runtimeConfiguration.get(key))
   }
 
   private[this] def evaluateTemplate(template: String,
@@ -209,7 +202,12 @@ trait HttpAtomOutputConf {
   val score: String
 
   def responseExtraction(response: HttpResponse)
-                        (implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]]
+                        (implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
+    Unmarshaller.stringUnmarshaller(response.entity)
+      .map(bodyParser(_, response.entity.contentType.toString(), response.status.toString))
+  }
+
+  def bodyParser(body: String, contentType: String, status: String): Map[String, String]
 
   def exists(extractedVariables: Map[String, String]): Boolean = {
     extractedVariables.contains(score)
