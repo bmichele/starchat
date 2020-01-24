@@ -215,11 +215,11 @@ object ResponseService extends AbstractDataService {
 
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
-    if (splittedBubble.length > 1) {
-      val r = new scala.util.Random
-      val randomIdx = r.nextInt(splittedBubble.length)
-      splittedBubble(randomIdx)
-    } else {
+      if (splittedBubble.length > 1) {
+        val r = new scala.util.Random
+        val randomIdx = r.nextInt(splittedBubble.length)
+        splittedBubble(randomIdx)
+      } else {
       bubble
     }
   }

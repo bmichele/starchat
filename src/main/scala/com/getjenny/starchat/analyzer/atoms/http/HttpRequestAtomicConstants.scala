@@ -21,6 +21,10 @@ object HttpRequestAtomicConstants {
     val inputQueryTemplate = "input-query-template"
     val inputJson = "input-json"
 
+    val parameterConstantList = List(url, httpMethod, inputContentType, authorizationType,
+      token, key, storeTo, username, password, outputContentType, outputStatus, outputData, outputScore,
+      inputQueryTemplate, inputJson)
+
     val temp = "A__temp__."
   }
 

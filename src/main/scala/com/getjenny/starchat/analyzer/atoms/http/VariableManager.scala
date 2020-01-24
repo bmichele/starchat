@@ -1,12 +1,13 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse}
+import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse, StatusCode}
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.templateRegex
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants._
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName.parameterConstantList
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
@@ -17,34 +18,36 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import scala.util.Try
 
-trait VariableManager {
+trait  VariableManager {
 
   type AtomValidation[T] = ValidationNel[String, T]
+
+  private[this] val keyValueSeparator = "="
+  private [this] val queryKeyword = "query"
 
   def urlConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf]
 
   def authenticationConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]]
 
-  def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf]
+  def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]]
 
   def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf]
 
-  def additionalArguments: List[String] = Nil
+  def confParamsList: List[String] = configurationPrefix.map{
+    prefix => parameterConstantList.map(p => s"$prefix.$p")
+  }.getOrElse(Nil)
+
+  def configurationPrefix: Option[String]
 
   def validateAndBuild(arguments: List[String],
                        restrictedArgs: Map[String, String],
-                       extractedVariables: Map[String, String]): AtomValidation[HttpRequestAtomicConfiguration] = {
-    val allArguments = arguments ++ additionalArguments
-    val keyValueSeparator = "="
-    val additionalConfiguration = allArguments
-      .filter(_.contains(keyValueSeparator))
-      .map { x =>
-        val keyValue = x.split(keyValueSeparator)
-        keyValue(0) -> keyValue(1)
-      }.toMap
-    val runtimeConfiguration = additionalConfiguration ++ extractedVariables
+                       extractedVariables: Map[String, String],
+                       query: String): AtomValidation[HttpRequestAtomicConfiguration] = {
+    val allVariables = arguments ++ confParamsList
+    val argumentConfiguration = createArgumentConfiguration(allVariables)
+    val runtimeConfiguration = (argumentConfiguration ++ extractedVariables) + (queryKeyword -> query)
     val findProperty: String => Option[String] = findIn(systemConfiguration = restrictedArgs, runtimeConfiguration)
-    val configuration = configurationFromArguments(allArguments.map(_.split(keyValueSeparator)(0)), findProperty)
+    val configuration = variableConfiguration(allVariables.map(_.split(keyValueSeparator)(0)), findProperty)
 
     (urlConf(configuration, findProperty) |@|
       authenticationConf(configuration, findProperty) |@|
@@ -55,8 +58,22 @@ trait VariableManager {
     }
   }
 
-  def configurationFromArguments(arguments: List[String],
-                                 findProperty: String => Option[String]): VariableConfiguration = {
+  /**
+  * This is useful when a specific http atom implementation allows passing parameter as arguments
+  * e.g weather atom builded with specific location paramter weather("location=London")
+  * override this returning an empty map if this behaviour is not needed
+  */
+  protected[this] def createArgumentConfiguration(arguments: List[String]): Map[String, String] = {
+    arguments
+      .filter(_.contains(keyValueSeparator))
+      .map { x =>
+        val keyValue = x.split(keyValueSeparator)
+        keyValue(0) -> keyValue(1)
+      }.toMap
+  }
+
+  def variableConfiguration(arguments: List[String],
+                            findProperty: String => Option[String]): VariableConfiguration = {
     arguments
       .map(variable => variable.substring(variable.lastIndexOf('.') + 1, variable.length) -> findProperty(variable))
       .collect { case (key, Some(value)) => (key, value) }
@@ -162,7 +179,7 @@ object AtomVariableReader {
 
 case class HttpRequestAtomicConfiguration(urlConf: HttpAtomUrlConf,
                                           auth: Option[HttpAtomAuthConf],
-                                          inputConf: HttpAtomInputConf,
+                                          inputConf: Option[HttpAtomInputConf],
                                           outputConf: HttpAtomOutputConf)
 
 case class HttpAtomUrlConf(url: String, method: HttpMethod, contentType: ContentType)
@@ -204,10 +221,10 @@ trait HttpAtomOutputConf {
   def responseExtraction(response: HttpResponse)
                         (implicit ec: ExecutionContext, materializer: Materializer): Future[Map[String, String]] = {
     Unmarshaller.stringUnmarshaller(response.entity)
-      .map(bodyParser(_, response.entity.contentType.toString(), response.status.toString))
+      .map(bodyParser(_, response.entity.contentType.toString(), response.status))
   }
 
-  def bodyParser(body: String, contentType: String, status: String): Map[String, String]
+  def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String]
 
   def exists(extractedVariables: Map[String, String]): Boolean = {
     extractedVariables.contains(score)

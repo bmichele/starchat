@@ -41,7 +41,6 @@ object DtActionAtomAdapter {
   private[this] val atomConfigurationBasePath = "starchat.atom-values"
   private[this] val systemConfiguration: Map[String, String] = SystemConfiguration
     .createMapFromPath(atomConfigurationBasePath)
-  private[this] val queryKeyword = "query"
 
   def apply(indexName: String, stateName: String, action: String, params: Seq[Map[String, String]], query: String): DtActionResult = {
     val command = action.stripPrefix(DtAction.analyzerActionPrefix)
@@ -57,7 +56,7 @@ object DtActionAtomAdapter {
     }
 
     starchatAnalyzer.map { analyzer =>
-      val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = allParams - queryKeyword))
+      val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = allParams))
       DtActionResult(result.score === 1,
         if (result.score === 0) 1 else 0,
         result.data.extractedVariables
