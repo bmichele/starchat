@@ -27,13 +27,13 @@ case class DTDocumentCreate(override val state: String,
                             queries: List[String],
                             bubble: String,
                             action: String,
-                            actionInput: Map[String, String],
+                            actionInput: Seq[Map[String, String]],
                             stateData: Map[String, String],
                             successValue: String,
                             failureValue: String,
                             evaluationClass: Option[String] = Some("default"),
                             version: Option[Long] = Some(0L)
-                     ) extends DTDocument
+                           ) extends DTDocument
 
 case class DTDocumentUpdate(override val state: String,
                             executionOrder: Option[Int],
@@ -42,7 +42,7 @@ case class DTDocumentUpdate(override val state: String,
                             queries: Option[List[String]],
                             bubble: Option[String],
                             action: Option[String],
-                            actionInput: Option[Map[String, String]],
+                            actionInput: Option[Seq[Map[String, String]]],
                             stateData: Option[Map[String, String]],
                             successValue: Option[String],
                             failureValue: Option[String],
@@ -96,10 +96,10 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       case None => ""
     }
 
-    val actionInput: Map[String, String] = source.get("action_input") match {
-      case Some(null) => Map[String, String]()
-      case Some(t) => t.asInstanceOf[util.HashMap[String, String]].asScala.toMap
-      case None => Map[String, String]()
+    val actionInput: Seq[Map[String, String]] = source.get("action_input") match {
+      case Some(t) => t.asInstanceOf[util.List[util.HashMap[String, String]]]
+        .asScala.map(_.asScala.toMap)
+      case Some(null) | None => Seq[Map[String, String]]()
     }
 
     val stateData: Map[String, String] = source.get("state_data") match {
@@ -125,18 +125,24 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
 
     val state = extractId(id)
 
-    val document: DTDocumentCreate = DTDocumentCreate(state = state, executionOrder = executionOrder,
+    val document: DTDocumentCreate = DTDocumentCreate(state = state,
+      executionOrder = executionOrder,
       maxStateCount = maxStateCount,
-      analyzer = analyzer, queries = queries, bubble = bubble,
-      action = action, actionInput = actionInput, stateData = stateData,
-      successValue = successValue, failureValue = failureValue,
-      evaluationClass = Some(evaluationClass), version = version
+      analyzer = analyzer,
+      queries = queries,
+      bubble = bubble,
+      action = action,
+      actionInput = actionInput,
+      stateData = stateData,
+      successValue = successValue,
+      failureValue = failureValue,
+      evaluationClass = Some(evaluationClass),
+      version = version
     )
 
     val searchDocument: SearchDTDocument = SearchDTDocument(score = score, document = document)
     (searchDocument, ngram)
   }
-
 
   override def fromGetResponse(response: List[GetResponse]): List[SearchDTDocumentsAndNgrams] = {
     response
@@ -172,9 +178,13 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
     builder.field("bubble", document.bubble)
     builder.field("action", document.action)
 
-    val actionInputBuilder: XContentBuilder = builder.startObject("action_input")
-    for ((k, v) <- document.actionInput) actionInputBuilder.field(k, v)
-    actionInputBuilder.endObject()
+    val actionInputBuilder: XContentBuilder = builder.startArray("action_input")
+    document.actionInput.foreach { actionInputItem =>
+      val obj = actionInputBuilder.startObject()
+      actionInputItem.map{ case(key, value) => obj.field(key, value) }
+      obj.endObject()
+    }
+    actionInputBuilder.endArray()
 
     val stateDataBuilder: XContentBuilder = builder.startObject("state_data")
     for ((k, v) <- document.stateData) stateDataBuilder.field(k, v)
@@ -211,9 +221,16 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
     document.action.foreach(x => builder.field("action", x))
     document.actionInput.foreach { x =>
       if (x.nonEmpty) {
-        val actionInputBuilder: XContentBuilder = builder.startObject("action_input")
-        for ((k, v) <- x) actionInputBuilder.field(k, v)
-        actionInputBuilder.endObject()
+        val actionInputBuilder: XContentBuilder = builder.startArray("action_input")
+        x.foreach { actionInputItem =>
+          val key = actionInputItem.get("key")
+          val value = actionInputItem.get("value")
+          val obj = actionInputBuilder.startObject()
+          obj.field("key", key)
+          obj.field("value", value)
+          obj.endObject()
+        }
+        actionInputBuilder.endArray()
       } else {
         builder.nullField("action_input")
       }

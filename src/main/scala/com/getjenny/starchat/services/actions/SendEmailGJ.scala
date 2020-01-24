@@ -22,10 +22,15 @@ object SendEmailGJ extends DtAction {
   val port: Int = config.getInt("starchat.actions.SendEmailGJ.port")
   val from: InternetAddress = new InternetAddress(config.getString("starchat.actions.SendEmailGJ.from"))
 
-  override def apply(indexName: String, stateName: String, params: Map[String, String]): DtActionResult = {
+  override def apply(indexName: String, stateName: String, actionInput: Seq[Map[String, String]]): DtActionResult = {
 
     if(!enabled) {
       throw DtActionException("Action SendEmailGJ is disabled")
+    }
+
+    val parameters = actionInput.headOption match {
+      case Some(p) => p
+      case _ => throw DtActionException("arguments map not provided")
     }
 
     val mailer = Mailer(host, port)
@@ -35,7 +40,7 @@ object SendEmailGJ extends DtAction {
 
     var envelope: Envelope = Envelope.from(from)
 
-    params.get("to") match {
+    parameters.get("to") match {
       case Some(v) =>
         v.replace(" ", "").split(";")
           .map(addr => new InternetAddress(addr))
@@ -45,29 +50,29 @@ object SendEmailGJ extends DtAction {
       case _ =>
     }
 
-    params.get("replyTo") match {
+    parameters.get("replyTo") match {
       case Some(v) => envelope = envelope.replyTo(new InternetAddress(v))
       case _ =>
     }
 
-    params.get("cc") match {
+    parameters.get("cc") match {
       case Some(v) => v.replace(" ", "").split(";")
         .map(addr => new InternetAddress(addr))
         .foreach(addr => envelope = envelope.cc(addr))
       case _ =>
     }
 
-    params.get("bcc") match {
+    parameters.get("bcc") match {
       case Some(v) => v.replace(" ", "").split(";")
         .map(addr => new InternetAddress(addr))
         .foreach(addr => envelope = envelope.bcc(addr))
       case _ =>
     }
 
-    val html: String = params.getOrElse("html", "false")
-    val body: String = params.getOrElse("body", "")
+    val html: String = parameters.getOrElse("html", "false")
+    val body: String = parameters.getOrElse("body", "")
 
-    params.get("subject") match {
+    parameters.get("subject") match {
       case Some(v) => envelope = envelope.subject(v)
       case _ => throw DtActionException("Field missing on SendEmailGJ Action: subject")
     }
