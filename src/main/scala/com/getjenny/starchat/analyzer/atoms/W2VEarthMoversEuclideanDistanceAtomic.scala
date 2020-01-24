@@ -33,7 +33,7 @@ class W2VEarthMoversEuclideanDistanceAtomic(val arguments: List[String],
   }
 
   val termService: TermService.type = TermService
-
+  //FIXME use context to get index_name
   val originalIndexName: String = restrictedArgs("index_name")
   val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 

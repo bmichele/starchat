@@ -32,7 +32,7 @@ class W2VCosineWordAtomic(arguments: List[String], restrictedArgs: Map[String, S
   override def toString: String = "similar(\"" + word + "\")"
 
   val termService: TermService.type = TermService
-
+  //FIXME use context to get index_name
   val originalIndexName: String = restrictedArgs("index_name")
   val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 
