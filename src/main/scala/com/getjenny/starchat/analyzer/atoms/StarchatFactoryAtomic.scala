@@ -6,7 +6,7 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms._
 import com.getjenny.analyzer.interfaces._
-import com.getjenny.starchat.analyzer.atoms.http.custom.{SubmitHubspotVariableManager, WeatherVariableManager, ParseDateVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
 import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic}
 
 class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAtomic, Map[String, String]] {
@@ -51,6 +51,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "submitHubspot",
     "httpRequest",
     "parseDate",
+    "readS3Data",
     "checkMultipleDaysOfWeek"
   )
 
@@ -93,6 +94,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "weather" => new HttpRequestAtomic(argument, restrictedArgs) with WeatherVariableManager
     case "checkDate" => new CheckDateAtomic(argument, restrictedArgs)
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
+    case "readS3Data" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
     case "checkMultipleDaysOfWeek" => new CheckMultipleDaysOfWeekAtomic(argument, restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }

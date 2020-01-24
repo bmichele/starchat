@@ -1,37 +1,25 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
+import akka.http.scaladsl.model.{ContentTypes, HttpMethods, StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http._
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName._
 import scalaz.Scalaz._
 import spray.json._
 
+/**
+  * parseDate()
+  *
+  * If no date is found, score is 0.
+  *
+  * TODO ATM we are using the conf template which does not allow change of input-json. It should accept also other parameter (eg timezone, prefix)
+  */
 
 trait ParseDateVariableManager extends GenericVariableManager {
 
-  override def additionalArguments: List[String] = {
-    List("http-atom.parsedate.token")
-  }
+  override def configurationPrefix: Option[String] = Some("http-atom.parsedate")
 
-  override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
-    val url = "https://dateparser-0.getjenny.com/dateparser/search_dates"
-    HttpAtomUrlConf(url, HttpMethods.POST, ContentTypes.`application/json`).successNel
-  }
-
-  override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
-    as[String](token)
-      .run(configMap)
-        .map{token =>
-          Some(ApiKeyAuth(key = "key", token = token, storeTo = StoreOption.HEADER))
-        }
-  }
-
-  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
-    val queryStringTemplate = """{"text": "<query>"}"""
-    substituteTemplate(queryStringTemplate, findProperty)
-      .map(queryString => JsonConf(queryString))
-  }
+  override def createArgumentConfiguration(arguments: List[String]): Map[String, String] = Map.empty
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     ParseDateOutput().successNel
@@ -40,22 +28,32 @@ trait ParseDateVariableManager extends GenericVariableManager {
 
 case class ParseDateOutput(
                              override val score: String = "extracted_date.score",
-                             status: String = "extracted_date.status",
+                             responseStatus: String = "extracted_date.status",
                              date: String = "extracted_date.date"
                            ) extends HttpAtomOutputConf {
 
-  override def bodyParser(body: String, contentType: String, status: String): Map[String, String] = {
-    val json = body.parseJson.asJsObject
-    val dateList = json.fields.get("dates").map {
-      case JsArray(dates) => dates.map(_.toString()).toArray
-      case _ => Array.empty[String]
-    }.getOrElse(Array.empty[String])
+  override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
+    if(StatusCodes.OK.equals(status)){
+      val json = body.parseJson.asJsObject
+      val dateList = json.fields.get("dates").map {
+        case JsArray(dates) => dates.map(_.toString()).toArray
+        case _ => Array.empty[String]
+      }.getOrElse(Array.empty[String])
 
-    Map(
-      date -> dateList.headOption.getOrElse(""),
-      score -> "1",
-      status -> status
-    )
+      val s = if(dateList.isEmpty) "0" else "1"
+
+      Map(
+        date -> dateList.headOption.getOrElse(""),
+        score -> s,
+        responseStatus -> status.toString
+      )
+    } else {
+      Map(
+        score -> "0",
+        responseStatus -> status.toString
+      )
+    }
+
   }
 
 }

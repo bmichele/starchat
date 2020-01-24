@@ -15,10 +15,10 @@ trait SubmitHubspotVariableManager extends GenericVariableManager {
     HttpAtomUrlConf(url, HttpMethods.POST, ContentTypes.`application/x-www-form-urlencoded`).successNel
   }
 
-  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomInputConf] = {
+  override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
     val queryStringTemplate = "email=<http-atom.submithubspot.input-email>"
     substituteTemplate(queryStringTemplate, findProperty)
-      .map(queryString => QueryStringConf(queryString))
+      .map(queryString => Some(QueryStringConf(queryString)))
   }
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
