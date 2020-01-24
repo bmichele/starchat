@@ -39,13 +39,14 @@ object DtAction {
 
 object DtActionAtomAdapter {
   private[this] val atomConfigurationBasePath = "starchat.atom-values"
-  private[this] val systemConfiguration: Map[String, String] = SystemConfiguration
+  private[this] val restrictedArgs: Map[String, String] = SystemConfiguration
     .createMapFromPath(atomConfigurationBasePath)
 
   def apply(indexName: String, stateName: String, action: String, params: Map[String, String], query: String): DtActionResult = {
     val command = action.stripPrefix(DtAction.analyzerActionPrefix)
 
-    val starchatAnalyzer = Try(new StarChatAnalyzer(command, systemConfiguration)) match {
+    //FIXME use context to pass index_name
+    val starchatAnalyzer = Try(new StarChatAnalyzer(command, restrictedArgs + ("index_name" -> indexName))) match {
       case Success(analyzerObject) =>
         log.debug("Analyzer successfully built index(" + indexName + ") state(" + stateName + ")")
         Some(analyzerObject)

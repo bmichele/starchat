@@ -38,6 +38,7 @@ class W2VCosineSentenceAtomic(val arguments: List[String],
   override def toString: String = "similar(\"" + sentence + "\")"
   val isEvaluateNormalized: Boolean = true
 
+  //FIXME use context to get index_name
   val originalIndexName: String = restrictedArgs("index_name")
 
   val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)

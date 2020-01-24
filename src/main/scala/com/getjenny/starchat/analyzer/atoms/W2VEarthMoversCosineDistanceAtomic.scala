@@ -40,7 +40,7 @@ class W2VEarthMoversCosineDistanceAtomic(val arguments: List[String], restricted
 
   override def toString: String = "similarCosEmd(\"" + sentence + "\")"
   val isEvaluateNormalized: Boolean = true
-
+  //FIXME use context to get index_name
   val originalIndexName: String = restrictedArgs("index_name")
   val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 

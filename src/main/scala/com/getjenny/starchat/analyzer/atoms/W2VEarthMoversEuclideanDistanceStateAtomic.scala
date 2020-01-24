@@ -42,7 +42,7 @@ class W2VEarthMoversEuclideanDistanceStateAtomic(val arguments: List[String], re
   override def toString: String = "similarEucEmdState(\"" + state + "\")"
 
   val analyzerService: AnalyzerService.type = AnalyzerService
-
+  //FIXME use context to get index_name
   val originalIndexName: String = restrictedArgs("index_name")
   val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 
