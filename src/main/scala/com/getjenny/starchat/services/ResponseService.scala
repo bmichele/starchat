@@ -191,7 +191,7 @@ object ResponseService extends AbstractDataService {
     }.toList
       .sortWith(_.score > _.score)
       .map { document =>
-        executeAction(indexName, document = document)
+        executeAction(indexName, document = document, userText)
       }
 
     if (dtDocumentsList.isEmpty) {

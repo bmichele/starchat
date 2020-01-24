@@ -481,7 +481,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         headDeleteDocumentResult.index should be ("index_english.state")
         headDeleteDocumentResult.id should be ("forgot_password")
         headDeleteDocumentResult.found should be (true)
-        headDeleteDocumentResult.version should be (5)
+        headDeleteDocumentResult.version should be (6)
       }
     }
   }
