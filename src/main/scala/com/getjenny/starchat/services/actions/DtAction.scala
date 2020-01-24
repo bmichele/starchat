@@ -49,10 +49,10 @@ object DtActionAtomAdapter {
 
     val starchatAnalyzer = Try(new StarChatAnalyzer(command, systemConfiguration)) match {
       case Success(analyzerObject) =>
-        log.debug("Analyzer successfully built index(" + indexName + ") state(" + stateName + ")")
+        log.debug(s"Analyzer successfully built index($indexName) state($stateName)")
         Some(analyzerObject)
       case Failure(e) =>
-        log.error(e, "Error building analyzer index(" + indexName + ") state(" + stateName + ")")
+        log.error(e, s"Error building analyzer index($indexName) state($stateName)")
         None
     }
 
