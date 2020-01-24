@@ -27,11 +27,11 @@ object DtAction {
   val actionPrefix = "com.getjenny.starchat.actions."
   val analyzerActionPrefix = "com.getjenny.analyzer.analyzers.DefaultParser "
 
-  def apply(indexName: String, stateName: String, action: String, params: Seq[Map[String, String]]): DtActionResult = {
+  def apply(indexName: String, stateName: String, action: String, params: Seq[Map[String, String]], query: String): DtActionResult = {
     action match {
       case "com.getjenny.starchat.actions.SendEmailSmtp" => SendEmailSmtp(indexName, stateName, params)
       case "com.getjenny.starchat.actions.SendEmailGJ" => SendEmailGJ(indexName, stateName, params)
-      case action if action.startsWith(analyzerActionPrefix) => DtActionAtomAdapter(indexName, stateName, action, params)
+      case action if action.startsWith(analyzerActionPrefix) => DtActionAtomAdapter(indexName, stateName, action, params, query)
       case _ => throw DtActionException("Action not implemented: " + action)
     }
   }
@@ -43,11 +43,9 @@ object DtActionAtomAdapter {
     .createMapFromPath(atomConfigurationBasePath)
   private[this] val queryKeyword = "query"
 
-  def apply(indexName: String, stateName: String, action: String, params: Seq[Map[String, String]]): DtActionResult = {
+  def apply(indexName: String, stateName: String, action: String, params: Seq[Map[String, String]], query: String): DtActionResult = {
     val command = action.stripPrefix(DtAction.analyzerActionPrefix)
     val allParams = if(params.isEmpty) Map.empty[String, String] else params.reduce(_ ++ _)
-
-    val query = allParams.getOrElse(queryKeyword, "")
 
     val starchatAnalyzer = Try(new StarChatAnalyzer(command, systemConfiguration)) match {
       case Success(analyzerObject) =>

@@ -570,13 +570,11 @@ class DecisionTableResourceTest extends TestEnglishBase {
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
-        analyzer = "reinfConjunction(bor(vOneKeyword(\"forgot\"), vOneKeyword(\"don't remember\")), bor(vOneKeyword(\"password\")))",
-        queries = List("I forgot my password",
-          "my password is wrong",
-          "don't remember the password"),
-        bubble = "Hello how can I help you?",
+        analyzer = "vOneKeyword(\"email\")",
+        queries = List("my email is"),
+        bubble = "Thank you",
         action = """com.getjenny.analyzer.analyzers.DefaultParser matchPatternRegex("[email](?:([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+))")""",
-        actionInput = List(Map("query" -> "my email: is this.is.test@email.com")),
+        actionInput = List.empty,
         stateData = Map("url" -> "www.getjenny.com"),
         successValue = "eval(show_buttons)",
         failureValue = "dont_understand",
@@ -590,13 +588,13 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
         traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
-        userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
+        userInput = Some(ResponseRequestInUserInput(text = Some("my email is this.is.test@email.com"), img = None
         )),
-        state = None,
+        state = Some(List("forgot_password")),
         data = None,
-        threshold = Some(0),
+        threshold = None,
         evaluationClass = None,
-        maxResults = Some(1),
+        maxResults = None,
         searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
       )
 
