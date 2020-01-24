@@ -36,7 +36,7 @@ class W2VCosineStateAtomic(val arguments: List[String], restrictedArgs: Map[Stri
   override def toString: String = "similarState(\"" + state + "\")"
 
   val analyzerService: AnalyzerService.type = AnalyzerService
-
+  //FIXME use context to get index_name
   val originalIndexName: String = restrictedArgs("index_name")
   val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 
