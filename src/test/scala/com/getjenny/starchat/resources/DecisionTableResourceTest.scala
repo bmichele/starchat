@@ -473,6 +473,53 @@ class DecisionTableResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return an HTTP code 200 and call analyzer atom" in {
+      val decisionTableRequest = DTDocumentCreate(
+        state = "forgot_password",
+        executionOrder = 0,
+        maxStateCount = 0,
+        analyzer = "vOneKeyword(\"email\")",
+        queries = List("my email is"),
+        bubble = "Thank you",
+        action = """com.getjenny.analyzer.analyzers.DefaultParser matchPatternRegex("[email](?:([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+))")""",
+        actionInput = Map.empty,
+        stateData = Map("url" -> "www.getjenny.com"),
+        successValue = "eval(show_buttons)",
+        failureValue = "dont_understand",
+        evaluationClass = Some("default"),
+        version = None
+      )
+
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      val request = ResponseRequestIn(conversationId = "conv_12131",
+        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        userInput = Some(ResponseRequestInUserInput(text = Some("my email is this.is.test@email.com"), img = None
+        )),
+        state = Some(List("forgot_password")),
+        data = None,
+        threshold = None,
+        evaluationClass = None,
+        maxResults = None,
+        searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
+      )
+
+      Post("/index_getjenny_english_0/get_next_response", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[ResponseRequestOut]]
+        val out: ResponseRequestOut = response.headOption.getOrElse(fail)
+        out.actionResult shouldBe defined
+        out.actionResult.map { res =>
+          res.data should contain key("email.0")
+          res.data.getOrElse("email.0", "") shouldEqual "this.is.test@email.com"
+        }
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 when deleting a document" in {
       Delete("/index_getjenny_english_0/decisiontable?id=forgot_password&refresh=1") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK

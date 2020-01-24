@@ -37,9 +37,10 @@ object ResponseService extends AbstractDataService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
 
-  private[this] def executeAction(indexName: String, document: ResponseRequestOut): ResponseRequestOut = {
-    if (document.action.startsWith(DtAction.actionPrefix)) {
-      val res = DtAction(indexName, document.state, document.action, document.actionInput)
+  private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String): ResponseRequestOut = {
+    if (document.action.startsWith(DtAction.actionPrefix) ||
+      document.action.startsWith(DtAction.analyzerActionPrefix)) {
+      val res = DtAction(indexName, document.state, document.action, document.actionInput, query)
       document.copy(actionResult = Some {
         res
       })
@@ -214,7 +215,7 @@ object ResponseService extends AbstractDataService {
 
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
-      if(splittedBubble.length > 1){
+      if (splittedBubble.length > 1) {
         val r = new scala.util.Random
         val randomIdx = r.nextInt(splittedBubble.length)
         splittedBubble(randomIdx)
