@@ -5,24 +5,61 @@ package com.getjenny.starchat.services.actions
  */
 
 import akka.event.{Logging, LoggingAdapter}
+import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.SCActorSystem
+import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
 import com.getjenny.starchat.entities.io.DtActionResult
+import com.getjenny.starchat.services.AnalyzerService.log
+import com.getjenny.starchat.utils.SystemConfiguration
+
+import scala.util.{Failure, Success, Try}
 
 case class DtActionException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
 trait DtAction {
   protected val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
+
   def apply(indexName: String, stateName: String, params: Map[String, String]): DtActionResult
 }
 
 object DtAction {
   val actionPrefix = "com.getjenny.starchat.actions."
-  def apply(indexName: String, stateName: String, action: String, params: Map[String, String]): DtActionResult = {
+  val analyzerActionPrefix = "com.getjenny.analyzer.analyzers.DefaultParser "
+
+  def apply(indexName: String, stateName: String, action: String, params: Map[String, String], query: String): DtActionResult = {
     action match {
-      case "com.getjenny.starchat.actions.SendEmailSmtp"  => SendEmailSmtp(indexName, stateName, params)
-      case "com.getjenny.starchat.actions.SendEmailGJ"  => SendEmailGJ(indexName, stateName, params)
+      case "com.getjenny.starchat.actions.SendEmailSmtp" => SendEmailSmtp(indexName, stateName, params)
+      case "com.getjenny.starchat.actions.SendEmailGJ" => SendEmailGJ(indexName, stateName, params)
+      case action if action.startsWith(analyzerActionPrefix) => DtActionAtomAdapter(indexName, stateName, action, params, query)
       case _ => throw DtActionException("Action not implemented: " + action)
     }
+  }
+}
+
+object DtActionAtomAdapter {
+  private[this] val atomConfigurationBasePath = "starchat.atom-values"
+  private[this] val systemConfiguration: Map[String, String] = SystemConfiguration
+    .createMapFromPath(atomConfigurationBasePath)
+
+  def apply(indexName: String, stateName: String, action: String, params: Map[String, String], query: String): DtActionResult = {
+    val command = action.stripPrefix(DtAction.analyzerActionPrefix)
+
+    val starchatAnalyzer = Try(new StarChatAnalyzer(command, systemConfiguration)) match {
+      case Success(analyzerObject) =>
+        log.debug("Analyzer successfully built index(" + indexName + ") state(" + stateName + ")")
+        Some(analyzerObject)
+      case Failure(e) =>
+        log.error(e, "Error building analyzer index(" + indexName + ") state(" + stateName + ")")
+        None
+    }
+
+    starchatAnalyzer.map { analyzer =>
+      val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = params))
+      DtActionResult(result.score == 1,
+        if (result.score == 0) 1 else 0,
+        result.data.extractedVariables
+      )
+    }.getOrElse(DtActionResult(success = false, code = 1))
   }
 }
