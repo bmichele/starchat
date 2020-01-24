@@ -52,10 +52,11 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "httpRequest",
     "parseDate",
     "readS3Data",
+    "checkMultipleDaysOfWeek"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
-                  AbstractAtomic = name.filter(c => !c.isWhitespace ) match {
+  AbstractAtomic = name.filter(c => !c.isWhitespace) match {
     case "keyword" => new KeywordAtomic2(argument, restrictedArgs)
     case "vOneKeyword" => new KeywordAtomic(argument, restrictedArgs)
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
@@ -94,6 +95,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "checkDate" => new CheckDateAtomic(argument, restrictedArgs)
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
     case "readS3Data" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
+    case "checkMultipleDaysOfWeek" => new CheckMultipleDaysOfWeekAtomic(argument, restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }
 }
