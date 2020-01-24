@@ -43,7 +43,7 @@ class W2VEarthMoversCosineDistanceStateAtomic(val arguments: List[String], restr
   override def toString: String = "similarCosEmdState(\"" + state + "\")"
 
   val analyzerService: AnalyzerService.type = AnalyzerService
-
+  //FIXME use context to get index_name
   val originalIndexName: String = restrictedArgs("index_name")
   val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 
