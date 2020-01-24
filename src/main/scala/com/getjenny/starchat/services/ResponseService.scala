@@ -38,7 +38,8 @@ object ResponseService extends AbstractDataService {
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
 
   private[this] def executeAction(indexName: String, document: ResponseRequestOut): ResponseRequestOut = {
-    if (document.action.startsWith(DtAction.actionPrefix)) {
+    if (document.action.startsWith(DtAction.actionPrefix) ||
+      document.action.startsWith(DtAction.analyzerActionPrefix)) {
       val res = DtAction(indexName, document.state, document.action, document.actionInput)
       document.copy(actionResult = Some {
         res
@@ -214,7 +215,7 @@ object ResponseService extends AbstractDataService {
 
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
-    if(splittedBubble.length > 1){
+    if (splittedBubble.length > 1) {
       val r = new scala.util.Random
       val randomIdx = r.nextInt(splittedBubble.length)
       splittedBubble(randomIdx)
@@ -226,9 +227,9 @@ object ResponseService extends AbstractDataService {
   private[this] def replaceActionInput(actionInput: Seq[Map[String, String]],
                                        values: Map[String, String]): Seq[Map[String, String]] = {
     actionInput.map { input =>
-      input.map { case(mapInputKey, mapInputValue) =>
+      input.map { case (mapInputKey, mapInputValue) =>
         values.foldLeft((mapInputKey, mapInputValue)) {
-          case((accKey, accVal), (replKey, replValue)) =>
+          case ((accKey, accVal), (replKey, replValue)) =>
             (accKey.replaceAll("%" + replKey + "%", replValue),
               accVal.replaceAll("%" + replKey + "%", replValue))
         }
