@@ -22,7 +22,6 @@ class SystemIndexManagementResourceTest extends WordSpec with Matchers with Scal
   val sealedRoutes = Route.seal(routes)
 
   val testAdminCredentials = BasicHttpCredentials("admin", "adminp4ssw0rd")
-  val testUserCredentials = BasicHttpCredentials("test_user", "p4ssw0rd")
 
   val suffixes = Seq("user", "instance_registry", "cluster_nodes", "decision_table_node_status", "bayes_operator_cache")
 

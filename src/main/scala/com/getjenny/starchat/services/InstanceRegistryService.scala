@@ -97,6 +97,7 @@ object InstanceRegistryService extends AbstractDataService {
   private[this] val languageIndexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
   private[this] val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
   private[this] val config: Config = ConfigFactory.load()
+  private[this] val userEsService: AbstractUserService = UserService.service
 
   private[this] val cache: Cache[String, InstanceRegistryDocument] = CacheBuilder.newBuilder()
     .expireAfterWrite(config.getInt("starchat.instance_registry.cache_expiration_time"), TimeUnit.SECONDS)
@@ -164,6 +165,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(indexName, timestamp = None,
       enabled = true.some, delete = None, deleted = None)
+    userEsService.enablePermissionForIndex(indexName)
     IndexManagementResponse(s"Enabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -172,6 +174,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(indexName, timestamp = None,
       enabled = false.some, delete = None, deleted = None)
+    //userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -179,6 +182,7 @@ object InstanceRegistryService extends AbstractDataService {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None, enabled = false.some, delete = true.some, None)
+    userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -230,6 +234,7 @@ object InstanceRegistryService extends AbstractDataService {
     ids.foreach { entry =>
       updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some)
       cache.invalidate(entry)
+      userEsService.disablePermissionForIndex(entry)
     }
   }
 

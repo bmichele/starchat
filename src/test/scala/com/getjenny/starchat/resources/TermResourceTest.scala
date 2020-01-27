@@ -11,20 +11,6 @@ import scala.io.Source.fromResource
 class TermResourceTest extends TestEnglishBase {
 
   "StarChat" should {
-    "return an HTTP code 201 when creating a new user" in {
-      val user = User(
-        id = "test_user",
-        password = "3c98bf19cb962ac4cd0227142b3495ab1be46534061919f792254b80c0f3e566f7819cae73bdc616af0ff555f7460ac96d88d56338d659ebd93e2be858ce1cf9",
-        salt = "salt",
-        permissions = Map[String, Set[Permissions.Value]]("index_getjenny_english_0" -> Set(Permissions.read, Permissions.write))
-      )
-      Post(s"/user", user) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-      }
-    }
-  }
-
-  it should {
     "return an HTTP code 200 when creating multiple terms" in {
       val terms = Terms(
         terms = List(Term(term = "term1"), Term(term = "term2"))

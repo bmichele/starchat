@@ -2,6 +2,7 @@ package com.getjenny.starchat.services.auth
 
 import akka.http.scaladsl.server.directives.Credentials
 import com.getjenny.starchat.SCActorSystem
+import com.getjenny.starchat.entities.io.Permissions.Permission
 import com.getjenny.starchat.entities.io.{Permissions, User}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,9 +17,9 @@ abstract class AbstractStarChatAuthenticator {
 
   def authenticator(credentials: Credentials): Future[Option[User]]
 
-  def hasPermissions(user: User, index: String, permissions: Set[Permissions.Value]): Future[Boolean]
+  def hasPermissions(user: User, index: String, permissions: Set[Permission]): Future[Boolean]
 
-  def hasPermissions(user: User, index: String, permission: Permissions.Value): Future[Boolean] = {
+  def hasPermissions(user: User, index: String, permission: Permission): Future[Boolean] = {
     hasPermissions(user = user, index = index, permissions = Set(permission))
   }
 

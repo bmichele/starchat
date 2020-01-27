@@ -3,6 +3,7 @@ package com.getjenny.starchat.services.auth
 import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.server.directives.Credentials
 import com.getjenny.starchat.SCActorSystem
+import com.getjenny.starchat.entities.io.Permissions.Permission
 import com.getjenny.starchat.entities.io.{Permissions, User, UserId}
 import com.getjenny.starchat.services._
 import com.roundeights.hasher.Implicits._
@@ -53,7 +54,7 @@ class BasicHttpStarChatAuthenticator(userService: AbstractUserService) extends A
     }
   }
 
-  def hasPermissions(user: User, index: String, permissions: Set[Permissions.Value]): Future[Boolean] = {
+  def hasPermissions(user: User, index: String, permissions: Set[Permission]): Future[Boolean] = {
     user.id match {
       case `admin` => //admin can do everything
         val userPermissions = user.permissions.getOrElse("admin", Set.empty[Permissions.Value])
@@ -61,9 +62,13 @@ class BasicHttpStarChatAuthenticator(userService: AbstractUserService) extends A
         Future.successful(userPermissions.contains(Permissions.admin) && indexEnabled)
       case _ =>
         val userPermissions = user.permissions.getOrElse(index, Set.empty[Permissions.Value])
-        val indexEnabled = checkInstancePermission(index)
-        val authorized = (userPermissions & permissions).nonEmpty && indexEnabled
-        Future.successful(authorized)
+        if(!userPermissions.contains(Permissions.disabled)) {
+          val indexEnabled = checkInstancePermission(index)
+          val authorized = (userPermissions & permissions).nonEmpty && indexEnabled
+          Future.successful(authorized)
+        } else {
+          Future.successful(false)
+        }
     }
   }
 

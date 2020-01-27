@@ -5,18 +5,20 @@ package com.getjenny.starchat.services
  */
 
 import com.getjenny.analyzer.util.RandomNumbers
+import com.getjenny.starchat.entities.io.Permissions.Permission
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.auth.AbstractStarChatAuthenticator
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
+import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.typesafe.config.{Config, ConfigFactory}
 import javax.naming.AuthenticationException
-import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
-import org.elasticsearch.action.get.{GetResponse, _}
-import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
-import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
-import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
+import org.elasticsearch.action.delete.DeleteResponse
+import org.elasticsearch.action.get.GetResponse
+import org.elasticsearch.action.index.IndexResponse
+import org.elasticsearch.action.update.UpdateResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory._
+import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.rest.RestStatus
 import scalaz.Scalaz._
 
@@ -39,42 +41,20 @@ class UserEsService extends AbstractUserService {
   private[this] val adminUser = User(id = admin, password = password, salt = salt,
     permissions = Map("admin" -> Set(Permissions.admin)))
 
+  val esCrudBase = new EsCrudBase(elasticClient, indexName)
+
   def create(user: User): IndexDocumentResult = {
 
-    if(user.id === "admin") {
+    if (user.id === "admin") {
       throw new AuthenticationException("admin user cannot be created via APIs")
-    } else if (user.id.startsWith("index_")){
+    } else if (user.id.startsWith("index_")) {
       throw new AuthenticationException("Invalid pattern for username: \"index_\"")
     }
 
-    val builder : XContentBuilder = jsonBuilder().startObject()
+    val builder = createXContentBuilder(user.id, user.password.some, user.salt.some, user.permissions.some)
+    val response: IndexResponse = esCrudBase.create(user.id, builder)
 
-    builder.field("id", user.id)
-    builder.field("password", user.password)
-    builder.field("salt", user.salt)
-
-    val permissions = builder.startObject("permissions")
-    user.permissions.foreach{case(permIndexName, userPermissions) =>
-      val array = permissions.field(permIndexName).startArray()
-      userPermissions.foreach(p => { array.value(p.toString)}) // for each permission
-      array.endArray()
-    }
-    permissions.endObject()
-
-    builder.endObject()
-
-    val client: RestHighLevelClient = elasticClient.httpClient
-
-    val indexReq = new IndexRequest()
-      .index(indexName)
-      .create(true)
-      .id(user.id)
-      .source(builder)
-
-    val response: IndexResponse = client.index(indexReq, RequestOptions.DEFAULT)
-
-    val refreshIndex = elasticClient.refresh(indexName)
-    if(refreshIndex.failedShardsN > 0) {
+    if (esCrudBase.refresh().failedShardsN > 0) {
       throw UserEsServiceException("User : index refresh failed: (" + indexName + ")")
     }
 
@@ -88,131 +68,115 @@ class UserEsService extends AbstractUserService {
   }
 
   def update(user: UserUpdate): UpdateDocumentResult = {
+    val builder = createXContentBuilder(user.id, user.password, user.salt, user.permissions)
 
-    if(user.id === "admin") {
-      throw new AuthenticationException("admin user cannot be changed")
-    }
-
-    val builder : XContentBuilder = jsonBuilder().startObject()
-
-    user.password match {
-      case Some(t) => builder.field("password", t)
-      case None => ;
-    }
-
-    user.salt match {
-      case Some(t) => builder.field("salt", t)
-      case None => ;
-    }
-
-    user.permissions match {
-      case Some(_) =>
-        val permissions = builder.startObject("permissions")
-        user.permissions.getOrElse(Map.empty).foreach {
-          case(permIndexName, userPermissions) =>
-            val array = permissions.field(permIndexName).startArray()
-            userPermissions.foreach(p => { array.value(p.toString)})
-            array.endArray()
-        }
-        permissions.endObject()
-      case None => ;
-    }
-
-    builder.endObject()
-
-    val client: RestHighLevelClient = elasticClient.httpClient
-
-    val updateReq = new UpdateRequest()
-      .index(indexName)
-      .doc(builder)
-      .id(user.id)
-
-    val response: UpdateResponse = client.update(updateReq, RequestOptions.DEFAULT)
-
-    val refresh_index = elasticClient.refresh(indexName)
-    if(refresh_index.failedShardsN > 0) {
+    val response: UpdateResponse = esCrudBase.update(user.id, builder)
+    if (esCrudBase.refresh().failedShardsN > 0) {
       throw UserEsServiceException("User : index refresh failed: (" + indexName + ")")
     }
 
-    val docResult: UpdateDocumentResult = UpdateDocumentResult(index = response.getIndex,
+    UpdateDocumentResult(index = response.getIndex,
       id = response.getId,
       version = response.getVersion,
       created = response.status === RestStatus.CREATED
     )
-
-    docResult
   }
 
-  def delete(user: UserId): DeleteDocumentResult = {
-
-    if(user.id === "admin") {
+  private[this] def createXContentBuilder(id: String, password: Option[String], salt: Option[String],
+                                          permissions: Option[Map[String, Set[Permission]]]): XContentBuilder = {
+    if (id === "admin") {
       throw new AuthenticationException("admin user cannot be changed")
     }
 
-    val client: RestHighLevelClient = elasticClient.httpClient
+    val builder: XContentBuilder = jsonBuilder().startObject()
+    builder.field("id", id)
 
-    val deleteReq = new DeleteRequest()
-      .index(indexName)
-      .id(user.id)
+    password match {
+      case Some(t) => builder.field("password", t)
+      case None => ;
+    }
 
-    val response: DeleteResponse = client.delete(deleteReq, RequestOptions.DEFAULT)
+    salt match {
+      case Some(t) => builder.field("salt", t)
+      case None => ;
+    }
 
-    val refreshIndex = elasticClient.refresh(indexName)
-    if(refreshIndex.failedShardsN > 0) {
+    permissions match {
+      case Some(p) =>
+        val permission = builder.startObject("permissions")
+        p.foreach { case (permIndexName, userPermissions) =>
+          val array = permission.field(permIndexName).startArray()
+          userPermissions.foreach(p => {
+            array.value(p.toString)
+          }) // for each permission
+          array.endArray()
+        }
+        permission.endObject()
+      case None => ;
+    }
+
+    builder.endObject()
+    builder
+  }
+
+  def delete(user: UserId): DeleteDocumentResult = {
+    if (user.id === "admin") {
+      throw new AuthenticationException("admin user cannot be changed")
+    }
+
+    val response: DeleteResponse = esCrudBase.delete(user.id)
+    if (esCrudBase.refresh().failedShardsN > 0) {
       throw new Exception("User: index refresh failed: (" + indexName + ")")
     }
 
-    val docResult: DeleteDocumentResult = DeleteDocumentResult(index = response.getIndex,
+    DeleteDocumentResult(index = response.getIndex,
       id = response.getId,
       version = response.getVersion,
       found = response.status =/= RestStatus.NOT_FOUND
     )
-
-    docResult
   }
 
   def read(user: UserId): User = {
-    if(user.id === "admin") {
+    if (user.id === "admin") {
       adminUser
     } else {
-      val client: RestHighLevelClient = elasticClient.httpClient
+      val response: GetResponse = esCrudBase.read(user.id)
 
-      val getReq = new GetRequest()
-        .index(indexName)
-        .id(user.id)
-
-      val response: GetResponse = client.get(getReq, RequestOptions.DEFAULT)
-      val source = if(response.getSource != None.orNull) {
+      val source = if (response.getSource != None.orNull) {
         response.getSource.asScala.toMap
       } else {
         throw UserEsServiceException("Cannot find user: " + id)
       }
 
-      val userId: String = source.get("id") match {
-        case Some(t) => t.asInstanceOf[String]
-        case None => throw UserEsServiceException("User id field is empty for: " + id)
-      }
-
-      val password: String = source.get("password") match {
-        case Some(t) => t.asInstanceOf[String]
-        case None => throw UserEsServiceException("Password is empty for the user: " + id)
-      }
-
-      val salt: String = source.get("salt") match {
-        case Some(t) => t.asInstanceOf[String]
-        case None => throw UserEsServiceException("Salt is empty for the user: " + id)
-      }
-
-      val permissions: Map[String, Set[Permissions.Value]] = source.get("permissions") match {
-        case Some(t) => t.asInstanceOf[java.util.HashMap[String, java.util.List[String]]]
-          .asScala.map{case(permIndexName, userPermissions) =>
-          (permIndexName, userPermissions.asScala.map(permissionString => Permissions.value(permissionString)).toSet)
-        }.toMap
-        case None =>
-          throw UserEsServiceException("Permissions list is empty for the user: " + id)
-      }
-      User(id = userId, password = password, salt = salt, permissions = permissions)
+      sourceToUser(source)
     }
+  }
+
+  private[this] def sourceToUser(source: Map[String, AnyRef]): User = {
+    val userId: String = source.get("id") match {
+      case Some(t) => t.asInstanceOf[String]
+      case None => throw UserEsServiceException("User id field is empty for: " + id)
+    }
+
+    val password: String = source.get("password") match {
+      case Some(t) => t.asInstanceOf[String]
+      case None => throw UserEsServiceException("Password is empty for the user: " + id)
+    }
+
+    val salt: String = source.get("salt") match {
+      case Some(t) => t.asInstanceOf[String]
+      case None => throw UserEsServiceException("Salt is empty for the user: " + id)
+    }
+
+    val permissions: Map[String, Set[Permissions.Value]] = source.get("permissions") match {
+      case Some(t) => t.asInstanceOf[java.util.HashMap[String, java.util.List[String]]]
+        .asScala.map { case (permIndexName, userPermissions) =>
+        (permIndexName, userPermissions.asScala.map(permissionString => Permissions.value(permissionString)).toSet)
+      }.toMap
+      case None =>
+        throw UserEsServiceException("Permissions list is empty for the user: " + id)
+    }
+    User(id = userId, password = password, salt = salt, permissions = permissions)
   }
 
   /** given id and optionally password and permissions, generate a new user */
@@ -241,6 +205,43 @@ class UserEsService extends AbstractUserService {
     User(id = user.id, password = password, salt = salt, permissions = permissions)
   }
 
+  private[this] val addDisabled = (p: Set[Permission]) => p + Permissions.disabled
+  private[this] val removeDisabled = (p: Set[Permission]) => p - Permissions.disabled
+
+  private[this] def updateUserList(list: List[User], index: String)(f: Set[Permission] => Set[Permission]): List[User] = {
+    list
+      .filter(user => user.permissions.contains(index))
+      .map { user =>
+        val updatedPermission = user.permissions.get(index) match {
+          case Some(p) => val newPermission = f(p)
+            user.permissions + (index -> newPermission)
+          case None => user.permissions
+        }
+        user.copy(permissions = updatedPermission)
+      }
+  }
+
+  def disablePermissionForIndex(index: String): List[User] = updatePermissions(index, addDisabled)
+
+  def enablePermissionForIndex(index: String): List[User] = updatePermissions(index, removeDisabled)
+
+  private[this] def updatePermissions(index: String, f: Set[Permission] => Set[Permission]): List[User] = {
+    val allUsers = readAll()
+    val updatedUsers = updateUserList(allUsers, index)(f)
+    if(updatedUsers.nonEmpty){
+      esCrudBase.bulkUpdate(updatedUsers.map(u => (u.id -> createXContentBuilder(u.id, None, None, u.permissions.some))))
+      if (esCrudBase.refresh().failedShardsN > 0) {
+        throw UserEsServiceException("User : index refresh failed: (" + indexName + ")")
+      }
+    }
+    updatedUsers
+  }
+
+  def readAll(): List[User] = {
+    val response = esCrudBase.read(QueryBuilders.matchAllQuery())
+    response.getHits.getHits.toList.map(x => sourceToUser(x.getSourceAsMap.asScala.toMap))
+  }
+
   def generatePassword(size: Int = 16): String = {
     RandomNumbers.string(size)
   }
@@ -249,4 +250,3 @@ class UserEsService extends AbstractUserService {
     RandomNumbers.string(16)
   }
 }
-

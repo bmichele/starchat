@@ -17,4 +17,6 @@ trait AbstractUserService {
   def delete(user: UserId): DeleteDocumentResult
   def read(user: UserId): User
   def genUser(user: UserUpdate, authenticator: AbstractStarChatAuthenticator): User
+  def disablePermissionForIndex(index: String): List[User]
+  def enablePermissionForIndex(index: String): List[User]
 }
