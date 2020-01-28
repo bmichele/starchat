@@ -69,11 +69,4 @@ class BasicHttpStarChatAuthenticator(userService: AbstractUserService) extends A
         }
     }
   }
-
-  private[this] def checkInstancePermission(index: String): Boolean = {
-    if(instanceRegistryService.isValidIndexName(index)) {
-      instanceRegistryService.getInstance(index).enabled.getOrElse(false)
-    } else true
-  }
-
 }
