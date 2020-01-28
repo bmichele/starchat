@@ -18,18 +18,41 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import scala.util.Try
 
+/**
+  * To be implemented if one does not use the generic variable manager.
+  *
+  * It defines methods to create a `HttpRequestAtomicConfiguration`.
+  *
+  */
 trait  VariableManager {
-
   type AtomValidation[T] = ValidationNel[String, T]
 
   private[this] val keyValueSeparator = "="
   private [this] val queryKeyword = "query"
 
+  /**
+    * Used to create Url conf. Same for authenticationConf. Typically not to be reimplemented
+    * @param configuration map of all configuration values
+    * @param findProperty see findIn
+    * @return
+    */
   def urlConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf]
 
+  /**
+    * As per urlConf
+    *
+    */
   def authenticationConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]]
 
+  /**
+    * Build e.g. the json or the query string for the http service.
+    *
+    * @param configuration
+    * @param findProperty
+    * @return
+    */
   def inputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]]
+
 
   def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf]
 
@@ -37,8 +60,28 @@ trait  VariableManager {
     prefix => parameterConstantList.map(p => s"$prefix.$p")
   }.getOrElse(Nil)
 
+  /** Prefix of the implemented atomic (eg http-atom.weather).
+    *
+    * To be implemented in each custom atomic
+    *
+    * @return
+    */
   def configurationPrefix: Option[String]
 
+  /**
+    * Called by HttpRequestAtomic. Checks that all arguments needed by to create
+    * an `HttpRequestAtomicConfiguration` are there. These arguments' value are passed
+    * through restrictedArgs (system configuration) extractedVariables (passed as atomic
+    * argument etc), query.
+    *
+    * Not to be re-implemented
+    *
+    * @param arguments arguments in the atomic
+    * @param restrictedArgs
+    * @param extractedVariables
+    * @param query
+    * @return
+    */
   def validateAndBuild(arguments: List[String],
                        restrictedArgs: Map[String, String],
                        extractedVariables: Map[String, String],
@@ -75,6 +118,12 @@ trait  VariableManager {
       .toMap
   }
 
+  /**
+    *
+    * @param systemConfiguration The config file
+    * @param runtimeConfiguration Eg argument of the atomic, extracted variables, query...
+    * @return a function that can be used to get configuration values from system or if not from runtime Configuration
+    */
   protected final def findIn(systemConfiguration: Map[String, String], runtimeConfiguration: Map[String, String])
                             (key: String): Option[String] = {
     systemConfiguration.get(key)
@@ -94,6 +143,13 @@ trait  VariableManager {
       }
   }
 
+  /**
+    *
+    *
+    * @param template
+    * @param findProperty
+    * @return
+    */
   protected def substituteTemplate(template: String,
                                    findProperty: String => Option[String]): AtomValidation[String] = {
     val formatted = evaluateTemplate(template, findProperty)
@@ -172,6 +228,14 @@ object AtomVariableReader {
   }
 }
 
+/**
+  * Contains all parameters needed to execute an http call
+  *
+  * @param urlConf
+  * @param auth
+  * @param inputConf
+  * @param outputConf
+  */
 case class HttpRequestAtomicConfiguration(urlConf: HttpAtomUrlConf,
                                           auth: Option[HttpAtomAuthConf],
                                           inputConf: Option[HttpAtomInputConf],
