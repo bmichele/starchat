@@ -1,6 +1,7 @@
 package com.getjenny.starchat.services
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.testkit.{ImplicitSender, TestKitBase, TestProbe}
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io.UpdateDocumentsResult
@@ -31,7 +32,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
       val terms = Terms(
         terms = List(Term(term = "term1"), Term(term = "term2"))
       )
-      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[UpdateDocumentsResult]
         response.data.length should be(terms.terms.length)
@@ -76,6 +77,15 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
       //so we can safely delete the instance from the registry
       val registryEntryDeleted = instanceRegistryService.getInstance(indexName)
       registryEntryDeleted.isEmpty shouldBe true
+    }
+
+    "return an HTTP code 403 when creating a new document" in {
+      val terms = Terms(
+        terms = List(Term(term = "term1"), Term(term = "term2"))
+      )
+      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        rejection shouldBe a [AuthorizationFailedRejection.type]
+      }
     }
 
   }

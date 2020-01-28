@@ -1,8 +1,11 @@
 package com.getjenny.starchat.resources
 
+import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import com.getjenny.starchat.TestBase
-import com.getjenny.starchat.entities.io.{CreateLanguageIndexRequest, IndexManagementResponse, IndexManagementStatusResponse}
+import com.getjenny.starchat.entities.io.Permissions.Permission
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.{InstanceRegistryService, InstanceRegistryStatus}
 
 class IndexManagementResourceTest extends TestBase {
@@ -13,6 +16,18 @@ class IndexManagementResourceTest extends TestBase {
     super.beforeAll()
     Post("/language_index_management", createEnglishRequest) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       true
+    }
+    val user = User(
+      id = "test_user",
+      password = "3c98bf19cb962ac4cd0227142b3495ab1be46534061919f792254b80c0f3e566f7819cae73bdc616af0ff555f7460ac96d88d56338d659ebd93e2be858ce1cf9",
+      salt = "salt",
+      permissions = Map[String, Set[Permissions.Value]](
+        "index_getjenny_english_0" -> Set(Permissions.read, Permissions.write),
+        "index_getjenny_english_common_0" -> Set(Permissions.read, Permissions.write))
+    )
+    Post(s"/user", user) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      val s = status
+      s shouldEqual StatusCodes.Created
     }
   }
 
@@ -88,6 +103,15 @@ class IndexManagementResourceTest extends TestBase {
       }
     }
 
+    "return an HTTP code 200 and permission set to disabled when instance is disabled" in {
+      Post(s"/user/get", UserId("test_user")) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[User]
+        response.permissions
+          .getOrElse("index_getjenny_english_0", Set.empty[Permission]) contains Permissions.disabled
+      }
+    }
+
     "return an HTTP code 200 when mark delete instance" in {
       Delete(s"/index_getjenny_english_0/index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -96,9 +120,15 @@ class IndexManagementResourceTest extends TestBase {
       }
     }
 
-    "return an HTTP code 401 when trying to access to a service when instance is disabled" in {
-      Get("/index_getjenny_english_0/decisiontable?id=forgot_password&id=call_operator") ~> addCredentials(testUserCredentials) ~> routes ~> check {
+    "return an HTTP code 401 when trying to access to a service and user does not exists" in {
+      Get("/index_getjenny_english_0/decisiontable?id=forgot_password&id=call_operator") ~> addCredentials(BasicHttpCredentials("aaaa", "p4ssw0rd")) ~> routes ~> check {
         status shouldEqual StatusCodes.Unauthorized
+      }
+    }
+
+    "reject call with a 403 when trying to access a service when instance is disabled" in {
+      Get("/index_getjenny_english_0/decisiontable?id=forgot_password&id=call_operator") ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        rejection shouldBe a [AuthorizationFailedRejection.type]
       }
     }
 

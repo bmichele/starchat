@@ -4,16 +4,12 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 23/08/17.
  */
 
-import java.util.concurrent.TimeUnit
-
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse, IndexManagementStatusResponse}
 import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
-import com.google.common.cache.{Cache, CacheBuilder}
-import com.typesafe.config.{Config, ConfigFactory}
 import org.elasticsearch.action.update.UpdateResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory._
@@ -96,11 +92,7 @@ object InstanceRegistryService extends AbstractDataService {
     elasticClient.systemInstanceRegistrySuffix)
   private[this] val languageIndexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
   private[this] val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
-  private[this] val config: Config = ConfigFactory.load()
-
-  private[this] val cache: Cache[String, InstanceRegistryDocument] = CacheBuilder.newBuilder()
-    .expireAfterWrite(config.getInt("starchat.instance_registry.cache_expiration_time"), TimeUnit.SECONDS)
-    .build[String, InstanceRegistryDocument]
+  private[this] val userEsService: AbstractUserService = UserService.service
 
   def updateTimestamp(dtIndexName: String,
                       timestamp: Long = InstanceRegistryDocument.InstanceRegistryTimestampDefault,
@@ -142,15 +134,13 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = esCrudBase.update(indexName, document.builder, upsert = true)
 
-    cache.put(indexName, findInstance(indexName))
     IndexManagementResponse(s"Created instance $indexName, operation status: ${response.status}", check = true)
   }
 
   def getInstance(indexName: String): InstanceRegistryDocument = {
     if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
-
-    cache.get(indexName, () => findInstance(indexName))
+    findInstance(indexName)
   }
 
   def checkInstance(indexName: String): IndexManagementStatusResponse = {
@@ -164,6 +154,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(indexName, timestamp = None,
       enabled = true.some, delete = None, deleted = None)
+    userEsService.enablePermissionForIndex(indexName)
     IndexManagementResponse(s"Enabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -172,6 +163,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(indexName, timestamp = None,
       enabled = false.some, delete = None, deleted = None)
+    userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -179,6 +171,7 @@ object InstanceRegistryService extends AbstractDataService {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None, enabled = false.some, delete = true.some, None)
+    userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
 
@@ -198,7 +191,6 @@ object InstanceRegistryService extends AbstractDataService {
 
     val updatedDocument = findInstance(indexName)
     log.debug("Updated instance {} with document: {}", indexName, updatedDocument)
-    cache.put(indexName, updatedDocument)
     response
   }
 
@@ -229,7 +221,7 @@ object InstanceRegistryService extends AbstractDataService {
   def markAsDeleted(ids: List[String]): Unit = {
     ids.foreach { entry =>
       updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some)
-      cache.invalidate(entry)
+      userEsService.disablePermissionForIndex(entry)
     }
   }
 

@@ -62,22 +62,8 @@ class QAResourceTest extends TestEnglishBase {
           ))
         ))
 
-  "StarChat" should {
-    "return an HTTP code 201 when creating a new user" in {
-      val user = User(
-        id = "test_user",
-        password = "3c98bf19cb962ac4cd0227142b3495ab1be46534061919f792254b80c0f3e566f7819cae73bdc616af0ff555f7460ac96d88d56338d659ebd93e2be858ce1cf9",
-        salt = "salt",
-        permissions = Map[String, Set[Permissions.Value]]("index_getjenny_english_0" -> Set(Permissions.read, Permissions.write))
-      )
-      Post(s"/user", user) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-      }
-    }
-  }
-
   for(qaRoute <- qaRoutes) {
-    it should {
+    "StarChat" should {
       s"return an HTTP code 201 when inserting a QA document to the $qaRoute" in {
         for(document <- documents) {
           Post(s"/index_getjenny_english_0/$qaRoute?refresh=1", document) ~> addCredentials(testUserCredentials) ~> routes ~> check {

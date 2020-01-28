@@ -5,7 +5,7 @@ import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io.RefreshIndexResult
 import com.getjenny.starchat.services.esclient.ElasticClient
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
-import org.elasticsearch.action.delete.DeleteRequest
+import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
 import org.elasticsearch.action.get.{GetRequest, GetResponse, MultiGetRequest, MultiGetResponse}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse, SearchScrollRequest, SearchType}
@@ -155,6 +155,14 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
     log.debug("Delete request: {}", request)
 
     client.httpClient.deleteByQuery(request, RequestOptions.DEFAULT)
+  }
+
+  def delete(id: String): DeleteResponse = {
+    val deleteReq = new DeleteRequest()
+      .index(index)
+      .id(id)
+
+    client.httpClient.delete(deleteReq, RequestOptions.DEFAULT)
   }
 
   def delete(ids: List[String]): BulkResponse = {
