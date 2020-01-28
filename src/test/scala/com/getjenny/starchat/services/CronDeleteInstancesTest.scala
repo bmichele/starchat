@@ -32,7 +32,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
       val terms = Terms(
         terms = List(Term(term = "term1"), Term(term = "term2"))
       )
-      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[UpdateDocumentsResult]
         response.data.length should be(terms.terms.length)
@@ -79,11 +79,11 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
       registryEntryDeleted.isEmpty shouldBe true
     }
 
-    "return an HTTP code 401 when creating a new document" in {
+    "return an HTTP code 403 when creating a new document" in {
       val terms = Terms(
         terms = List(Term(term = "term1"), Term(term = "term2"))
       )
-      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         rejection shouldBe a [AuthorizationFailedRejection.type]
       }
     }

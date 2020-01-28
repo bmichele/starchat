@@ -2,6 +2,7 @@ package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import com.getjenny.starchat.TestBase
 import com.getjenny.starchat.entities.io.Permissions.Permission
 import com.getjenny.starchat.entities.io._
@@ -119,7 +120,13 @@ class IndexManagementResourceTest extends TestBase {
       }
     }
 
-    "reject call when trying to access a service when instance is disabled" in {
+    "return an HTTP code 401 when trying to access to a service and user does not exists" in {
+      Get("/index_getjenny_english_0/decisiontable?id=forgot_password&id=call_operator") ~> addCredentials(BasicHttpCredentials("aaaa", "p4ssw0rd")) ~> routes ~> check {
+        status shouldEqual StatusCodes.Unauthorized
+      }
+    }
+
+    "reject call with a 403 when trying to access a service when instance is disabled" in {
       Get("/index_getjenny_english_0/decisiontable?id=forgot_password&id=call_operator") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         rejection shouldBe a [AuthorizationFailedRejection.type]
       }
