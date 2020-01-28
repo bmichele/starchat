@@ -1,11 +1,11 @@
 openapi: 3.0.2
 servers:
-  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.1'
+  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.3'
 info:
   description: An Open Source, scalable conversational engine for B2B applications. You can find
     out more about StarChat at [starchat.ai](http://starchat.ai) or on
     [github GetJenny/starchat](https://github.com/GetJenny/starchat).
-  version: "v5.2"
+  version: "v5.3"
   title: StarChat APIs
   contact:
     email: angelo@getjenny.com
@@ -3025,11 +3025,7 @@ components:
           description: a function to be called on the client side. StarChat developer must provide types of input and output (like an abstract method), and the GUI developer is responsible for the actual implementation (e.g. show_button)
           example: "show_button"
         actionInput:
-          type: object
-          description: input passed to action's function (e.g., for show_buttons can be a set of pairs ("text to be shown on button", state_to_go_when_clicked)
-          additionalProperties:
-            type: string
-          example: {"text to be shown on button": "password_recovery"}
+          $ref: '#/components/schemas/actionInput'
         stateData:
           type: object
           description: a dictionary of strings with arbitrary data to pass along
@@ -3038,11 +3034,11 @@ components:
           example: {"url": "www.getjenny.com"}
         successValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function succeed
-          example: "eval(show_buttons)"
+          description: a state name for the client to set the next state in case the evaluated function succeed
+          example: "ask_feedback"
         failureValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function fail
+          description: a state name for the client to set the next state in case the evaluated function fail
           example: "dont_understand"
         evaluationClass:
           type: string
@@ -3093,11 +3089,7 @@ components:
           description: a function to be called on the client side. StarChat developer must provide types of input and output (like an abstract method), and the GUI developer is responsible for the actual implementation (e.g. show_button)
           example: "show_button"
         actionInput:
-          type: object
-          description: input passed to action's function (e.g., for show_buttons can be a set of pairs ("text to be shown on button", state_to_go_when_clicked)
-          additionalProperties:
-            type: string
-          example: {"text to be shown on button": "password_recovery"}
+          $ref: '#/components/schemas/actionInput'
         stateData:
           type: object
           description: a dictionary of strings with arbitrary data to pass along
@@ -3106,11 +3098,11 @@ components:
           example: {"url": "www.getjenny.com"}
         successValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function succeed
-          example: "eval(show_buttons)"
+          description: a state name for the client to set the next state in case the evaluated function succeed
+          example: "show_buttons"
         failureValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function fail
+          description: a state name for the client to set the next state in case the evaluated function fail
           example: "dont_understand"
         evaluationClass:
           type: string
@@ -3359,11 +3351,7 @@ components:
           description: a function to be called on the client side. StarChat developer must provide types of input and output (like an abstract method), and the GUI developer is responsible for the actual implementation (e.g. show_button)
           example: "show_button"
         actionInput:
-          type: object
-          description: input passed to action's function (e.g., for show_buttons can be a set of pairs ("text to be shown on button", state_to_go_when_clicked)
-          additionalProperties:
-            type: string
-          example: {"text to be shown on button": "password_recovery"}
+          $ref: '#/components/schemas/actionInput'
         stateData:
           type: object
           description: a dictionary of strings with arbitrary data to pass along
@@ -3372,11 +3360,11 @@ components:
           example: {"url": "www.getjenny.com"}
         successValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function succeed
-          example: "eval(show_buttons)"
+          description: a state name for the client to set the next state in case the evaluated function succeed
+          example: "ask_feedback"
         failureValue:
           type: string
-          description: an action or a state name for the client to set the next state in case the evaluated function fail
+          description: a state name for the client to set the next state in case the evaluated function fail
           example: "dont_understand"
         score:
           type: number
@@ -5518,3 +5506,29 @@ components:
         message:
           type: string
           description: description containing error or number of elements loaded
+    actionInput:
+      type: array
+      description: >-
+        a list of string dictionaries, the input passed to action's function (e.g., for show_buttons is button's description
+      items:
+        type: object
+        additionalProperties:
+          type: string
+      example: [
+      {
+        "state": "talktohuman",
+        "label": "Talk to human",
+        "type": "button",
+        "url": "https://www.getjenny.com",
+        "tag": "#human",
+        "target": "_blank"
+      },
+      {
+        "state": "feedback",
+        "label": "insert a feedback",
+        "type": "button",
+        "url": "https://www.getjenny.com",
+        "tag": "#feedback",
+        "target": "_blank"
+      }
+      ]

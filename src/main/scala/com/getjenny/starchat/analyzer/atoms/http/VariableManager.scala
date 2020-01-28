@@ -101,7 +101,12 @@ trait  VariableManager {
     }
   }
 
-  private[this] def createArgumentConfiguration(arguments: List[String]): Map[String, String] = {
+  /**
+  * This is useful when a specific http atom implementation allows passing parameter as arguments
+  * e.g weather atom builded with specific location paramter weather("location=London")
+  * override this returning an empty map if this behaviour is not needed
+  */
+  protected[this] def createArgumentConfiguration(arguments: List[String]): Map[String, String] = {
     arguments
       .filter(_.contains(keyValueSeparator))
       .map { x =>

@@ -14,21 +14,26 @@ import scala.concurrent.duration._
 
 
 object SendEmailSmtp extends DtAction {
-  override def apply(indexName: String, stateName: String, params: Map[String, String]): DtActionResult = {
+  override def apply(indexName: String, stateName: String, actionInput: Seq[Map[String, String]]): DtActionResult = {
 
-    val host: String = params.get("host") match {
+    val parameters = actionInput.headOption match {
+      case Some(p) => p
+      case _ => throw DtActionException("arguments map not provided")
+    }
+
+    val host: String = parameters.get("host") match {
       case Some(v) => v
       case _ => throw DtActionException("Field missing on SendEmailSmtp Action: host")
     }
 
-    val port: Int = params.getOrElse("port", "587").toInt
+    val port: Int = parameters.getOrElse("port", "587").toInt
 
-    val username: String = params.get("username") match {
+    val username: String = parameters.get("username") match {
       case Some(v) => v
       case _ => throw DtActionException("Field missing on SendEmailSmtp Action: username")
     }
 
-    val password: String = params.get("password") match {
+    val password: String = parameters.get("password") match {
       case Some(v) => v
       case _ => throw DtActionException("Field missing on SendEmailSmtp Action: password")
     }
@@ -38,14 +43,14 @@ object SendEmailSmtp extends DtAction {
       .as(user = username, pass = password)
       .startTls(true)()
 
-    val from: InternetAddress = params.get("from") match {
+    val from: InternetAddress = parameters.get("from") match {
       case Some(v) => new InternetAddress(v)
       case _ => throw DtActionException("Field missing on SendEmailSmtp Action: from")
     }
 
     var envelope: Envelope = Envelope.from(from)
 
-    params.get("to") match {
+    parameters.get("to") match {
       case Some(v) =>
         v.replace(" ", "").split(";")
           .map(addr => new InternetAddress(addr))
@@ -55,29 +60,29 @@ object SendEmailSmtp extends DtAction {
       case _ =>
     }
 
-    params.get("replyTo") match {
+    parameters.get("replyTo") match {
       case Some(v) => envelope = envelope.replyTo(new InternetAddress(v))
       case _ =>
     }
 
-    params.get("cc") match {
+    parameters.get("cc") match {
       case Some(v) => v.replace(" ", "").split(";")
         .map(addr => new InternetAddress(addr))
         .foreach(addr => envelope = envelope.cc(addr))
       case _ =>
     }
 
-    params.get("bcc") match {
+    parameters.get("bcc") match {
       case Some(v) => v.replace(" ", "").split(";")
         .map(addr => new InternetAddress(addr))
         .foreach(addr => envelope = envelope.bcc(addr))
       case _ =>
     }
 
-    val html: String = params.getOrElse("html", "false")
-    val body: String = params.getOrElse("body", "")
+    val html: String = parameters.getOrElse("html", "false")
+    val body: String = parameters.getOrElse("body", "")
 
-    params.get("subject") match {
+    parameters.get("subject") match {
       case Some(v) => envelope = envelope.subject(v)
       case _ => throw DtActionException("Field missing on SendEmailSmtp Action: subject")
     }

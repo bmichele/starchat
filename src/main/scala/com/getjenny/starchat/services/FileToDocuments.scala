@@ -86,9 +86,9 @@ object FileToDocuments extends JsonSupport {
           case _ => Unmarshal(queriesCsvString).to[List[String]]
         }
 
-        val actionInputFuture: Future[Map[String, String]] = actionInputCsvString match {
-          case "" => Future { Map.empty[String, String] }
-          case _ => Unmarshal(actionInputCsvString).to[Map[String, String]]
+        val actionInputFuture: Future[Seq[Map[String, String]]] = actionInputCsvString match {
+          case "" => Future { Seq.empty[Map[String, String]] }
+          case _ => Unmarshal(actionInputCsvString).to[Seq[Map[String, String]]]
         }
 
         val stateDataFuture: Future[Map[String, String]] = stateDataCsvString match {

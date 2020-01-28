@@ -19,6 +19,8 @@ trait ParseDateVariableManager extends GenericVariableManager {
 
   override def configurationPrefix: Option[String] = Some("http-atom.parsedate")
 
+  override def createArgumentConfiguration(arguments: List[String]): Map[String, String] = Map.empty
+
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     ParseDateOutput().successNel
   }
