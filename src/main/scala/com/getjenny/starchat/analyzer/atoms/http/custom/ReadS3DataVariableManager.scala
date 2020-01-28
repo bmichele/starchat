@@ -9,18 +9,8 @@ import spray.json._
 trait ReadS3DataVariableManager extends GenericVariableManager {
   /** Implement an atom which accept as input:
     *
-    * S3FolderId
-    * itemId
-    *
-    * S3FolderId is the name of a folder in the S3 bucket. That folder
-    * can contain public data (e.g. for a demo) or data owned by a customer.
-    *
-    * The atomic will retrieve a property stored in the file called item-id. Eg
-    *
     * s3-folder-id:   demoDishwasherProductIds
     * item-id:       XYZ1
-    * read-access-key-id:  AKIA...
-    * secret-access-key:   0jQL...
     *
     * Will provide the information {"price": "350.00", "model": "Foo"}
     *
@@ -29,7 +19,9 @@ trait ReadS3DataVariableManager extends GenericVariableManager {
     * XYZ1    content: {"price": "350.00", "model": "Foo"}
     * XYZ2    content: {"price": "1100.00", "model": "Bar"}
     *
-    * atom will be called with: readS3Data("s3-folder-id=demoDishwasherProductIds","item-id=XYZ1")
+    * atom will be called with:
+    *
+    * readS3Data("s3-folder-id=demoDishwasherProductIds","item-id=XYZ1")
     *
     * Variables set:
     * %XYZ1.price%
@@ -40,7 +32,8 @@ trait ReadS3DataVariableManager extends GenericVariableManager {
 
   override def configurationPrefix: Option[String] = Some("http-atom.readS3Data")
 
-  override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
+  override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
+               AtomValidation[HttpAtomOutputConf] = {
     val itemId = findProperty("item-id")
       .toSuccessNel("item-id not found, unable to create output conf")
     itemId.map(x => S3Output(itemIdPrefix = x))

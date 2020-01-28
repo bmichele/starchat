@@ -9,18 +9,26 @@ import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._
 import scalaz.{Failure, NonEmptyList, Success}
 
+/**
+  * Generic class to get hettp-atom-conf configuration parameters.
+  *
+  * To create a new atomic, typically:
+  *
+  * . Extend this
+  * . Override configurationPrefix (eg http-newatomicname)
+  * . Override output
+  *
+  * All templates (variables like <location> for Weather) used in the config file must be passed either as argument of the atomic
+  * (eg <location> in weather), or extracted variables (I can extract variable booking-date.0 and
+  * use <booking-date.0>., <query> is always set
+  *
+  */
 trait GenericVariableManager extends VariableManager {
-
+  /**
+    * None allows generic paths
+    *
+    */
   override def configurationPrefix: Option[String] = None
-
-  def extractInput[T](varName: String,
-                      configMap: VariableConfiguration,
-                      findProperty: String => Option[String])(buildInput: String => T): AtomValidation[T] = {
-    as[String](varName)
-      .run(configMap)
-      .flatMap(t => substituteTemplate(t, findProperty))
-      .map(buildInput)
-  }
 
   def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
     (as[String](url) |@| as[HttpMethod](httpMethod) |@| as[ContentType](inputContentType)) {
@@ -81,6 +89,15 @@ trait GenericVariableManager extends VariableManager {
       case _ => None.successNel[String]
     }
 
+  }
+
+  private def extractInput[T](varName: String,
+                              configMap: VariableConfiguration,
+                              findProperty: String => Option[String])(buildInput: String => T): AtomValidation[T] = {
+    as[String](varName)
+      .run(configMap)
+      .flatMap(t => substituteTemplate(t, findProperty))
+      .map(buildInput)
   }
 
   def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {

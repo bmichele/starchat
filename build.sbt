@@ -24,6 +24,7 @@ libraryDependencies ++= {
   val ScoptVersion	= "3.7.0"
   val StanfordCoreNLP = "3.9.2"
   val TikaVersion	= "1.18"
+  val AwsJavaSdk = "1.11.714"
   Seq(
     "com.getjenny" %% "manaus-lib" % ManausLibVersion,
     "com.getjenny" %% "analyzer" % AnalyzerVersion,
@@ -51,7 +52,8 @@ libraryDependencies ++= {
     "org.scalanlp" %% "breeze-natives" % BreezeVersion,
     "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
     "org.scalaz" %% "scalaz-core" % ScalazVersion,
-    "com.github.daddykotex" %% "courier" % CourierVersion
+    "com.github.daddykotex" %% "courier" % CourierVersion,
+    "com.amazonaws" % "aws-java-sdk" % AwsJavaSdk
   )
 }
 
