@@ -6,6 +6,7 @@ import com.getjenny.starchat.entities.io.QAAggregationsTypes
 import org.elasticsearch.action.get.GetResponse
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter
+import org.elasticsearch.search.aggregations.bucket.filter.Filter
 import org.elasticsearch.search.aggregations.bucket.histogram.{Histogram, ParsedDateHistogram}
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms
 import org.elasticsearch.search.aggregations.metrics.{Avg, Cardinality}
@@ -276,7 +277,8 @@ class QAAggregatedAnalyticsEntityManager(aggregationsTypes: Option[List[QAAggreg
           }
         } else None
         val avgFeedbackConvScoreOverTime: Option[List[AvgScoresHistogramItem]] = if (reqAggs.contains(QAAggregationsTypes.avgFeedbackConvScoreOverTime)) {
-          val h: ParsedDateHistogram = response.getAggregations.get("avgFeedbackConvScoreOverTime")
+          val pf: Filter = response.getAggregations.get("filtered")
+          val h: ParsedDateHistogram = pf.getAggregations.get("avgFeedbackConvScoreOverTime")
           Some {
             h.getBuckets.asScala.map { bucket =>
               val avg: Avg = bucket.getAggregations.get("avgScore")

@@ -859,12 +859,14 @@ trait QuestionAnswerService extends AbstractDataService {
             )
         }
         if (reqAggs.contains(QAAggregationsTypes.avgFeedbackConvScoreOverTime)) {
+          val filterQ = QueryBuilders.rangeQuery("feedbackConvScore").gte(0)
           aggregationBuilderList +=
-            AggregationBuilders
+            AggregationBuilders.filter("filtered", filterQ).subAggregation(
+              AggregationBuilders
               .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
               .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
               .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore"))
+              .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
         }
         if (reqAggs.contains(QAAggregationsTypes.avgAlgorithmAnswerScoreOverTime)) {
           aggregationBuilderList += AggregationBuilders
