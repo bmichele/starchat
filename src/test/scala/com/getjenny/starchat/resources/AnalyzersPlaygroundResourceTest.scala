@@ -64,6 +64,52 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return an HTTP code 200 when evaluating a single keyword analyzer with unicode query using matches" in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "hello helsingiss3ä!",
+          analyzer = """and(max(bor(keyword("helsin*"))))""",
+          data = Option {
+            AnalyzersData()
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+      }
+    }
+
+  }
+
+  it should {
+    "return an HTTP code 200 when evaluating a pair keyword analyzer with unicode query using matches" in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "kivassödfks koirasdölfksdöl",
+          analyzer = """and(max(bor(keyword("kiva* koira*"))))""",
+          data = Option {
+            AnalyzersData()
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+      }
+    }
+
+  }
+
+
+
+  it should {
     "return an HTTP code 200 when checking if a value exists in the traversed states list" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
