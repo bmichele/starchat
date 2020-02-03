@@ -51,7 +51,7 @@ libraryDependencies ++= {
     "org.scalanlp" %% "breeze-natives" % BreezeVersion,
     "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
     "org.scalaz" %% "scalaz-core" % ScalazVersion,
-    "com.github.daddykotex" %% "courier" % CourierVersion
+    "com.github.daddykotex" %% "courier" % CourierVersion,
   )
 }
 

@@ -52,7 +52,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "httpRequest",
     "parseDate",
     "readS3Data",
-    "checkMultipleDaysOfWeek"
+    "checkMultipleDaysOfWeek",
+    "timeBetween"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
@@ -96,6 +97,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
     case "readS3Data" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
     case "checkMultipleDaysOfWeek" => new CheckMultipleDaysOfWeekAtomic(argument, restrictedArgs)
+    case "timeBetween" => new TimeBetweenAtomic(argument, restrictedArgs)
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }
 }
