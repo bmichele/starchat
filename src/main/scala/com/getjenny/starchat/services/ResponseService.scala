@@ -14,6 +14,7 @@ import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
 
+import scala.collection.immutable
 import scala.collection.immutable.Map
 import scala.util.{Failure, Success, Try}
 
@@ -37,15 +38,28 @@ object ResponseService extends AbstractDataService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
 
-  private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String): ResponseRequestOut = {
-    if (document.action.startsWith(DtAction.actionPrefix) ||
-      document.action.startsWith(DtAction.analyzerActionPrefix)) {
+  private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String, request: ResponseRequestIn): List[ResponseRequestOut] = {
+    val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
+    if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
       val res = DtAction(indexName, document.state, document.action, document.actionInput, query)
-      document.copy(actionResult = Some {
-        res
-      })
+      if (isAnalyzerInAction) {
+        val state = if (res.success) document.successValue else document.failureValue
+        getNextResponse(indexName,
+          request.copy(
+            traversedStates = Some(document.traversedStates),
+            userInput = None,
+            data = Option(res.data),
+            threshold = Option(0D),
+            evaluationClass = None,
+            maxResults = None,
+            state = Some(List(state))
+          )
+        ).responseRequestOut.getOrElse(List.empty)
+      } else {
+        List(document.copy(actionResult = Some(res)))
+      }
     } else {
-      document
+      List(document)
     }
   }
 
@@ -192,19 +206,7 @@ object ResponseService extends AbstractDataService {
     }.toList
       .sortWith(_.score > _.score)
       .flatMap { document =>
-        val res = executeAction(indexName, document = document, userText)
-        val state = if (res.actionResult.exists(_.success)) document.successValue else document.failureValue
-        getNextResponse(indexName,
-          request.copy(
-            traversedStates = Some(document.traversedStates),
-            userInput = None,
-            data = res.actionResult.map(_.data),
-            threshold = Option(0D),
-            evaluationClass = None,
-            maxResults = None,
-            state = Some(List(state))
-          )
-        ).responseRequestOut.getOrElse(List.empty)
+        executeAction(indexName, document = document, userText, request)
       }
 
     if (dtDocumentsList.isEmpty) {
