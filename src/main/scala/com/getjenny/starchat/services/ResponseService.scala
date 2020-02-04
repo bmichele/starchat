@@ -175,7 +175,7 @@ object ResponseService extends AbstractDataService {
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
       val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
-      val responseItem: ResponseRequestOut = ResponseRequestOut(conversationId = conversationId,
+      val responseItem = ResponseRequestOut(conversationId = conversationId,
         state = state,
         maxStateCount = maxStateCount,
         traversedStates = traversedStatesUpdated,
@@ -191,8 +191,20 @@ object ResponseService extends AbstractDataService {
       responseItem
     }.toList
       .sortWith(_.score > _.score)
-      .map { document =>
-        executeAction(indexName, document = document, userText)
+      .flatMap { document =>
+        val res = executeAction(indexName, document = document, userText)
+        val state = if (res.actionResult.exists(_.success)) document.successValue else document.failureValue
+        getNextResponse(indexName,
+          request.copy(
+            traversedStates = Some(document.traversedStates),
+            userInput = None,
+            data = res.actionResult.map(_.data),
+            threshold = Option(0D),
+            evaluationClass = None,
+            maxResults = None,
+            state = Some(List(state))
+          )
+        ).responseRequestOut.getOrElse(List.empty)
       }
 
     if (dtDocumentsList.isEmpty) {
@@ -215,11 +227,11 @@ object ResponseService extends AbstractDataService {
 
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
-      if (splittedBubble.length > 1) {
-        val r = new scala.util.Random
-        val randomIdx = r.nextInt(splittedBubble.length)
-        splittedBubble(randomIdx)
-      } else {
+    if (splittedBubble.length > 1) {
+      val r = new scala.util.Random
+      val randomIdx = r.nextInt(splittedBubble.length)
+      splittedBubble(randomIdx)
+    } else {
       bubble
     }
   }
