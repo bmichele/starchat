@@ -199,7 +199,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       Get("/index_getjenny_english_0/decisiontable?dump=true") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[SearchDTDocumentsResults]
-        response.total should be (24)
+        response.total should be (25)
       }
     }
   }
@@ -484,7 +484,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         action = """com.getjenny.analyzer.analyzers.DefaultParser matchPatternRegex("[email](?:([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+))")""",
         actionInput = Map.empty,
         stateData = Map("url" -> "www.getjenny.com"),
-        successValue = "eval(show_buttons)",
+        successValue = "thanks_email",
         failureValue = "dont_understand",
         evaluationClass = Some("default"),
         version = None
@@ -510,11 +510,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.OK
         val response = responseAs[List[ResponseRequestOut]]
         val out: ResponseRequestOut = response.headOption.getOrElse(fail)
-        out.actionResult shouldBe defined
-        out.actionResult.map { res =>
-          res.data should contain key("email.0")
-          res.data.getOrElse("email.0", "") shouldEqual "this.is.test@email.com"
-        }
+        out.state shouldEqual "thanks_email"
       }
     }
   }
@@ -549,7 +545,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       Delete("/index_getjenny_english_0/decisiontable/all") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsSummaryResult]
-        response.deleted should be (23)
+        response.deleted should be (24)
       }
     }
   }

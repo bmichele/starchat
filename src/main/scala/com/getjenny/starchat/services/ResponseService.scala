@@ -14,6 +14,7 @@ import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
 
+import scala.collection.immutable
 import scala.collection.immutable.Map
 import scala.util.{Failure, Success, Try}
 
@@ -37,15 +38,34 @@ object ResponseService extends AbstractDataService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
 
-  private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String): ResponseRequestOut = {
-    if (document.action.startsWith(DtAction.actionPrefix) ||
-      document.action.startsWith(DtAction.analyzerActionPrefix)) {
+  private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String, request: ResponseRequestIn): List[ResponseRequestOut] = {
+    val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
+    if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
       val res = DtAction(indexName, document.state, document.action, document.actionInput, query)
-      document.copy(actionResult = Some {
-        res
-      })
+
+      // error in execution and negative results lead both to failureValue
+      val state = if (res.success && res.code === 0)
+        document.successValue
+      else
+        document.failureValue
+
+      if(state.isEmpty || state === document.state) { // avoiding recursive state fetch.
+        List(document)
+      } else {
+        getNextResponse(indexName,
+          request.copy(
+            traversedStates = Some(document.traversedStates),
+            userInput = None,
+            data = Option(res.data),
+            threshold = Option(0D),
+            evaluationClass = None,
+            maxResults = None,
+            state = Some(List(state))
+          )
+        ).responseRequestOut.getOrElse(List.empty)
+      }
     } else {
-      document
+      List(document)
     }
   }
 
@@ -175,7 +195,7 @@ object ResponseService extends AbstractDataService {
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
       val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
-      val responseItem: ResponseRequestOut = ResponseRequestOut(conversationId = conversationId,
+      val responseItem = ResponseRequestOut(conversationId = conversationId,
         state = state,
         maxStateCount = maxStateCount,
         traversedStates = traversedStatesUpdated,
@@ -191,8 +211,8 @@ object ResponseService extends AbstractDataService {
       responseItem
     }.toList
       .sortWith(_.score > _.score)
-      .map { document =>
-        executeAction(indexName, document = document, userText)
+      .flatMap { document =>
+        executeAction(indexName, document = document, userText, request)
       }
 
     if (dtDocumentsList.isEmpty) {
@@ -215,11 +235,11 @@ object ResponseService extends AbstractDataService {
 
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
-      if (splittedBubble.length > 1) {
-        val r = new scala.util.Random
-        val randomIdx = r.nextInt(splittedBubble.length)
-        splittedBubble(randomIdx)
-      } else {
+    if (splittedBubble.length > 1) {
+      val r = new scala.util.Random
+      val randomIdx = r.nextInt(splittedBubble.length)
+      splittedBubble(randomIdx)
+    } else {
       bubble
     }
   }

@@ -90,3 +90,4 @@ terrible_feedback,1,0,"booleanor(vOneKeyword(""idiot""), vOneKeyword(""fuck.*"")
 call_operator,1,0,"band(bor(vOneKeyword(""call""),vOneKeyword(""talk""),vOneKeyword(""speak"")),vOneKeyword(""operator""))",,"No operator is available at the moment, sorry. You just have me.",,,,,,default
 any_further,1,0,,,"Let me know if you have any other request, or type 'Bye' to close the chat",,,,,,default
 dont_understand,1,0,,,"I do not understand your input, please try again or type ""help"" to know my capabilities",,,,,,default
+thanks_email,1,0,,,"Thanks for providing email",,,,,,default
