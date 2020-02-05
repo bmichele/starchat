@@ -10,6 +10,7 @@ import breeze.io.CSVReader
 import com.getjenny.starchat.entities.persistents.{DTDocumentCreate, SearchDTDocument, SearchDTDocumentsResults, Term}
 import com.getjenny.starchat.serializers.JsonSupport
 import scalaz.Scalaz._
+import spray.json.{JsObject, _}
 
 import scala.collection.immutable.{List, Map}
 import scala.concurrent.duration._
@@ -86,9 +87,9 @@ object FileToDocuments extends JsonSupport {
           case _ => Unmarshal(queriesCsvString).to[List[String]]
         }
 
-        val actionInputFuture: Future[Seq[Map[String, String]]] = actionInputCsvString match {
-          case "" => Future { Seq.empty[Map[String, String]] }
-          case _ => Unmarshal(actionInputCsvString).to[Seq[Map[String, String]]]
+        val actionInput: Seq[JsObject] = actionInputCsvString match {
+          case "" => Seq.empty[JsObject]
+          case _ => actionInputCsvString.parseJson.convertTo[Seq[JsObject]]
         }
 
         val stateDataFuture: Future[Map[String, String]] = stateDataCsvString match {
@@ -97,7 +98,6 @@ object FileToDocuments extends JsonSupport {
         }
 
         val queries = Await.result(queriesFuture, 10.second)
-        val actionInput = Await.result(actionInputFuture, 10.second)
         val stateData = Await.result(stateDataFuture, 10.second)
         val evaluationClass: Option[String] = if(entry.contains("evaluationClass")) {
           Some{entry(header("evaluationClass"))}

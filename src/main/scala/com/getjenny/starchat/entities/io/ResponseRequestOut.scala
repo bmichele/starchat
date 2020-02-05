@@ -1,5 +1,7 @@
 package com.getjenny.starchat.entities.io
 
+import spray.json.JsObject
+
 import scala.collection.immutable.Map
 
 case class ResponseRequestOut(conversationId: String,
@@ -10,7 +12,7 @@ case class ResponseRequestOut(conversationId: String,
                               bubble: String,
                               action: String,
                               data: Map[String, String],
-                              actionInput: Seq[Map[String, String]],
+                              actionInput: Seq[JsObject],
                               stateData: Map[String, String],
                               successValue: String,
                               failureValue: String,

@@ -12,6 +12,9 @@ import com.getjenny.starchat.entities.io.DtActionResult
 import com.getjenny.starchat.services.AnalyzerService.log
 import com.getjenny.starchat.utils.SystemConfiguration
 import scalaz.Scalaz._
+import spray.json.DefaultJsonProtocol._
+import spray.json.JsObject
+
 import scala.util.{Failure, Success, Try}
 
 case class DtActionException(message: String = "", cause: Throwable = None.orNull)
@@ -20,14 +23,14 @@ case class DtActionException(message: String = "", cause: Throwable = None.orNul
 trait DtAction {
   protected val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
 
-  def apply(indexName: String, stateName: String, params: Seq[Map[String, String]]): DtActionResult
+  def apply(indexName: String, stateName: String, params: Seq[JsObject]): DtActionResult
 }
 
 object DtAction {
   val actionPrefix = "com.getjenny.starchat.actions."
   val analyzerActionPrefix = "com.getjenny.analyzer.analyzers.DefaultParser "
 
-  def apply(indexName: String, stateName: String, action: String, params: Seq[Map[String, String]], query: String): DtActionResult = {
+  def apply(indexName: String, stateName: String, action: String, params: Seq[JsObject], query: String): DtActionResult = {
     action match {
       case "com.getjenny.starchat.actions.SendEmailSmtp" => SendEmailSmtp(indexName, stateName, params)
       case "com.getjenny.starchat.actions.SendEmailGJ" => SendEmailGJ(indexName, stateName, params)
@@ -42,12 +45,17 @@ object DtActionAtomAdapter {
   private[this] val restrictedArgs: Map[String, String] = SystemConfiguration
     .createMapFromPath(atomConfigurationBasePath)
 
-  def apply(indexName: String, stateName: String, action: String, params: Seq[Map[String, String]], query: String): DtActionResult = {
+  def apply(indexName: String, stateName: String, action: String, params: Seq[JsObject], query: String): DtActionResult = {
     val command = action.stripPrefix(DtAction.analyzerActionPrefix)
-    val allParams = if(params.isEmpty) Map.empty[String, String] else params.reduce(_ ++ _)
+
+    val allParams = if(params.nonEmpty)
+      params.map(_.convertTo[Map[String, String]]).reduce(_ ++ _)
+    else
+      Map.empty[String, String]
 
     //FIXME use context to pass index_name
-    val starchatAnalyzer = Try(new StarChatAnalyzer(command, restrictedArgs + ("index_name" -> indexName))) match {
+    val wrappedCommand = "band(" + command + ")"
+    val starchatAnalyzer = Try(new StarChatAnalyzer(wrappedCommand, restrictedArgs + ("index_name" -> indexName))) match {
       case Success(analyzerObject) =>
         log.debug(s"Analyzer successfully built index($indexName) state($stateName)")
         Some(analyzerObject)
@@ -58,10 +66,10 @@ object DtActionAtomAdapter {
 
     starchatAnalyzer.map { analyzer =>
       val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = allParams))
-      DtActionResult(result.score === 1,
-        if (result.score === 0) 1 else 0,
+      DtActionResult(result.score == 1,
+        if (result.score == 0) 1 else 0,
         result.data.extractedVariables
       )
-    }.getOrElse(DtActionResult(success = false, code = 1))
+    }.getOrElse(DtActionResult(code = 1))
   }
 }

@@ -6,6 +6,7 @@ import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.BayesOperatorCacheService
+import spray.json.JsObject
 
 class BayesOperatorResourceTest extends TestEnglishBase {
 
@@ -62,7 +63,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
         queries = List("Keyword1 is good", "Keyword1 is wonderful", "Keyword2 is so so"),
         bubble = "S1 is the winner",
         action = "",
-        actionInput = Seq.empty[Map[String, String]],
+        actionInput = Seq.empty[JsObject],
         stateData = Map(),
         successValue = "",
         failureValue = "",
@@ -78,7 +79,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
         queries = List("Keyword1 is enough", "Keyword2 is quite good"),
         bubble = "S2 is the winner",
         action = "",
-        actionInput = Seq.empty[Map[String, String]],
+        actionInput = Seq.empty[JsObject],
         stateData = Map(),
         successValue = "",
         failureValue = "",
@@ -94,7 +95,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
         queries = List(),
         bubble = "S3 is the winner",
         action = "",
-        actionInput = Seq.empty[Map[String, String]],
+        actionInput = Seq.empty[JsObject],
         stateData = Map(),
         successValue = "",
         failureValue = "",

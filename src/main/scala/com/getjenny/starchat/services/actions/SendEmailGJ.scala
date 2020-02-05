@@ -9,6 +9,8 @@ import com.typesafe.config.{Config, ConfigFactory}
 import courier.Defaults._
 import courier._
 import javax.mail.internet.InternetAddress
+import spray.json.DefaultJsonProtocol._
+import spray.json.JsObject
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -22,14 +24,14 @@ object SendEmailGJ extends DtAction {
   val port: Int = config.getInt("starchat.actions.SendEmailGJ.port")
   val from: InternetAddress = new InternetAddress(config.getString("starchat.actions.SendEmailGJ.from"))
 
-  override def apply(indexName: String, stateName: String, actionInput: Seq[Map[String, String]]): DtActionResult = {
+  override def apply(indexName: String, stateName: String, actionInput: Seq[JsObject]): DtActionResult = {
 
     if(!enabled) {
       throw DtActionException("Action SendEmailGJ is disabled")
     }
 
     val parameters = actionInput.headOption match {
-      case Some(p) => p
+      case Some(p) => p.convertTo[Map[String, String]]
       case _ => throw DtActionException("arguments map not provided")
     }
 

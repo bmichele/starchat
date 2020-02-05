@@ -13,6 +13,7 @@ import com.getjenny.starchat.entities.persistents.DTDocumentCreate
 import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
+import spray.json._
 
 import scala.collection.immutable.Map
 import scala.util.{Failure, Success, Try}
@@ -37,15 +38,34 @@ object ResponseService extends AbstractDataService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
 
-  private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String): ResponseRequestOut = {
-    if (document.action.startsWith(DtAction.actionPrefix) ||
-      document.action.startsWith(DtAction.analyzerActionPrefix)) {
+  private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String, request: ResponseRequestIn): List[ResponseRequestOut] = {
+    val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
+    if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
       val res = DtAction(indexName, document.state, document.action, document.actionInput, query)
-      document.copy(actionResult = Some {
-        res
-      })
+
+      // error in execution and negative results lead both to failureValue
+      val state = if (res.success && res.code === 0)
+        document.successValue
+      else
+        document.failureValue
+
+      if(state.isEmpty || state === document.state) { // avoiding recursive state fetch.
+        List(document)
     } else {
-      document
+        getNextResponse(indexName,
+          request.copy(
+            traversedStates = Some(document.traversedStates),
+            userInput = None,
+            data = Option(res.data),
+            threshold = Option(0D),
+            evaluationClass = None,
+            maxResults = None,
+            state = Some(List(state))
+          )
+        ).responseRequestOut.getOrElse(List.empty)
+      }
+    } else {
+      List(document)
     }
   }
 
@@ -191,8 +211,8 @@ object ResponseService extends AbstractDataService {
       responseItem
     }.toList
       .sortWith(_.score > _.score)
-      .map { document =>
-        executeAction(indexName, document = document, userText)
+      .flatMap { document =>
+        executeAction(indexName, document = document, userText, request)
       }
 
     if (dtDocumentsList.isEmpty) {
@@ -224,16 +244,13 @@ object ResponseService extends AbstractDataService {
     }
   }
 
-  private[this] def replaceActionInput(actionInput: Seq[Map[String, String]],
-                                       values: Map[String, String]): Seq[Map[String, String]] = {
+  private[this] def replaceActionInput(actionInput: Seq[JsObject],
+                                       values: Map[String, String]): Seq[JsObject] = {
     actionInput.map { input =>
-      input.map { case (mapInputKey, mapInputValue) =>
-        values.foldLeft((mapInputKey, mapInputValue)) {
-          case ((accKey, accVal), (replKey, replValue)) =>
-            (accKey.replaceAll("%" + replKey + "%", replValue),
-              accVal.replaceAll("%" + replKey + "%", replValue))
-        }
+      val jsonObjString = values.foldLeft(input.toString) { case (acc, (replKey, replValue)) =>
+        acc.replaceAll("%" + replKey + "%", replValue)
       }
+      jsonObjString.parseJson.asJsObject
     }
   }
 

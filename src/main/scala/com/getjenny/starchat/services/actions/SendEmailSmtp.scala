@@ -8,16 +8,17 @@ import com.getjenny.starchat.entities.io.DtActionResult
 import courier.Defaults._
 import courier._
 import javax.mail.internet.InternetAddress
+import spray.json.DefaultJsonProtocol._
+import spray.json.JsObject
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-
 object SendEmailSmtp extends DtAction {
-  override def apply(indexName: String, stateName: String, actionInput: Seq[Map[String, String]]): DtActionResult = {
+  override def apply(indexName: String, stateName: String, actionInput: Seq[JsObject]): DtActionResult = {
 
     val parameters = actionInput.headOption match {
-      case Some(p) => p
+      case Some(p) => p.convertTo[Map[String, String]]
       case _ => throw DtActionException("arguments map not provided")
     }
 

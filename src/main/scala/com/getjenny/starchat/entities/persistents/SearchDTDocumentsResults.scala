@@ -8,6 +8,7 @@ import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder
 import org.elasticsearch.search.{SearchHit, SearchHits}
+import spray.json.{JsObject, _}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
@@ -27,7 +28,7 @@ case class DTDocumentCreate(override val state: String,
                             queries: List[String],
                             bubble: String,
                             action: String,
-                            actionInput: Seq[Map[String, String]],
+                            actionInput: Seq[JsObject],
                             stateData: Map[String, String],
                             successValue: String,
                             failureValue: String,
@@ -42,7 +43,7 @@ case class DTDocumentUpdate(override val state: String,
                             queries: Option[List[String]],
                             bubble: Option[String],
                             action: Option[String],
-                            actionInput: Option[Seq[Map[String, String]]],
+                            actionInput: Option[Seq[JsObject]],
                             stateData: Option[Map[String, String]],
                             successValue: Option[String],
                             failureValue: Option[String],
@@ -96,10 +97,10 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       case None => ""
     }
 
-    val actionInput: Seq[Map[String, String]] = source.get("action_input") match {
+    val actionInput: Seq[JsObject] = source.get("action_input") match {
       case Some(t) => t.asInstanceOf[util.List[util.HashMap[String, String]]]
-        .asScala.map(_.asScala.toMap)
-      case Some(null) | None => Seq[Map[String, String]]()
+        .asScala.map{ v => v.getOrDefault("json", "").parseJson.asJsObject }
+      case Some(null) | None => Seq[JsObject]()
     }
 
     val stateData: Map[String, String] = source.get("state_data") match {
@@ -181,7 +182,8 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
     val actionInputBuilder: XContentBuilder = builder.startArray("action_input")
     document.actionInput.foreach { actionInputItem =>
       val obj = actionInputBuilder.startObject()
-      actionInputItem.map{ case(key, value) => obj.field(key, value) }
+      val jsonString = actionInputItem.toString()
+      obj.field("json", jsonString)
       obj.endObject()
     }
     actionInputBuilder.endArray()
@@ -223,11 +225,9 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       if (x.nonEmpty) {
         val actionInputBuilder: XContentBuilder = builder.startArray("action_input")
         x.foreach { actionInputItem =>
-          val key = actionInputItem.get("key")
-          val value = actionInputItem.get("value")
           val obj = actionInputBuilder.startObject()
-          obj.field("key", key)
-          obj.field("value", value)
+          val jsonString = actionInputItem.toString()
+          obj.field("json", jsonString)
           obj.endObject()
         }
         actionInputBuilder.endArray()
