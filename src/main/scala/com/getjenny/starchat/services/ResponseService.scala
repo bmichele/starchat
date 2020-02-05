@@ -43,7 +43,7 @@ object ResponseService extends AbstractDataService {
     if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
       val res = DtAction(indexName, document.state, document.action, document.actionInput, query)
       if (isAnalyzerInAction) {
-        val state = if (res.success) document.successValue else document.failureValue
+        val state = if (res.success && res.code === 0) document.successValue else document.failureValue
         getNextResponse(indexName,
           request.copy(
             traversedStates = Some(document.traversedStates),
