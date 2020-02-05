@@ -8,13 +8,14 @@ import scalaz.Scalaz._
 import spray.json._
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import DefaultJsonProtocol._
 
 /**
   * parseDate()
   * output:
   * "extracted_date.score" 0 if no date is found
   * "extracted_date.status"
-  * "extracted_date.date_iso" full datetime formatted as yyyy-MM-dd'T'HH:mm:ss
+  * "extracted_date.date_iso" full datetime formatted as yyyy-MM-ddTHH:mm:ss
   * "extracted_date.date.year" year - yyyy
   * "extracted_date.date.month" month - MM
   * "extracted_date.date.day_of_month" day of month - dd
@@ -55,16 +56,15 @@ case class ParseDateOutput(
     if(StatusCodes.OK.equals(status)){
       val json = body.parseJson.asJsObject
       val dateList = json.fields.get("dates").map {
-        case JsArray(dates) => dates.map(_.toString()).toArray
+        case JsArray(dates) => dates.map(_.convertTo[String]).toArray
         case _ => Array.empty[String]
       }.getOrElse(Array.empty[String])
 
       val s = if(dateList.isEmpty) "0" else "1"
 
       val dateIso = dateList.headOption.getOrElse("")
-      // TODO: remove quotes from format (need to wait new version of dateparse microservice)
-      val format = new SimpleDateFormat("'\"'yyyy-MM-dd'T'HH:mm:ss'\"'")
-      val dateObj = if (dateIso.isEmpty) format.parse("\"1970-01-01T00:00:00\"") else format.parse(dateIso)
+      val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+      val dateObj = if (dateIso.isEmpty) format.parse("1970-01-01T00:00:00") else format.parse(dateIso)
       val cal = Calendar.getInstance()
       cal.setTime(dateObj)
 
