@@ -42,8 +42,16 @@ object ResponseService extends AbstractDataService {
     val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
     if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
       val res = DtAction(indexName, document.state, document.action, document.actionInput, query)
-      if (isAnalyzerInAction) {
-        val state = if (res.success && res.code === 0) document.successValue else document.failureValue
+
+      // error in execution and negative results lead both to failureValue
+      val state = if (res.success && res.code === 0)
+        document.successValue
+      else
+        document.failureValue
+
+      if(state.isEmpty || state === document.state) { // avoiding recursive state fetch.
+        List(document)
+      } else {
         getNextResponse(indexName,
           request.copy(
             traversedStates = Some(document.traversedStates),
@@ -55,8 +63,6 @@ object ResponseService extends AbstractDataService {
             state = Some(List(state))
           )
         ).responseRequestOut.getOrElse(List.empty)
-      } else {
-        List(document.copy(actionResult = Some(res)))
       }
     } else {
       List(document)
