@@ -16,7 +16,7 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "user query unused",
-          analyzer = """band(checkDate("2019-12-01T00:00:00","Greater","2019-11-01T00:00:00","P0D", "EET"))""",
+          analyzer = """band(checkDate("2019-12-01T00:00:00","Greater","P0D", "EET","2019-11-01T00:00:00"))""",
           data = Option {
             AnalyzersData()
           }
@@ -37,7 +37,7 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "user query unused",
-          analyzer = """band(checkDate("2019-12-01T00:00:00","Greater","2019-11-01T00:00:00","P+60D", "EET"))""",
+          analyzer = """band(checkDate("2019-12-01T00:00:00","Greater","P+60D", "EET","2019-11-01T00:00:00"))""",
           data = Option {
             AnalyzersData()
           }
@@ -54,12 +54,12 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
   }
 
   "CheckDate Atomic" should {
-    "return 1.0 when evaluating condition now is after yesterday" in {
+    "return 1.0 when evaluating condition now from empty string is after yesterday" in {
       val nowString = LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "user query unused",
-          analyzer = """band(checkDate("""" + nowString + """","Greater","","P-1D", "EET"))""",
+          analyzer = """band(checkDate("""" + nowString + """","Greater","P-1D", "EET", ""))""",
           data = Option {
             AnalyzersData()
           }
@@ -74,4 +74,27 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
       }
     }
   }
+
+  "CheckDate Atomic" should {
+    "return 1.0 when evaluating condition now from missing argument is after yesterday" in {
+      val nowString = LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "user query unused",
+          analyzer = """band(checkDate("""" + nowString + """","Greater","P-1D", "EET"))""",
+          data = Option {
+            AnalyzersData()
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+      }
+    }
+  }
+
 }
