@@ -4,6 +4,10 @@
 *.class
 *.log
 
+# Elasticsearch logs and data
+docker-starchat/elasticsearch/logs/
+docker-starchat/elasticsearch/data/
+
 # sbt specific
 .cache
 .history
