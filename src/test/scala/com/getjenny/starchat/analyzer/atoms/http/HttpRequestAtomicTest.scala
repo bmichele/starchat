@@ -388,7 +388,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
 
-      val configuration = variableManager.validateAndBuild(List.empty, systemConf, Map.empty, "July 22nd, 1947")
+      val configuration = variableManager.validateAndBuild(List("language=en","timezone=GMT+1"), systemConf, Map.empty, "July 22nd, 1947")
       configuration shouldBe a [Success[_]]
       configuration.map(println)
     }
