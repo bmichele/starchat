@@ -19,6 +19,7 @@ import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
   * Arg1 = opening time as "HH:mm"
   * Arg2 = closing time as "HH:mm"
   * Arg3 = Time Zone
+  * Arg4 = current time in Time Zone if "" or missing, otherwise input time to be compared
   *
   * Ex: timeBetween("09:15", "19:30", "CET")
   *
@@ -53,7 +54,7 @@ class TimeBetweenAtomic(val arguments: List[String],
   val timeZone: ZoneId = arguments.lift(2) match {
     case Some(t) => {
       try {
-        ZoneId.of("CET")
+        ZoneId.of(t)
       }
       catch {
         case _: Throwable => throw ExceptionAtomic(atomName + ": Third argument should be a valid timezone (eg CET, Europe/Moscow)")
@@ -63,13 +64,29 @@ class TimeBetweenAtomic(val arguments: List[String],
     case _ => throw ExceptionAtomic(atomName + ": must have 3 arguments (2)")
   }
 
+  val compareTime: LocalTime = arguments.lift(3) match {
+    case Some(t) => {
+      try {
+        t match {
+          case "" => LocalTime.now(timeZone)
+          case _ => LocalTime.parse(t, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        }
+      }
+      catch {
+        case _: Throwable => throw ExceptionAtomic(atomName + ": Third argument is compareTime and should be formatted as HH:mm")
+      }
+    }
+    case _ => LocalTime.now(timeZone)
+  }
+
+
   override def toString: String = "timeBetween(\"" + arguments.mkString(", ") + "\")"
 
   val isEvaluateNormalized: Boolean = true
 
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
     // Using compareTo and not isBefore / After bc want =
-    if (openingTime.compareTo(LocalTime.now(timeZone)) <= 0 &&  closingTime.compareTo(LocalTime.now(timeZone)) >= 0)
+    if (openingTime.compareTo(compareTime) <= 0 &&  closingTime.compareTo(compareTime) >= 0)
       Result(score = 1.0)
     else
       Result(score = 0.0)
