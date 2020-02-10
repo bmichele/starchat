@@ -8,20 +8,6 @@ import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvalu
 class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
 
   "StarChat" should {
-    "return an HTTP code 201 when creating a new user" in {
-      val user = User(
-        id = "test_user",
-        password = "3c98bf19cb962ac4cd0227142b3495ab1be46534061919f792254b80c0f3e566f7819cae73bdc616af0ff555f7460ac96d88d56338d659ebd93e2be858ce1cf9",
-        salt = "salt",
-        permissions = Map[String, Set[Permissions.Value]]("index_getjenny_english_0" -> Set(Permissions.read, Permissions.write))
-      )
-      Post(s"/user", user) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.Created
-      }
-    }
-  }
-
-  it should {
     "return an HTTP code 200 when evaluating a simple vOneKeyword analyzer with an empty query" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
@@ -59,6 +45,52 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         response.build should be(true)
         response.buildMessage should be("success")
         response.value should be(0.25)
+      }
+    }
+  }
+
+  it should {
+    "return an HTTP code 200 when testing a variable value: positive match" in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "this is variable check test",
+          analyzer = """checkVariableValue("GJ_SERVICE_AVAILABLE", "busy")""",
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"),
+              extractedVariables =
+                Map[String, String]("GJ_SERVICE_AVAILABLE" -> "busy"))
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+      }
+    }
+  }
+
+  it should {
+    "return an HTTP code 200 when testing a variable value: negative match" in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "this is variable check test",
+          analyzer = """checkVariableValue("GJ_SERVICE_AVAILABLE", "busy")""",
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"),
+              extractedVariables =
+                Map[String, String]("GJ_SERVICE_AVAILABLE" -> "true"))
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(0.0)
       }
     }
   }
