@@ -7,6 +7,7 @@ import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvalu
 
 class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
 
+  /*
   "StarChat" should {
     "return an HTTP code 200 when evaluating a simple vOneKeyword analyzer with an empty query" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
@@ -433,7 +434,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
     }*/
 
   }
-
+  */
 }
 
 
