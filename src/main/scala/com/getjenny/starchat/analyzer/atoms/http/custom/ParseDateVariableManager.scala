@@ -10,7 +10,7 @@ import java.util.Calendar
 import DefaultJsonProtocol._
 
 /**
-  * parseDate("language=it,timezone=US/Eastern")
+  * parseDate("language=it", "timezone=US/Eastern")
   * output:
   * "extracted_date.score" 0 if no date is found
   * "extracted_date.status"
