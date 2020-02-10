@@ -383,6 +383,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       configuration.map(println)
     }
 
+    //TODO: these test can be enabled when the parameters are moved to a secret travis variable
+    /*
     "create a valid date parser atom configuration " in {
       val variableManager = new ParseDateVariableManager {}
       val systemConf = SystemConfiguration
@@ -392,8 +394,6 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       configuration shouldBe a [Success[_]]
       configuration.map(println)
     }
-    //TODO: these test can be enabled when the parameters are moved to a secret travis variable
-    /*
 
     "create a valid read s3 atom configuration" in {
       val variableManager = new ReadS3DataVariableManager {}
