@@ -5509,7 +5509,7 @@ components:
     actionInput:
       type: array
       description: >-
-        a list of string dictionaries, the input passed to action's function (e.g., for show_buttons is button's description
+        a list of JSON objects, the input passed to action's function (e.g., for show_buttons is button's description)
       items:
         type: object
         additionalProperties:

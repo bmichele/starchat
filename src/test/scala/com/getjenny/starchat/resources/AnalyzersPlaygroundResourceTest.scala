@@ -50,6 +50,52 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return an HTTP code 200 when testing a variable value: positive match" in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "this is variable check test",
+          analyzer = """checkVariableValue("GJ_SERVICE_AVAILABLE", "busy")""",
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"),
+              extractedVariables =
+                Map[String, String]("GJ_SERVICE_AVAILABLE" -> "busy"))
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+      }
+    }
+  }
+
+  it should {
+    "return an HTTP code 200 when testing a variable value: negative match" in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "this is variable check test",
+          analyzer = """checkVariableValue("GJ_SERVICE_AVAILABLE", "busy")""",
+          data = Option {
+            AnalyzersData(traversedStates = Vector("one", "two"),
+              extractedVariables =
+                Map[String, String]("GJ_SERVICE_AVAILABLE" -> "true"))
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(0.0)
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 when evaluating a single keyword analyzer with unicode query using matches" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
