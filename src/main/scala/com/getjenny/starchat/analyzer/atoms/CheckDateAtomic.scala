@@ -4,12 +4,14 @@
 
 package com.getjenny.starchat.analyzer.atoms
 
-import java.time.format.DateTimeFormatter
-import java.time.{Duration, ZoneId, LocalDateTime}
+import java.time.format.{DateTimeFormatter, DateTimeParseException}
+import java.time.{Duration, LocalDateTime, ZoneId}
 
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
 import com.getjenny.analyzer.util.{ComparisonOperators, Time}
+
+import scala.util.{Failure, Success, Try}
 
 
 /**
@@ -33,79 +35,46 @@ class CheckDateAtomic(val arguments: List[String],
 
   val atomName: String = "checkDate"
 
-  val argInputDate: LocalDateTime = arguments.headOption match {
-    case Some(t) => {
-      try {
-        LocalDateTime.parse(t, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-      }
-      catch {
-        case _: Throwable => throw ExceptionAtomic(atomName + ": First argument should be a date formatted as ISO_LOCAL_DATE_TIME")
-      }
+  val parseArguments: () => Try[(LocalDateTime, String, LocalDateTime)] = {
+    for {
+      argInputDate <- arguments.headOption
+      argOperator <- arguments.lift(1)
+      argShift <- arguments.lift(2)
+      timeZone <- arguments.lift(3)
+    } yield {
+      () => Try {
+        val shift = Duration.parse(argShift)
+        val zone = ZoneId.of(timeZone)
+        val compare = arguments.lift(4)
+          .flatMap(x => if (x.isEmpty) None else Some(x))
+          .map {
+          x => LocalDateTime.parse(x, DateTimeFormatter.ISO_LOCAL_DATE_TIME).plusNanos(shift.toNanos)
+        }.getOrElse(LocalDateTime.now(zone).plusNanos(shift.toNanos))
 
-    }
-    case _ => throw ExceptionAtomic(atomName + ": must have 5 arguments")
-  }
+        ComparisonOperators.compare(0, 0, argOperator)
 
-  val argOperator: String = arguments.lift(1) match {
-    case Some(t) => try {
-      // call compare method to validate t string is a valid operator
-      ComparisonOperators.compare(0, 0, t)
-      t
-    }
-    catch {
-      case _: Throwable => throw ExceptionAtomic(atomName + ": Second argument should be a valid operator")
-    }
-    case _ => throw ExceptionAtomic(atomName + ": must have 5 arguments")
-  }
-
-  val argShift: Duration = arguments.lift(2) match {
-    case Some(t) => {
-      try {
-        Duration.parse(t)
-      }
-      catch {
-        case _: Throwable => throw ExceptionAtomic(atomName + ": Third argument should be a duration formatted using ISO-8601 duration format ")
+        (LocalDateTime.parse(argInputDate, DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+          argOperator,
+          compare
+        )
       }
     }
-    case _ => throw ExceptionAtomic(atomName + ": must have four arguments")
-  }
-
-  val timeZone: ZoneId = arguments.lift(3) match {
-    case Some(t) => {
-      try {
-        ZoneId.of(t)
-      }
-      catch {
-        case _: Throwable => throw ExceptionAtomic(atomName + ": Fourth argument should be a valid timezone (eg CET, Europe/Moscow)")
-      }
-    }
-    case _ => throw ExceptionAtomic(atomName + ": must have 5 arguments")
-  }
-
-  val argCompareDate: LocalDateTime = arguments.lift(5) match {
-    case Some(t) => {
-      try {
-        t match {
-          case "" => LocalDateTime.now(timeZone).plusNanos(argShift.toNanos)
-          case _ => LocalDateTime.parse(t, DateTimeFormatter.ISO_LOCAL_DATE_TIME).plusNanos(argShift.toNanos)
-        }
-      }
-      catch {
-        case _: Throwable => throw ExceptionAtomic(atomName + ": Fifth argument should be a date formatted as ISO_LOCAL_DATE_TIME")
-      }
-
-    }
-    case _ => LocalDateTime.now(timeZone).plusNanos(argShift.toNanos)
-  }
+    }.getOrElse(throw ExceptionAtomic(atomName + ": must have arguments"))
 
   override def toString: String = "CheckDate(\"" + arguments + "\")"
 
   val isEvaluateNormalized: Boolean = true
 
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
-    if (ComparisonOperators.compare(argInputDate.compareTo(argCompareDate), 0, argOperator))
-      Result(score = 1.0)
-    else
-      Result(score = 0.0)
+
+    parseArguments() match {
+      case Success((inputDate, operator, compare)) =>
+        if (ComparisonOperators.compare(inputDate.compareTo(compare), 0, operator))
+          Result(score = 1.0)
+        else
+          Result(score = 0.0)
+
+      case Failure(exception) => throw ExceptionAtomic("Error while parsing date: ", exception)
+    }
   }
 }
