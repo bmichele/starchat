@@ -1,22 +1,21 @@
 package com.getjenny.starchat.resources
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
 import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.util.Time
 import com.getjenny.starchat.TestEnglishBase
-import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, Permissions, User}
+import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse}
+import scalaz.Scalaz._
 
-class CheckDateAtomicResourceTest extends TestEnglishBase {
+class TimeBetweenAtomicResourceTest extends TestEnglishBase {
 
 
-  "CheckDate Atomic" should {
-    "return 1.0 when evaluating condition 1st december 2019 is after 1st november 2019" in {
+  "TimeBetween Atomic" should {
+    "return 1.0 when evaluating condition from midnight to midnight" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "user query unused",
-          analyzer = """band(checkDate("2019-12-01T00:00:00","Greater","P0D", "EET","2019-11-01T00:00:00"))""",
+          analyzer = """band(timeBetween("00:00", "23:59", "Europe/Helsinki"))""",
           data = Option {
             AnalyzersData()
           }
@@ -32,34 +31,13 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
     }
   }
 
-  "CheckDate Atomic" should {
-    "return 0.0 when evaluating condition 1st december 2019 is after 1st november 2019 plus 60 days" in {
+  "TimeBetween Atomic" should {
+    "return 1.0 when evaluating a compareTime between opening times" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "user query unused",
-          analyzer = """band(checkDate("2019-12-01T00:00:00","Greater","P+60D", "EET","2019-11-01T00:00:00"))""",
-          data = Option {
-            AnalyzersData()
-          }
-        )
-
-      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        val response = responseAs[AnalyzerEvaluateResponse]
-        response.build should be(true)
-        response.buildMessage should be("success")
-        response.value should be(0.0)
-      }
-    }
-  }
-
-  "CheckDate Atomic" should {
-    "return 1.0 when evaluating condition now from empty string is after yesterday" in {
-      val nowString = LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-      val evaluateRequest: AnalyzerEvaluateRequest =
-        AnalyzerEvaluateRequest(
-          query = "user query unused",
-          analyzer = """band(checkDate("""" + nowString + """","Greater","P-1D", "EET", ""))""",
+          // Timezone is not used, but it's required
+          analyzer = """band(timeBetween("00:00", "23:59", "Europe/Helsinki", "08:44"))""",
           data = Option {
             AnalyzersData()
           }
@@ -75,13 +53,12 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
     }
   }
 
-  "CheckDate Atomic" should {
-    "return 1.0 when evaluating condition now from missing argument is after yesterday" in {
-      val nowString = LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+  "Two TimeBetween Atomics" should {
+    "return 1.0 when evaluated in XOR and have TimeZone in a 12h interval" in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "user query unused",
-          analyzer = """band(checkDate("""" + nowString + """","Greater","P-1D", "EET"))""",
+          analyzer = """bor(band(timeBetween("00:00", "11:59", "UTC-6"), bnot(timeBetween("00:00", "11:59", "UTC+6"))), band(timeBetween("00:00", "11:59", "UTC+6"), bnot(timeBetween("00:00", "11:59", "UTC-6"))))""",
           data = Option {
             AnalyzersData()
           }
@@ -96,5 +73,4 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
       }
     }
   }
-
 }
