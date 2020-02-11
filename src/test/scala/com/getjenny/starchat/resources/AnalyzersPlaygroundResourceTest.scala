@@ -7,7 +7,7 @@ import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvalu
 
 class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
 
-  /*
+
   "StarChat" should {
     "return an HTTP code 201 when creating a new user" in {
       val user = User(
@@ -448,7 +448,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
     }*/
 
   }
-  */
+
 }
 
 
