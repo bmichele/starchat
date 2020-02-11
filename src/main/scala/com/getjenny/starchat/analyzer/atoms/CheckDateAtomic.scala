@@ -59,7 +59,7 @@ class CheckDateAtomic(val arguments: List[String],
         )
       }
     }
-    }.getOrElse(throw ExceptionAtomic(atomName + ": must have arguments"))
+    }.getOrElse(throw ExceptionAtomic(atomName + ": missing arguments"))
 
   override def toString: String = "CheckDate(\"" + arguments + "\")"
 
@@ -74,7 +74,7 @@ class CheckDateAtomic(val arguments: List[String],
         else
           Result(score = 0.0)
 
-      case Failure(exception) => throw ExceptionAtomic("Error while parsing date: ", exception)
+      case Failure(exception) => throw ExceptionAtomic("Error while parsing arguments: ", exception)
     }
   }
 }
