@@ -62,11 +62,6 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
           assert(read.getHits.getHits.flatMap(_.getSourceAsMap.asScala).isEmpty)
         })
 
-      //At first registry entry is not deleted, because we cannot be sure that the elasticsearch
-      // delete has deleted all elements
-      val registryEntry = instanceRegistryService.getInstance(indexName)
-      registryEntry.isEmpty shouldBe false
-
       deleteInstanceActor ! "tick"
       val completedDelete = testProbe.expectMsgClass(10 seconds, classOf[Map[String, Long]])
       completedDelete
