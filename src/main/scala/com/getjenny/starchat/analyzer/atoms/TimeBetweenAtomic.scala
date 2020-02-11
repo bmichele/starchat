@@ -30,15 +30,13 @@ class TimeBetweenAtomic(val arguments: List[String],
   val atomName: String = "timeBetween"
 
   val openingTime: LocalTime = arguments.headOption match {
-    case Some(t) => {
+    case Some(t) =>
       try {
         LocalTime.parse(t)
       }
       catch {
         case _: Throwable => throw ExceptionAtomic(atomName + ": First argument is opening time and should be formatted as HH:mm")
       }
-
-    }
     case _ => throw ExceptionAtomic(atomName + ": must have 3 arguments (0)")
   }
 
@@ -52,30 +50,27 @@ class TimeBetweenAtomic(val arguments: List[String],
   }
 
   val timeZone: ZoneId = arguments.lift(2) match {
-    case Some(t) => {
+    case Some(t) =>
       try {
         ZoneId.of(t)
       }
       catch {
         case _: Throwable => throw ExceptionAtomic(atomName + ": Third argument should be a valid timezone (eg CET, Europe/Moscow)")
       }
-
-    }
     case _ => throw ExceptionAtomic(atomName + ": must have 3 arguments (2)")
   }
 
   val compareTime: LocalTime = arguments.lift(3) match {
-    case Some(t) => {
+    case Some(t) =>
       try {
         t match {
           case "" => LocalTime.now(timeZone)
-          case _ => LocalTime.parse(t, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+          case _ => LocalTime.parse(t)
         }
       }
       catch {
         case _: Throwable => throw ExceptionAtomic(atomName + ": Third argument is compareTime and should be formatted as HH:mm")
       }
-    }
     case _ => LocalTime.now(timeZone)
   }
 
