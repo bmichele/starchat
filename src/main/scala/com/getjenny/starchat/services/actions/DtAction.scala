@@ -11,7 +11,7 @@ import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
 import com.getjenny.starchat.entities.io.DtActionResult
 import com.getjenny.starchat.services.AnalyzerService.log
 import com.getjenny.starchat.utils.SystemConfiguration
-
+import scalaz.Scalaz._
 import scala.util.{Failure, Success, Try}
 
 case class DtActionException(message: String = "", cause: Throwable = None.orNull)
@@ -58,8 +58,8 @@ object DtActionAtomAdapter {
 
     starchatAnalyzer.map { analyzer =>
       val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = params))
-      DtActionResult(result.score == 1,
-        if (result.score == 0) 1 else 0,
+      DtActionResult(result.score === 1,
+        if (result.score === 0) 1 else 0,
         result.data.extractedVariables
       )
     }.getOrElse(DtActionResult(success = false, code = 1))

@@ -511,6 +511,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         val response = responseAs[List[ResponseRequestOut]]
         val out: ResponseRequestOut = response.headOption.getOrElse(fail)
         out.state shouldEqual "thanks_email"
+        out.score shouldEqual 1.0
       }
     }
   }

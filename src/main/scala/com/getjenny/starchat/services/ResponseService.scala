@@ -50,14 +50,17 @@ object ResponseService extends AbstractDataService {
         document.failureValue
 
       if(state.isEmpty || state === document.state) { // avoiding recursive state fetch.
-        List(document)
+        List(document.copy(
+          actionResult = Option(res),
+          score = if(res.success) 1.0 else 0)
+        )
       } else {
         getNextResponse(indexName,
           request.copy(
             traversedStates = Some(document.traversedStates),
             userInput = None,
             data = Option(res.data),
-            threshold = Option(0D),
+            threshold = Option(1d),
             evaluationClass = None,
             maxResults = None,
             state = Some(List(state))
