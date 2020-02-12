@@ -14,7 +14,7 @@ import DefaultJsonProtocol._
   * output:
   * "extracted_date.score" 0 if no date is found
   * "extracted_date.status"
-  * "extracted_date.date_iso" full datetime formatted as yyyy-MM-ddTHH:mm:ss
+  * "extracted_date.date_iso" full datetime formatted as ISO_LOCAL_DATE_TIME (yyyy-MM-ddTHH:mm:ss)
   * "extracted_date.year" year - yyyy
   * "extracted_date.month" month - MM
   * "extracted_date.day_of_month" day of month - dd
