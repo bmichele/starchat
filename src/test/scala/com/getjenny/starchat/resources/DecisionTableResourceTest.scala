@@ -443,6 +443,10 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.Created
       }
 
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
       val request = ResponseRequestIn(conversationId = "conv_12131",
         traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
         userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
@@ -585,13 +589,17 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.Created
       }
 
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
       val request = ResponseRequestIn(conversationId = "conv_12131",
         traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
         userInput = Some(ResponseRequestInUserInput(text = Some("my email is this.is.test@email.com"), img = None
         )),
         state = Some(List("forgot_password")),
         data = None,
-        threshold = None,
+        threshold = Some(0.5),
         evaluationClass = None,
         maxResults = None,
         searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
@@ -602,6 +610,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         val response = responseAs[List[ResponseRequestOut]]
         val out: ResponseRequestOut = response.headOption.getOrElse(fail)
         out.state shouldEqual "thanks_email"
+        out.score shouldEqual 0.5
       }
     }
   }
