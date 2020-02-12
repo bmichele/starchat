@@ -50,14 +50,16 @@ object ResponseService extends AbstractDataService {
         document.failureValue
 
       if(state.isEmpty || state === document.state) { // avoiding recursive state fetch.
-        List(document)
-    } else {
+        List(document.copy(
+          actionResult = Option(res),
+          score = if(res.success) 1.0 else 0)
+        )
+      } else {
         getNextResponse(indexName,
           request.copy(
             traversedStates = Some(document.traversedStates),
             userInput = None,
             data = Option(res.data),
-            threshold = Option(0D),
             evaluationClass = None,
             maxResults = None,
             state = Some(List(state))
@@ -212,7 +214,7 @@ object ResponseService extends AbstractDataService {
     }.toList
       .sortWith(_.score > _.score)
       .flatMap { document =>
-        executeAction(indexName, document = document, userText, request)
+        executeAction(indexName, document = document, userText, request.copy(threshold = Option(threshold)))
       }
 
     if (dtDocumentsList.isEmpty) {

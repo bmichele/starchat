@@ -66,8 +66,8 @@ object DtActionAtomAdapter {
 
     starchatAnalyzer.map { analyzer =>
       val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = allParams))
-      DtActionResult(result.score == 1,
-        if (result.score == 0) 1 else 0,
+      DtActionResult(result.score === 1,
+        if (result.score === 0) 1 else 0,
         result.data.extractedVariables
       )
     }.getOrElse(DtActionResult(code = 1))
