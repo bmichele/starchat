@@ -60,7 +60,6 @@ object ResponseService extends AbstractDataService {
             traversedStates = Some(document.traversedStates),
             userInput = None,
             data = Option(res.data),
-            threshold = Option(1d),
             evaluationClass = None,
             maxResults = None,
             state = Some(List(state))
@@ -215,7 +214,7 @@ object ResponseService extends AbstractDataService {
     }.toList
       .sortWith(_.score > _.score)
       .flatMap { document =>
-        executeAction(indexName, document = document, userText, request)
+        executeAction(indexName, document = document, userText, request.copy(threshold = Option(threshold)))
       }
 
     if (dtDocumentsList.isEmpty) {

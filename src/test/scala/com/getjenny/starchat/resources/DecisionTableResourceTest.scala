@@ -500,7 +500,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         )),
         state = Some(List("forgot_password")),
         data = None,
-        threshold = None,
+        threshold = Some(0.0),
         evaluationClass = None,
         maxResults = None,
         searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
@@ -511,7 +511,6 @@ class DecisionTableResourceTest extends TestEnglishBase {
         val response = responseAs[List[ResponseRequestOut]]
         val out: ResponseRequestOut = response.headOption.getOrElse(fail)
         out.state shouldEqual "thanks_email"
-        out.score shouldEqual 1.0
       }
     }
   }
