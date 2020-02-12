@@ -5169,6 +5169,40 @@ components:
           format: long
           description: record insertion timestamp
           example: 1549283768918
+    QADocumentUpdateByQuery:
+      type: object
+      properties:
+        id:
+          type: array
+          items:
+            type: string
+          example: ['id1', 'id2']
+        conversation:
+          type: string
+          description: ID of the conversation (multiple q&a may be inside a conversation)
+          example: conv_id_1234
+        indexInConversation:
+          type: number
+          format: integer
+          description: the index of the document in the conversation flow (Start from 1, 0 is reserved)
+          example: 10
+        coreData:
+          type: object
+          $ref: '#/components/schemas/QADocumentCore'
+        annotations:
+          type: object
+          $ref: '#/components/schemas/QADocumentAnnotations'
+        status:
+          type: number
+          format: integer
+          description: >-
+            tell whether the document is locked for editing or not, useful for a GUI to avoid concurrent modifications, 0 means no operations pending
+          example: 0
+        timestamp:
+          type: number
+          format: long
+          description: record insertion timestamp
+          example: 1549283768918
     UpdateQAByQueryReq:
       type: object
       required:
@@ -5178,7 +5212,7 @@ components:
         documentSearch:
           $ref: '#/components/schemas/QADocumentSearch'
         document:
-          $ref: '#/components/schemas/QADocumentUpdate'
+          $ref: '#/components/schemas/QADocumentUpdateByQuery'
     SearchQADocument:
       type: object
       required:
