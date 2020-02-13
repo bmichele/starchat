@@ -189,12 +189,12 @@ object ResponseService extends AbstractDataService {
       val evaluationRes: Result = analyzersEvalData(state)
       val maxStateCount: Int = doc.maxStateCount
       val analyzer: String = doc.analyzer
-      val action: String = doc.action
       val stateData: Map[String, String] = doc.stateData
 
       val merged = searchResAnalyzers.extractedVariables ++ evaluationRes.data.extractedVariables
-      val bubble = replaceBubble(doc.bubble, merged)
-      val actionInput = replaceActionInput(doc.actionInput, merged)
+      val bubble = replaceTemplates(doc.bubble, merged)
+      val action = replaceTemplates(doc.action, merged) //FIXME: to be removed, action must not be templated
+      val actionInput = replaceTemplates(doc.actionInput, merged)
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
       val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
@@ -230,9 +230,15 @@ object ResponseService extends AbstractDataService {
 
   }
 
-  private[this] def replaceBubble(inputBubble: String, values: Map[String, String]): String = {
+  private[this] def replaceTemplates(inputBubble: String, values: Map[String, String]): String = {
     values.foldLeft(randomizeBubble(inputBubble)) {
       case (b, (k, v)) => b.replaceAll("%" + k + "%", v)
+    }
+  }
+
+  private[this] def replaceTemplates(actionInput: Map[String, String], values: Map[String, String]): Map[String, String] = {
+    values.foldLeft(actionInput) {
+      case (acc, (key, value)) => acc.mapValues(_.replaceAll("%" + key + "%", value))
     }
   }
 
@@ -244,12 +250,6 @@ object ResponseService extends AbstractDataService {
       splittedBubble(randomIdx)
     } else {
       bubble
-    }
-  }
-
-  private[this] def replaceActionInput(actionInput: Map[String, String], values: Map[String, String]): Map[String, String] = {
-    values.foldLeft(actionInput) {
-      case (acc, (key, value)) => acc.mapValues(_.replaceAll("%" + key + "%", value))
     }
   }
 
