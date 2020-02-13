@@ -188,12 +188,13 @@ object ResponseService extends AbstractDataService {
       val evaluationRes: Result = analyzersEvalData(state)
       val maxStateCount: Int = doc.maxStateCount
       val analyzer: String = doc.analyzer
-      val action: String = doc.action
       val stateData: Map[String, String] = doc.stateData
 
       val merged = searchResAnalyzers.extractedVariables ++ evaluationRes.data.extractedVariables
-      val bubble = replaceBubble(doc.bubble, merged)
-      val actionInput = replaceActionInput(doc.actionInput, merged)
+      val randomizedBubbleValue = randomizeBubble(doc.bubble)
+      val bubble = replaceTemplates(randomizedBubbleValue, merged)
+      val action = replaceTemplates(doc.action, merged) //FIXME: action shouldn't contain templates
+      val actionInput = replaceTemplates(doc.actionInput, merged)
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
       val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
@@ -229,9 +230,19 @@ object ResponseService extends AbstractDataService {
 
   }
 
-  private[this] def replaceBubble(inputBubble: String, values: Map[String, String]): String = {
-    values.foldLeft(randomizeBubble(inputBubble)) {
+  private[this] def replaceTemplates(input: String, values: Map[String, String]): String = {
+    values.foldLeft(input) {
       case (b, (k, v)) => b.replaceAll("%" + k + "%", v)
+    }
+  }
+
+  private[this] def replaceTemplates(input: Seq[JsObject],
+                                     values: Map[String, String]): Seq[JsObject] = {
+    input.map { item =>
+      val jsonObjString = values.foldLeft(item.toString) { case (acc, (replKey, replValue)) =>
+        acc.replaceAll("%" + replKey + "%", replValue)
+      }
+      jsonObjString.parseJson.asJsObject
     }
   }
 
@@ -243,16 +254,6 @@ object ResponseService extends AbstractDataService {
         splittedBubble(randomIdx)
       } else {
       bubble
-    }
-  }
-
-  private[this] def replaceActionInput(actionInput: Seq[JsObject],
-                                       values: Map[String, String]): Seq[JsObject] = {
-    actionInput.map { input =>
-      val jsonObjString = values.foldLeft(input.toString) { case (acc, (replKey, replValue)) =>
-        acc.replaceAll("%" + replKey + "%", replValue)
-      }
-      jsonObjString.parseJson.asJsObject
     }
   }
 
