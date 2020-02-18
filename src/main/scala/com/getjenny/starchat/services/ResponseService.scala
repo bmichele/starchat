@@ -30,6 +30,7 @@ case class ResponseServiceNoResponseException(message: String = "", cause: Throw
 case class ResponseServiceDTNotLoadedException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
+
 /**
  * Implements response functionalities
  */
@@ -37,6 +38,35 @@ object ResponseService extends AbstractDataService {
   override val elasticClient: DecisionTableElasticClient.type = DecisionTableElasticClient
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
+
+  private[this] def extractSCVariables(indexName: String,
+                                       variables: Set[StarChatVariables.Value],
+                                       request: ResponseRequestIn): Map[String, Any] = {
+    val conversationLogsService: ConversationLogsService.type = ConversationLogsService
+    variables.map {
+      case StarChatVariables.GJ_CONVERSATION_ID =>
+        (StarChatVariables.GJ_CONVERSATION_ID.toString, request.conversationId)
+      case StarChatVariables.GJ_LAST_USER_INPUT_TEXT =>
+        (StarChatVariables.GJ_LAST_USER_INPUT_TEXT.toString,
+          request.userInput.getOrElse(ResponseRequestInUserInput()).text)
+      case StarChatVariables.GJ_CONVERSATION_V1 =>
+        val ids = DocsIds(ids=List(request.conversationId))
+        val conversation =
+          conversationLogsService.conversations(indexName, ids).conversations.headOption match {
+            case Some(value) => value.docs.map(c =>
+              c.coreData match {
+                case Some(core) =>
+                  s"""Question(${c.indexInConversation}): ${core.question.getOrElse("EMPTY")}\n
+                     |Answer(${c.indexInConversation}}): ${core.answer.getOrElse("EMPTY")}""".stripMargin
+                case _ => ""
+              }).filter(_ =/= "").mkString("---\n")
+            case _ => "EMPTY CONVERSATION"
+          }
+        (StarChatVariables.GJ_CONVERSATION_V1.toString, conversation)
+      case _ =>
+        throw ResponseServiceException("Requested an unknown or invalid variable")
+    }.toMap
+  }
 
   private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String, request: ResponseRequestIn): List[ResponseRequestOut] = {
     val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
@@ -248,11 +278,11 @@ object ResponseService extends AbstractDataService {
 
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
-      if (splittedBubble.length > 1) {
-        val r = new scala.util.Random
-        val randomIdx = r.nextInt(splittedBubble.length)
-        splittedBubble(randomIdx)
-      } else {
+    if (splittedBubble.length > 1) {
+      val r = new scala.util.Random
+      val randomIdx = r.nextInt(splittedBubble.length)
+      splittedBubble(randomIdx)
+    } else {
       bubble
     }
   }

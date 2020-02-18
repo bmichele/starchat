@@ -55,6 +55,7 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResult(decisionTableAnalyzerRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableAsyncReloadRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableCacheLoad) ~
+    LoggingEntities.logRequestAndResult(decisionTableCloneIndexRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableResponseRequestRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableRoutes) ~
     LoggingEntities.logRequestAndResult(decisionTableRoutesAllRoutes) ~

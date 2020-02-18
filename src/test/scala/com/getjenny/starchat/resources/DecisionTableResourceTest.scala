@@ -198,7 +198,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
     "return an HTTP code 400 when no queries are given" in {
       Get("/index_getjenny_english_0/decisiontable") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        val resopnse =responseAs[ReturnMessageData]
+        val resopnse = responseAs[ReturnMessageData]
       }
     }
   }

@@ -20,6 +20,7 @@ import org.elasticsearch.index.query.{BoolQueryBuilder, InnerHitBuilder, QueryBu
 import org.elasticsearch.script.Script
 import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.aggregations.AggregationBuilders
+import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
@@ -336,7 +337,7 @@ object DecisionTableService extends AbstractDataService {
       new SearchDTDocumentEntityManager(simpleQueryExtractor),
       refresh = refresh)
 
-    val docResult: IndexDocumentResult = IndexDocumentResult(index = response.index,
+    val docResult: IndexDocumentResult = IndexDocumentResult(index = indexName,
       id = response.id,
       version = response.version,
       created = response.created
@@ -438,9 +439,9 @@ object DecisionTableService extends AbstractDataService {
   }
 
   def bulkCreate(indexName: String, documents: IndexedSeq[DTDocumentCreate],
-                 check: Boolean = true): IndexDocumentListResult = {
+                 check: Boolean = true, refresh: Int = 0): IndexDocumentListResult = {
     val indexDocumentListResult = documents.map(dtDocument => {
-      create(indexName = indexName, document = dtDocument, check = check)
+      create(indexName = indexName, document = dtDocument, check = check, refresh = refresh)
     }).toList
 
     IndexDocumentListResult(data = indexDocumentListResult)
@@ -646,6 +647,32 @@ object DecisionTableService extends AbstractDataService {
 
     totalHits.map(_.queriesTotalHits).sum
 
+  }
+
+  def cloneIndexContent(indexNameSrc: String, indexNameDst: String,
+                        reset: Boolean = true, propagate: Boolean = true): IndexDocumentListResult = {
+    val dtReloadService: InstanceRegistryService.type = InstanceRegistryService
+    if(reset) {
+      IndexLanguageCrud(elasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery)
+    }
+
+    if (indexNameSrc === indexNameDst)
+      throw DecisionTableServiceException(s"Cloning index is impossible: " +
+        s"src($indexNameSrc) and dst($indexNameDst) are the same")
+
+    val srcDocuments = this.getDTDocuments(indexNameSrc)
+    val documents = srcDocuments.hits.map(_.document).toIndexedSeq
+    val createResult = this.bulkCreate(indexName=indexNameDst,
+      documents = documents, refresh = 1)
+
+    if(createResult.data.length =/= srcDocuments.total)
+      throw DecisionTableServiceException(s"Error cloning index $indexNameSrc into " +
+        s"$indexNameDst: ${createResult.data.length} != ${srcDocuments.total}")
+
+    if(propagate)
+      dtReloadService.updateTimestamp(dtIndexName = indexNameDst, refresh = 1)
+
+    createResult
   }
 
   override def delete(indexName: String, ids: List[String], refresh: Int): DeleteDocumentsResult = {

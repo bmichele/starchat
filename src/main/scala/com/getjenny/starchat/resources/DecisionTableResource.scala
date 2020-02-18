@@ -30,6 +30,46 @@ trait DecisionTableResource extends StarChatResource {
   private[this] val bayesOperatorCacheService: BayesOperatorCacheService.type = BayesOperatorCacheService
   private[this] val fileTypeRegex: Regex = "^(csv|json)$".r
 
+  def decisionTableCloneIndexRoutes: Route = handleExceptions(routesExceptionHandler) {
+    pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "clone" ~ Slash ~ indexRegex) {
+      (indexNameSrc, indexNameDst)  =>
+        pathEnd {
+          post {
+            authenticateBasicAsync(realm = authRealm,
+              authenticator = authenticator.authenticator) { user =>
+              authorizeAsync(_ => authenticator.hasPermissions(user, indexNameSrc, Permissions.read)) {
+                authorizeAsync(_ => authenticator.hasPermissions(user, indexNameDst, Permissions.write)) {
+                  extractRequest { request =>
+                    parameters("reset".as[Boolean] ? true, "propagate".as[Boolean] ? true) { (reset, propagate) =>
+                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                      onCompleteWithBreakerFuture(breaker)(
+                        decisionTableService.cloneIndexContent(
+                          indexNameSrc = indexNameSrc,
+                          indexNameDst = indexNameDst,
+                          reset = reset,
+                          propagate = propagate
+                        )
+                      ) {
+                        case Success(t) =>
+                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
+                        case Failure(e) =>
+                          log.error(logTemplate(user.id, indexNameSrc + ":" + indexNameDst,
+                            "decisionTableCloneIndexRoutes", request.method, request.uri), e)
+                          completeResponse(StatusCodes.BadRequest,
+                            Option {
+                              ReturnMessageData(code = 104, message = e.getMessage)
+                            })
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    }
+  }
+
   def decisionTableRoutesAllRoutes: Route = handleExceptions(routesExceptionHandler) {
     pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "all") { indexName =>
       pathEnd {
@@ -114,7 +154,7 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.read)) {
               extractRequest { request =>
-                parameters("check".as[Boolean] ? true) { (check) =>
+                parameters("check".as[Boolean] ? true) { check =>
                   entity(as[IndexedSeq[DTDocumentCreate]]) { documents =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                     onCompleteWithBreakerFuture(breaker)(
