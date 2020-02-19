@@ -32,7 +32,7 @@ class KeywordAtomic2(arguments: List[String], restrictedArgs: Map[String, String
   }
 
   // regular expression used to understand if the user query contains the keyword/regex specified in the atom argument
-  private[this] val rxToBeMatched: Regex = {"""(?ui)\b""" + atomArgument.replace("*", """[\p{L}\p{N}]*""") + """\b"""}.r
+  private[this] val rxToBeMatched: Regex = {"""(?ui)\b""" + atomArgument.replace("*", """[\p{L}\p{N}.\-_@\~]*""") + """\b"""}.r
 
   override def toString: String = atomName + "(\"" + atomArgument + "\")"
 
