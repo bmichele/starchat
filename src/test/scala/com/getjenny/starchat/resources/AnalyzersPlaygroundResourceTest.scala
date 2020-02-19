@@ -139,6 +139,28 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
 
   }
 
+  it should {
+    """match when keyyword("suomi*fi") is tested with query suomi@ac~something-strange_my.fi """ in {
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "suomi@ac~something-strange_my.fi",
+          analyzer = """and(max(bor(keyword("suomi*fi"))))""",
+          data = Option {
+            AnalyzersData()
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+      }
+    }
+
+  }
+
 
 
   it should {
