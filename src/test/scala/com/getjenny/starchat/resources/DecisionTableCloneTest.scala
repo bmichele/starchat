@@ -9,7 +9,7 @@ class DecisionTableCloneTest extends TestEnglishBase {
   "StarChat" should {
 
     "return an HTTP code 200 creating a preview instance" in {
-      Post("/index_getjenny_english_0_preview/index_management/create?refresh=1") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+      Post("/index_getjenny_english_0_preview/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[IndexManagementResponse]
         response.message shouldEqual "Created instance index_getjenny_english_0_preview, operation status: CREATED"
@@ -44,7 +44,7 @@ class DecisionTableCloneTest extends TestEnglishBase {
   }
 
   "return an HTTP code 200 cloning data from the preview index" in {
-    Post("/index_getjenny_english_0_preview/decisiontable/clone/index_getjenny_english_0") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Post("/index_getjenny_english_0_preview/decisiontable/clone/index_getjenny_english_0?refresh=1") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       val response = responseAs[IndexDocumentListResult]
       response.data.length should be (23)

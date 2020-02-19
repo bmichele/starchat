@@ -40,14 +40,16 @@ trait DecisionTableResource extends StarChatResource {
               authorizeAsync(_ => authenticator.hasPermissions(user, indexNameSrc, Permissions.read)) {
                 authorizeAsync(_ => authenticator.hasPermissions(user, indexNameDst, Permissions.write)) {
                   extractRequest { request =>
-                    parameters("reset".as[Boolean] ? true, "propagate".as[Boolean] ? true) { (reset, propagate) =>
+                    parameters("reset".as[Boolean] ? true,
+                      "propagate".as[Boolean] ? true, "refresh".as[Int] ? 0) { (reset, propagate, refresh) =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                       onCompleteWithBreakerFuture(breaker)(
                         decisionTableService.cloneIndexContent(
                           indexNameSrc = indexNameSrc,
                           indexNameDst = indexNameDst,
                           reset = reset,
-                          propagate = propagate
+                          propagate = propagate,
+                          refresh = refresh
                         )
                       ) {
                         case Success(t) =>
