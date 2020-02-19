@@ -646,7 +646,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       Delete("/index_getjenny_english_0/decisiontable/all") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsSummaryResult]
-        response.deleted should be (23)
+        response.deleted should be (24)
       }
     }
   }
