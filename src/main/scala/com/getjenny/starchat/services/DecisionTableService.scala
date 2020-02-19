@@ -330,14 +330,14 @@ object DecisionTableService extends AbstractDataService {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     if (check) {
-    //TODO: to be implemented
+      //TODO: to be implemented
     }
 
     val response = indexLanguageCrud.update(document, upsert = true,
       new SearchDTDocumentEntityManager(simpleQueryExtractor),
       refresh = refresh)
 
-    val docResult: IndexDocumentResult = IndexDocumentResult(index = indexName,
+    val docResult: IndexDocumentResult = IndexDocumentResult(index = response.index,
       id = response.id,
       version = response.version,
       created = response.created
@@ -350,7 +350,7 @@ object DecisionTableService extends AbstractDataService {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     if (check) {
-
+      //TODO: to be implemented
     }
 
     val response = indexLanguageCrud.update(document,
@@ -360,12 +360,15 @@ object DecisionTableService extends AbstractDataService {
     response
   }
 
-  def getDTDocuments(indexName: String): SearchDTDocumentsResults = {
+  def getDTDocuments(indexName: String, refresh: Int = 0): SearchDTDocumentsResults = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val query = QueryBuilders.matchAllQuery
 
+    if(refresh === 1)
+      elasticClient.refresh(indexLanguageCrud.index)
+
     //get a map of stateId -> AnalyzerItem (only if there is smt in the field "analyzer")
-    val decisionTableContent = indexLanguageCrud.read(query, version = Option(true), maxItems = Option(10000),
+    val decisionTableContent = indexLanguageCrud.read(query, version = Option(true), maxItems = Some(10000),
       entityManager = new SearchDTDocumentEntityManager(simpleQueryExtractor))
       .map(_.documents)
       .sortBy(_.document.state)
@@ -652,7 +655,7 @@ object DecisionTableService extends AbstractDataService {
   def cloneIndexContent(indexNameSrc: String, indexNameDst: String,
                         reset: Boolean = true, propagate: Boolean = true): IndexDocumentListResult = {
     val dtReloadService: InstanceRegistryService.type = InstanceRegistryService
-    if(reset) {
+    if (reset) {
       IndexLanguageCrud(elasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery)
     }
 
@@ -660,7 +663,7 @@ object DecisionTableService extends AbstractDataService {
       throw DecisionTableServiceException(s"Cloning index is impossible: " +
         s"src($indexNameSrc) and dst($indexNameDst) are the same")
 
-    val srcDocuments = this.getDTDocuments(indexNameSrc)
+    val srcDocuments = getDTDocuments(indexName = indexNameSrc, refresh = 1)
     val documents = srcDocuments.hits.map(_.document).toIndexedSeq
     val createResult = this.bulkCreate(indexName=indexNameDst,
       documents = documents, refresh = 1)

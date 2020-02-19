@@ -38,6 +38,7 @@ class DecisionTableCloneTest extends TestEnglishBase {
       Post(s"/index_getjenny_english_0_preview/decisiontable/upload/csv", multipartForm) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[IndexDocumentListResult]
+        response.data.length should be (23)
       }
     }
   }
