@@ -55,7 +55,7 @@ object ResponseService extends AbstractDataService {
 
   private[this] def extractRequiredStarChatVarNames(input: Seq[JsObject]): Set[StarChatVariables.Value] = {
       input.map(jo => extractRequiredStarChatVarNames(jo.toString))
-        .reduce((acc, cur) => acc ++ cur)
+        .fold(Set.empty[StarChatVariables.Value])((acc, cur) => acc ++ cur)
   }
 
   private[this] def extractSCVariables(indexName: String,

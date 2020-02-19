@@ -549,8 +549,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
         traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
-        userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
-        )),
+        userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"))),
         state = None,
         data = Some(Map("number" -> "5", "action" -> "test")),
         threshold = Some(0),
@@ -574,7 +573,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
-        analyzer = "vOneKeyword(\"email\")",
+        analyzer = """vOneKeyword("email")""",
         queries = List("my email is"),
         bubble = "Thank you",
         action = """com.getjenny.analyzer.analyzers.DefaultParser matchPatternRegex("[email](?:([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+))")""",
@@ -596,8 +595,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
         traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
-        userInput = Some(ResponseRequestInUserInput(text = Some("my email is this.is.test@email.com"), img = None
-        )),
+        userInput = Some(ResponseRequestInUserInput(text = Some("my email is this.is.test@email.com"))),
         state = Some(List("forgot_password")),
         data = None,
         threshold = Some(0.5),

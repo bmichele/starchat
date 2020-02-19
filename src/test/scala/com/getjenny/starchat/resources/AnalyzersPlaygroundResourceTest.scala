@@ -140,7 +140,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
   }
 
   it should {
-    """match when keyyword("suomi*fi") is tested with query suomi@ac~something-strange_my.fi """ in {
+    """match when keyword("suomi*fi") is tested with query suomi@ac~something-strange_my.fi """ in {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "suomi@ac~something-strange_my.fi",
