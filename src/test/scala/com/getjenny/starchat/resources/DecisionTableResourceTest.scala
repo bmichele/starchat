@@ -289,6 +289,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
       Post("/index_getjenny_english_0/get_next_response", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
+        println(responseAs[String])
         val response = responseAs[List[ResponseRequestOut]]
         val headResponseRequestOut = response.headOption.getOrElse(fail)
         headResponseRequestOut.bubble should be ("Hello Donald Duck, how can I help you?")
@@ -645,7 +646,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       Delete("/index_getjenny_english_0/decisiontable/all") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsSummaryResult]
-        response.deleted should be (24)
+        response.deleted should be (23)
       }
     }
   }
