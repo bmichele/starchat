@@ -653,7 +653,9 @@ object DecisionTableService extends AbstractDataService {
   }
 
   def cloneIndexContent(indexNameSrc: String, indexNameDst: String,
-                        reset: Boolean = true, propagate: Boolean = true): IndexDocumentListResult = {
+                        reset: Boolean = true, propagate: Boolean = true,
+                        refresh: Int = 0
+                       ): IndexDocumentListResult = {
     val dtReloadService: InstanceRegistryService.type = InstanceRegistryService
     if (reset) {
       IndexLanguageCrud(elasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery)
@@ -666,7 +668,7 @@ object DecisionTableService extends AbstractDataService {
     val srcDocuments = getDTDocuments(indexName = indexNameSrc, refresh = 1)
     val documents = srcDocuments.hits.map(_.document).toIndexedSeq
     val createResult = this.bulkCreate(indexName=indexNameDst,
-      documents = documents, refresh = 1)
+      documents = documents, refresh = refresh)
 
     if(createResult.data.length =/= srcDocuments.total)
       throw DecisionTableServiceException(s"Error cloning index $indexNameSrc into " +
