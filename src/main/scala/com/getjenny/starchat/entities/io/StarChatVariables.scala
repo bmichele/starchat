@@ -6,14 +6,18 @@ package com.getjenny.starchat.entities.io
 
 import scalaz.Scalaz._
 
+case class StarChatVariablesException(message: String = "", cause: Throwable = None.orNull)
+  extends Exception(message, cause)
+
 object StarChatVariables extends Enumeration {
   val GJ_CONVERSATION_ID, /** Conversation ID */
   GJ_LAST_USER_INPUT_TEXT, /** the last user input */
-  GJ_CONVERSATION_V1, /** Conversation content: question-answer */
-  GJ_CONVERSATION_V2, /** Conversation content: question-answer */
-
-  UNKNOWN = StarChatVariables.Value
+  GJ_CONVERSATION_V1 = StarChatVariables.Value /** Conversation content: question-answer */
 
   /** normal document, can be returned to the user as response */
-  def value(v: String): StarChatVariables.Value = values.find(_.toString === v).getOrElse(UNKNOWN)
+  def value(v: String): StarChatVariables.Value =
+    values.find(_.toString === v) match {
+      case Some(value) => value
+      case _ => throw StarChatVariablesException(s"invalid or unsupported StarChat variable: $v")
+    }
 }
