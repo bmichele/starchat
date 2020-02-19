@@ -89,7 +89,9 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
     Iterator(initialResponse) ++ Iterator.continually {
       val request = new SearchScrollRequest(scrollId)
       request.scroll(new TimeValue(scrollTime))
-      client.httpClient.scroll(request, RequestOptions.DEFAULT)
+      response = client.httpClient.scroll(request, RequestOptions.DEFAULT)
+      val r = response //store response in an immutable variable
+      r
     }.takeWhile(x => x.getHits.getHits.length =/= 0)
   }
 

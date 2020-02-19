@@ -71,25 +71,27 @@ object ResponseService extends AbstractDataService {
   private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String, request: ResponseRequestIn): List[ResponseRequestOut] = {
     val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
     if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
-      val res = DtAction(indexName, document.state, document.action, document.actionInput, query)
+      val actionResult = DtAction(indexName, document.state, document.action, document.actionInput, document.data, query)
 
       // error in execution and negative results lead both to failureValue
-      val state = if (res.success && res.code === 0)
+      val state = if (actionResult.success && actionResult.code === 0)
         document.successValue
       else
         document.failureValue
 
+      val completeData = document.data ++ actionResult.data
       if(state.isEmpty || state === document.state) { // avoiding recursive state fetch.
         List(document.copy(
-          actionResult = Option(res),
-          score = if(res.success) 1.0 else 0)
+          actionResult = Option(actionResult),
+          data = completeData,
+          score = if(actionResult.success) 1.0 else 0)
         )
       } else {
         getNextResponse(indexName,
           request.copy(
             traversedStates = Some(document.traversedStates),
             userInput = None,
-            data = Option(res.data),
+            data = Option(completeData),
             evaluationClass = None,
             maxResults = None,
             state = Some(List(state))
@@ -228,7 +230,7 @@ object ResponseService extends AbstractDataService {
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
       val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
-      val responseItem: ResponseRequestOut = ResponseRequestOut(conversationId = conversationId,
+      ResponseRequestOut(conversationId = conversationId,
         state = state,
         maxStateCount = maxStateCount,
         traversedStates = traversedStatesUpdated,
@@ -241,7 +243,6 @@ object ResponseService extends AbstractDataService {
         successValue = doc.successValue,
         failureValue = doc.failureValue,
         score = evaluationRes.score)
-      responseItem
     }.toList
       .sortWith(_.score > _.score)
       .flatMap { document =>
