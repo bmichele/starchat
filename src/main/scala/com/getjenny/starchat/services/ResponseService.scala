@@ -39,16 +39,44 @@ object ResponseService extends AbstractDataService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
 
+  private[this] def extractRequiredStarChatVarNames(input: String): Set[StarChatVariables.Value] = {
+    StarChatVariables.values.map(name => (name, input contains name.toString))
+      .filter(_._2).map(_._1)
+  }
+
+  private[this] def extractSCVariables(indexName: String,
+                                       input: String,
+                                       request: ResponseRequestIn): Map[String, String] = {
+    extractSCVariables(indexName = indexName,
+      variables = extractRequiredStarChatVarNames(input),
+      request = request
+    )
+  }
+
+  private[this] def extractRequiredStarChatVarNames(input: Seq[JsObject]): Set[StarChatVariables.Value] = {
+      input.map(jo => extractRequiredStarChatVarNames(jo.toString))
+        .reduce((acc, cur) => acc ++ cur)
+  }
+
+  private[this] def extractSCVariables(indexName: String,
+                                       input: Seq[JsObject],
+                                       request: ResponseRequestIn): Map[String, String] = {
+    extractSCVariables(indexName = indexName,
+      variables = extractRequiredStarChatVarNames(input),
+      request = request
+    )
+  }
+
   private[this] def extractSCVariables(indexName: String,
                                        variables: Set[StarChatVariables.Value],
-                                       request: ResponseRequestIn): Map[String, Any] = {
+                                       request: ResponseRequestIn): Map[String, String] = {
     val conversationLogsService: ConversationLogsService.type = ConversationLogsService
     variables.map {
       case StarChatVariables.GJ_CONVERSATION_ID =>
         (StarChatVariables.GJ_CONVERSATION_ID.toString, request.conversationId)
       case StarChatVariables.GJ_LAST_USER_INPUT_TEXT =>
         (StarChatVariables.GJ_LAST_USER_INPUT_TEXT.toString,
-          request.userInput.getOrElse(ResponseRequestInUserInput()).text)
+          request.userInput.getOrElse(ResponseRequestInUserInput()).text.getOrElse(""))
       case StarChatVariables.GJ_CONVERSATION_V1 =>
         val ids = DocsIds(ids=List(request.conversationId))
         val conversation =
@@ -59,7 +87,7 @@ object ResponseService extends AbstractDataService {
                   s"""Question(${c.indexInConversation}): ${core.question.getOrElse("EMPTY")}\n
                      |Answer(${c.indexInConversation}}): ${core.answer.getOrElse("EMPTY")}""".stripMargin
                 case _ => ""
-              }).filter(_ =/= "").mkString("---\n")
+              }).filter(_.nonEmpty).mkString("---\n")
             case _ => "EMPTY CONVERSATION"
           }
         (StarChatVariables.GJ_CONVERSATION_V1.toString, conversation)
@@ -71,7 +99,13 @@ object ResponseService extends AbstractDataService {
   private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String, request: ResponseRequestIn): List[ResponseRequestOut] = {
     val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
     if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
-      val actionResult = DtAction(indexName, document.state, document.action, document.actionInput, document.data, query)
+
+      val onDemandStarChatVariables = extractSCVariables(indexName, document.actionInput, request)
+      val actionVariables = document.data ++ onDemandStarChatVariables // onDemandVariables are valid only for the action execution
+      val actionResult = DtAction(indexName,
+        document.state, document.action,
+        document.actionInput, actionVariables,
+        query)
 
       // error in execution and negative results lead both to failureValue
       val state = if (actionResult.success && actionResult.code === 0)
@@ -227,6 +261,7 @@ object ResponseService extends AbstractDataService {
       val bubble = replaceTemplates(randomizedBubbleValue, merged)
       val action = replaceTemplates(doc.action, merged) //FIXME: action shouldn't contain templates
       val actionInput = replaceTemplates(doc.actionInput, merged)
+
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
       val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
