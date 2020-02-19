@@ -425,15 +425,8 @@ object DecisionTableService extends AbstractDataService {
 
   def indexCSVFileIntoDecisionTable(indexName: String, file: File,
                                     skipLines: Int = 1, separator: Char = ','): IndexDocumentListResult = {
-    var documents: IndexedSeq[DTDocumentCreate] = null
-    try {
-      documents = FileToDocuments.getDTDocumentsFromCSV(log = log, file = file,
+    val documents: IndexedSeq[DTDocumentCreate] = FileToDocuments.getDTDocumentsFromCSV(log = log, file = file,
         skipLines = skipLines, separator = separator)
-    } catch {
-      case e: Exception =>
-        log.error(e, "aaaaaaaaaaaaaaa")
-    }
-
 
     bulkCreate(indexName, documents)
   }
