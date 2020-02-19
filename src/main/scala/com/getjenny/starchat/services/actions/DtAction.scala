@@ -27,11 +27,11 @@ object DtAction {
   val actionPrefix = "com.getjenny.starchat.actions."
   val analyzerActionPrefix = "com.getjenny.analyzer.analyzers.DefaultParser "
 
-  def apply(indexName: String, stateName: String, action: String, params: Map[String, String], query: String): DtActionResult = {
+  def apply(indexName: String, stateName: String, action: String, params: Map[String, String], data: Map[String, String], query: String): DtActionResult = {
     action match {
       case "com.getjenny.starchat.actions.SendEmailSmtp" => SendEmailSmtp(indexName, stateName, params)
       case "com.getjenny.starchat.actions.SendEmailGJ" => SendEmailGJ(indexName, stateName, params)
-      case action if action.startsWith(analyzerActionPrefix) => DtActionAtomAdapter(indexName, stateName, action, params, query)
+      case action if action.startsWith(analyzerActionPrefix) => DtActionAtomAdapter(indexName, stateName, action, params, query, data)
       case _ => throw DtActionException("Action not implemented: " + action)
     }
   }
@@ -42,7 +42,7 @@ object DtActionAtomAdapter {
   private[this] val restrictedArgs: Map[String, String] = SystemConfiguration
     .createMapFromPath(atomConfigurationBasePath)
 
-  def apply(indexName: String, stateName: String, action: String, params: Map[String, String], query: String): DtActionResult = {
+  def apply(indexName: String, stateName: String, action: String, params: Map[String, String], query: String, data: Map[String, String]): DtActionResult = {
     val command = action.stripPrefix(DtAction.analyzerActionPrefix)
 
     //FIXME use context to pass index_name
@@ -57,7 +57,7 @@ object DtActionAtomAdapter {
     }
 
     starchatAnalyzer.map { analyzer =>
-      val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = params))
+      val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = params ++ data))
       DtActionResult(result.score === 1,
         if (result.score === 0) 1 else 0,
         result.data.extractedVariables
