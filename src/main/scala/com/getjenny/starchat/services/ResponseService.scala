@@ -75,10 +75,10 @@ object ResponseService extends AbstractDataService {
             case Some(value) => value.docs.map(c =>
               c.coreData match {
                 case Some(core) =>
-                  "Question(" + c.indexInConversation + "): " + core.question.getOrElse("EMPTY") + "%0D%0A" +
-                    "Answer(" + c.indexInConversation + "): " + core.answer.getOrElse("EMPTY") + "%0D%0A"
+                  "Question(" + c.indexInConversation + "): " + core.question.getOrElse("EMPTY") + "\\r\\n" +
+                    "Answer(" + c.indexInConversation + "): " + core.answer.getOrElse("EMPTY") + "\r\n"
                 case _ => ""
-              }).filter(_.nonEmpty).mkString("---%0D%0A")
+              }).filter(_.nonEmpty).mkString("---\\r\\n")
             case _ => "EMPTY CONVERSATION"
           }
         (StarChatVariables.GJ_CONVERSATION_V1.toString, conversation)
