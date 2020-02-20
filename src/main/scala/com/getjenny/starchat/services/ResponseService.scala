@@ -40,7 +40,7 @@ object ResponseService extends AbstractDataService {
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
 
   private[this] def extractRequiredStarChatVarNames(input: String): Set[StarChatVariables.Value] = {
-    StarChatVariables.values.map(name => (name, input contains name.toString))
+    StarChatVariables.values.map(name => (name, input contains "%" + name.toString + "%"))
       .filter(_._2).map(_._1)
   }
 
