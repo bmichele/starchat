@@ -13,7 +13,7 @@ import com.getjenny.starchat.entities.persistents.DTDocumentCreate
 import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
-import spray.json._
+import spray.json.{JsString, _}
 
 import scala.collection.immutable.Map
 import scala.util.{Failure, Success, Try}
@@ -42,15 +42,6 @@ object ResponseService extends AbstractDataService {
   private[this] def extractRequiredStarChatVarNames(input: String): Set[StarChatVariables.Value] = {
     StarChatVariables.values.map(name => (name, input contains "%" + name.toString + "%"))
       .filter(_._2).map(_._1)
-  }
-
-  private[this] def extractSCVariables(indexName: String,
-                                       input: String,
-                                       request: ResponseRequestIn): Map[String, String] = {
-    extractSCVariables(indexName = indexName,
-      variables = extractRequiredStarChatVarNames(input),
-      request = request
-    )
   }
 
   private[this] def extractRequiredStarChatVarNames(input: Seq[JsObject]): Set[StarChatVariables.Value] = {
@@ -259,8 +250,8 @@ object ResponseService extends AbstractDataService {
       val bubble = replaceTemplates(randomizedBubbleValue, merged)
       val action = replaceTemplates(doc.action, merged) //FIXME: action shouldn't contain templates
 
-      val onDemandStarChatVariables = extractSCVariables(indexName, doc.actionInput, request)
-      val actionInput = replaceTemplates(doc.actionInput, merged ++ onDemandStarChatVariables)
+      val onDemandStarChatVariables = merged ++ extractSCVariables(indexName, doc.actionInput, request)
+      val actionInput = replaceTemplates(doc.actionInput, onDemandStarChatVariables)
 
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
@@ -296,9 +287,11 @@ object ResponseService extends AbstractDataService {
 
   }
 
+  private[this] def escapeJson(input: String): String = JsString(input).toString.replaceAll("^\"|\"$", "");
   private[this] def replaceTemplates(input: String, values: Map[String, String]): String = {
     values.foldLeft(input) {
-      case (b, (k, v)) => b.replaceAll("%" + k + "%", v)
+      case (b, (k, v)) =>
+        b.replaceAll("%" + k + "%", escapeJson(v))
     }
   }
 
@@ -306,7 +299,7 @@ object ResponseService extends AbstractDataService {
                                      values: Map[String, String]): Seq[JsObject] = {
     input.map { item =>
       val jsonObjString = values.foldLeft(item.toString) { case (acc, (replKey, replValue)) =>
-        acc.replaceAll("%" + replKey + "%", replValue)
+        acc.replaceAll("%" + replKey + "%", escapeJson(replValue))
       }
       jsonObjString.parseJson.asJsObject
     }
