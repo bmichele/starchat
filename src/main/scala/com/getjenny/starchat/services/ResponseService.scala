@@ -99,9 +99,7 @@ object ResponseService extends AbstractDataService {
   private[this] def executeAction(indexName: String, document: ResponseRequestOut, query: String, request: ResponseRequestIn): List[ResponseRequestOut] = {
     val isAnalyzerInAction = document.action.startsWith(DtAction.analyzerActionPrefix)
     if (document.action.startsWith(DtAction.actionPrefix) || isAnalyzerInAction) {
-
-      val onDemandStarChatVariables = extractSCVariables(indexName, document.actionInput, request)
-      val actionVariables = document.data ++ onDemandStarChatVariables // onDemandVariables are valid only for the action execution
+      val actionVariables = document.data
       val actionResult = DtAction(indexName,
         document.state, document.action,
         document.actionInput, actionVariables,
@@ -260,7 +258,9 @@ object ResponseService extends AbstractDataService {
       val randomizedBubbleValue = randomizeBubble(doc.bubble)
       val bubble = replaceTemplates(randomizedBubbleValue, merged)
       val action = replaceTemplates(doc.action, merged) //FIXME: action shouldn't contain templates
-      val actionInput = replaceTemplates(doc.actionInput, merged)
+
+      val onDemandStarChatVariables = extractSCVariables(indexName, doc.actionInput, request)
+      val actionInput = replaceTemplates(doc.actionInput, merged ++ onDemandStarChatVariables)
 
       val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
