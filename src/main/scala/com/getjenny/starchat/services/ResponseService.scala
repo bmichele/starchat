@@ -75,8 +75,8 @@ object ResponseService extends AbstractDataService {
             case Some(value) => value.docs.map(c =>
               c.coreData match {
                 case Some(core) =>
-                  s"""Question(${c.indexInConversation}): ${core.question.getOrElse("EMPTY")}\n
-                     |Answer(${c.indexInConversation}}): ${core.answer.getOrElse("EMPTY")}""".stripMargin
+                  "Question(" + c.indexInConversation + "): " + core.question.getOrElse("EMPTY") + "\n" +
+                    "Answer(" + c.indexInConversation + "): " + core.answer.getOrElse("EMPTY") + "\n"
                 case _ => ""
               }).filter(_.nonEmpty).mkString("---\n")
             case _ => "EMPTY CONVERSATION"
