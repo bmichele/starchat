@@ -38,7 +38,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "matchPatternRegex",
     "parseDate",
     "prevTravStateIs",
-    "readS3Data",
+    "readSSSData",
     "regex",
     "search",
     "setServiceOpening",
@@ -84,7 +84,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "matchPatternRegex" => new MatchPatternRegexAtomic(argument, restrictedArgs)
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
     case "prevTravStateIs" => new PrevTravStateIsAtomic(argument, restrictedArgs)
-    case "readS3Data" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
+    case "readRemoteData" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
     case "search" => new SearchAtomic(argument, restrictedArgs)
     case "setServiceOpening" => new SetServiceOpeningAtomic(argument, restrictedArgs)
