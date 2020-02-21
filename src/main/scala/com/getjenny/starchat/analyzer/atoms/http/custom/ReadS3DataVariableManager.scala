@@ -21,7 +21,7 @@ trait ReadS3DataVariableManager extends GenericVariableManager {
     *
     * atom will be called with:
     *
-    * readS3Data("s3-folder-id=demoDishwasherProductIds","item-id=XYZ1")
+    * readRemoteData("s3-folder-id=demoDishwasherProductIds","item-id=XYZ1")
     *
     * Variables set:
     * %XYZ1.price%
