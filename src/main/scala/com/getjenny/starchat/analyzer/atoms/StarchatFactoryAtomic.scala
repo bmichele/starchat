@@ -38,7 +38,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "matchPatternRegex",
     "parseDate",
     "prevTravStateIs",
-    "readSSSData",
+    "readRemoteData",
     "regex",
     "search",
     "setServiceOpening",
