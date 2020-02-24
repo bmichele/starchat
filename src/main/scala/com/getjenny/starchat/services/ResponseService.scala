@@ -287,11 +287,11 @@ object ResponseService extends AbstractDataService {
 
   }
 
-  private[this] def escapeJson(input: String): String = JsString(input).toString.replaceAll("^\"|\"$", "");
+  private[this] def escapeJson(input: String): String = JsString(input).toString.replaceAll("^\"|\"$", "")
   private[this] def replaceTemplates(input: String, values: Map[String, String]): String = {
     values.foldLeft(input) {
       case (b, (k, v)) =>
-        b.replaceAll("%" + k + "%", escapeJson(v))
+        b.replaceAllLiterally("%" + k + "%", escapeJson(v))
     }
   }
 
@@ -299,7 +299,7 @@ object ResponseService extends AbstractDataService {
                                      values: Map[String, String]): Seq[JsObject] = {
     input.map { item =>
       val jsonObjString = values.foldLeft(item.toString) { case (acc, (replKey, replValue)) =>
-        acc.replaceAll("%" + replKey + "%", escapeJson(replValue))
+        acc.replaceAllLiterally("%" + replKey + "%", escapeJson(replValue))
       }
       jsonObjString.parseJson.asJsObject
     }
