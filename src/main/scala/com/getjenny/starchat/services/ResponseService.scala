@@ -287,7 +287,7 @@ object ResponseService extends AbstractDataService {
 
   }
 
-  private[this] def escapeJson(input: String): String = JsString(input).toString.replaceAllLiterally("^\"|\"$", "")
+  private[this] def escapeJson(input: String): String = JsString(input).toString.replaceAll("^\"|\"$", "")
   private[this] def replaceTemplates(input: String, values: Map[String, String]): String = {
     values.foldLeft(input) {
       case (b, (k, v)) =>
