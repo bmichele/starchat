@@ -51,7 +51,7 @@ case class S3Output(override val score: String = "readS3Data.score",
       val json = body.parseJson.asJsObject
       val jsonMap = json.fields
       val extractedJsonProperties = jsonMap.keys.mkString(", ")
-      val outputJsonMap = jsonMap.map {case (k,v) => s"$itemIdPrefix.$k" -> v.toString()}
+      val outputJsonMap = jsonMap.map {case (k,v) => s"$itemIdPrefix.$k" -> v.toString.stripPrefix("\"").stripSuffix("\"")}
       Map(
         score -> "1",
         responseStatus -> status.toString,
