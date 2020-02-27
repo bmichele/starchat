@@ -445,17 +445,17 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
 
     }*/
 
-    /*"test s3 atom" in {
+    "test s3 atom" in {
 
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
 
-      val atom = new HttpRequestAtomic(List("s3-folder-id=demo","item-id=pippo"), systemConf) with ReadS3DataVariableManager
+      val atom = new HttpRequestAtomic(List("s3-folder-id=demo","item-id=EI24ID30QB"), systemConf) with ReadS3DataVariableManager
 
       val result = atom.evaluate("", AnalyzersDataInternal())
       println(result)
       result.data.extractedVariables.foreach(println)
-    }*/
+    }
   }
 
 }
