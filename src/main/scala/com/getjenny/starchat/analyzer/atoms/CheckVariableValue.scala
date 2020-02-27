@@ -7,10 +7,12 @@ import scalaz.Scalaz._
  * Created by angelo on 10/02/20.
  */
 
-/** test if a variable exists on dictionary of variables and match the value
- *
- * @param arguments name of the variable to be checked
- */
+/** test if a variable exists on dictionary of variables and match the value, eg:
+  *
+  * checkVariableValue(variable_name, variable_value)
+  *
+  * @param arguments: <variable>, <value>
+  */
 class CheckVariableValue(val arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   val varName: String = arguments.headOption match {
     case Some(t) => t
