@@ -18,7 +18,7 @@ import DefaultJsonProtocol._
   * "extracted_date.year" year - yyyy
   * "extracted_date.month" month - MM
   * "extracted_date.day_of_month" day of month - dd
-  * "extracted_date.day_of_week" day of week (1 = Sunday) - d
+  * "extracted_date.day_of_week" day of week ([1, ..., 7] = [Monday, ..., Sunday]) - d
   * "extracted_date.hour" hour - HH
   * "extracted_date.minute" minutes - mm
   * "extracted_date.second" seconds - ss
@@ -72,7 +72,7 @@ case class ParseDateOutput(
         year -> "%04d".format(cal.get(Calendar.YEAR)),
         month -> "%02d".format(cal.get(Calendar.MONTH) + 1),
         dayOfMonth -> "%02d".format(cal.get(Calendar.DAY_OF_MONTH)),
-        dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK)),
+        dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK) - 1 match {case 0 => 7; case n => n}),
         hour -> "%02d".format(cal.get(Calendar.HOUR_OF_DAY)),
         minute -> "%02d".format(cal.get(Calendar.MINUTE)),
         second -> "%02d".format(cal.get(Calendar.SECOND)),
