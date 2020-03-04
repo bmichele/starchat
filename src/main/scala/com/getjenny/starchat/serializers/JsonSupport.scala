@@ -186,6 +186,24 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
+  implicit val qaSortByUnmarshalling: Unmarshaller[String, QASearchSortBy.Value] =
+    Unmarshaller.strict[String, QASearchSortBy.Value] { enumValue =>
+      QASearchSortBy.value(enumValue)
+    }
+
+  implicit object qaSortByFormat extends JsonFormat[QASearchSortBy.Value] {
+    def write(obj: QASearchSortBy.Value): JsValue = JsString(obj.toString)
+
+    def read(json: JsValue): QASearchSortBy.Value = json match {
+      case JsString(str) =>
+        QASearchSortBy.values.find(_.toString === str) match {
+          case Some(t) => t
+          case _ => throw DeserializationException("SortSearch string is invalid")
+        }
+      case _ => throw DeserializationException("SortSearch string expected")
+    }
+  }
+
   implicit val dtActionResultFormat = jsonFormat3(DtActionResult)
   implicit val responseMessageDataFormat = jsonFormat2(ReturnMessageData)
   implicit val responseRequestUserInputFormat = jsonFormat3(ResponseRequestInUserInput)
@@ -202,7 +220,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val searchDTDocumentFormat = jsonFormat2(SearchDTDocument)
   implicit val searchQAResultsFormat = jsonFormat4(SearchQADocumentsResults)
   implicit val searchDTResultsFormat = jsonFormat3(SearchDTDocumentsResults)
-  implicit val qaDocumentSearchFormat = jsonFormat12(QADocumentSearch)
+  implicit val qaDocumentSearchFormat = jsonFormat13(QADocumentSearch)
   implicit val dtDocumentSearchFormat = jsonFormat9(DTDocumentSearch)
   implicit val indexDocumentResultFormat = jsonFormat4(IndexDocumentResult)
   implicit val updateDocumentResultFormat = jsonFormat4(UpdateDocumentResult)
@@ -283,6 +301,8 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
       case _ => throw DeserializationException("CommonOrSpecificSearch string expected")
     }
   }
+
+
 
   implicit val observedDataSourcesUnmarshalling:
     Unmarshaller[String, ObservedDataSources.Value] = Unmarshaller.strict[String, ObservedDataSources.Value] { enumValue =>
