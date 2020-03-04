@@ -46,7 +46,7 @@ case class QADocumentSearch(
                              minScore: Option[Float] = None,
                              @deprecated("this attribute will be removed, see: sortBy instead", "StarChat v6.0.0")
                              sortByConvIdIdx: Option[Boolean] = None,
-                             sortBy: Option[Seq[QASearchSortBy.Value]] = None,
+                             sortBy: Option[List[QASearchSortBy.Value]] = None,
                              conversation: Option[List[String]] = None, /* IDs of the conversations (or query) */
                              indexInConversation: Option[Int] = None, /* the index of the document in the conversation flow */
                              coreData: Option[QADocumentCore] = None, /* core question answer fields */

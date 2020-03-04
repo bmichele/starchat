@@ -911,7 +911,7 @@ paths:
       operationId: get_node_dt_update
       description: >-
         calculate if all the decision tables of the cluster were loaded by the node,
-        can be used as an Healt Check on start-up before the registration of a new node on the load balancer
+        can be used as an Health Check on start-up before the registration of a new node on the load balancer
       parameters:
         - in: query
           name: verbose
