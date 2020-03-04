@@ -2,9 +2,20 @@ package com.getjenny.starchat.entities.io
 
 import com.getjenny.starchat.entities.persistents._
 
+import scalaz.Scalaz._
+
 /**
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
+
+object SortSearch extends Enumeration {
+  val CONVERSATION,
+  IDX_IN_CONVERSATION,
+  TIMESTAMP,
+  SCORE = SortSearch.Value /* default value */
+
+  def value(v: String): SortSearch.Value = values.find(_.toString === v).getOrElse(SCORE)
+}
 
 case class QADocumentAnnotationsSearch(
                                         dclass: Option[String] = None, /* document classes e.g. group0 group1 etc.*/
@@ -33,8 +44,9 @@ case class QADocumentSearch(
                              from: Option[Int] = None,
                              size: Option[Int] = None,
                              minScore: Option[Float] = None,
+                             @deprecated("this attribute will be removed, see: sortBy instead", "StarChat v6.0.0")
                              sortByConvIdIdx: Option[Boolean] = None,
-
+                             sortBy: Option[Seq[SortSearch.Value]] = None,
                              conversation: Option[List[String]] = None, /* IDs of the conversations (or query) */
                              indexInConversation: Option[Int] = None, /* the index of the document in the conversation flow */
                              coreData: Option[QADocumentCore] = None, /* core question answer fields */

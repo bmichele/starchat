@@ -42,7 +42,7 @@ trait DecisionTableResource extends StarChatResource {
                   extractRequest { request =>
                     parameters("reset".as[Boolean] ? true,
                       "propagate".as[Boolean] ? true, "refresh".as[Int] ? 0) { (reset, propagate, refresh) =>
-                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                       onCompleteWithBreakerFuture(breaker)(
                         decisionTableService.cloneIndexContent(
                           indexNameSrc = indexNameSrc,
