@@ -186,17 +186,17 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
-  implicit val qaSortByUnmarshalling: Unmarshaller[String, SortSearch.Value] =
-    Unmarshaller.strict[String, SortSearch.Value] { enumValue =>
-      SortSearch.value(enumValue)
+  implicit val qaSortByUnmarshalling: Unmarshaller[String, QASearchSortBy.Value] =
+    Unmarshaller.strict[String, QASearchSortBy.Value] { enumValue =>
+      QASearchSortBy.value(enumValue)
     }
 
-  implicit object qaSortByFormat extends JsonFormat[SortSearch.Value] {
-    def write(obj: SortSearch.Value): JsValue = JsString(obj.toString)
+  implicit object qaSortByFormat extends JsonFormat[QASearchSortBy.Value] {
+    def write(obj: QASearchSortBy.Value): JsValue = JsString(obj.toString)
 
-    def read(json: JsValue): SortSearch.Value = json match {
+    def read(json: JsValue): QASearchSortBy.Value = json match {
       case JsString(str) =>
-        SortSearch.values.find(_.toString === str) match {
+        QASearchSortBy.values.find(_.toString === str) match {
           case Some(t) => t
           case _ => throw DeserializationException("SortSearch string is invalid")
         }

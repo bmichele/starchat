@@ -571,11 +571,28 @@ trait QuestionAnswerService extends AbstractDataService {
   def search(indexName: String, documentSearch: QADocumentSearch): Option[SearchQADocumentsResults] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
+    @deprecated("sortByConvIdIdx attribute will be removed, see: sortBy instead", "StarChat v6.0.0")
     val sort = documentSearch.sortByConvIdIdx match {
       case Some(true) => List(new FieldSortBuilder("conversation").order(SortOrder.DESC),
         new FieldSortBuilder("index_in_conversation").order(SortOrder.DESC),
         new FieldSortBuilder("timestamp").order(SortOrder.DESC))
-      case _ => List(new ScoreSortBuilder().order(SortOrder.DESC))
+      case _ =>
+        documentSearch.sortBy match {
+          case Some(sortByList) => sortByList.map {
+            case QASearchSortBy.CONVERSATION =>
+              new FieldSortBuilder("conversation").order(SortOrder.DESC)
+            case QASearchSortBy.IDX_IN_CONVERSATION =>
+              new FieldSortBuilder("index_in_conversation").order(SortOrder.DESC)
+            case QASearchSortBy.TIMESTAMP =>
+              new FieldSortBuilder("timestamp").order(SortOrder.DESC)
+            case QASearchSortBy.SCORE =>
+              new ScoreSortBuilder ().order(SortOrder.DESC)
+            case _ =>
+              throw QuestionAnswerServiceException("Bad QA SortBy value: " + sortByList)
+          }
+          case _ =>
+            List(new ScoreSortBuilder().order(SortOrder.DESC))
+        }
     }
 
     val query = queryBuilder(documentSearch)
