@@ -5,6 +5,11 @@
         "type": "keyword",
         "store": true
       },
+      "starchatAnnotations": {
+        "type": "object",
+        "dynamic": true,
+        "enabled": true
+      },
       "question": {
         "type": "text",
         "store": true,

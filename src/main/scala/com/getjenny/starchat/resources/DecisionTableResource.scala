@@ -112,7 +112,7 @@ trait DecisionTableResource extends StarChatResource {
               extractRequest { request =>
                 storeUploadedFile(fileType, tempDestination("." + fileType)) {
                   case (_, file) =>
-                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 60.seconds)
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                     onCompleteWithBreakerFuture(breaker)(
                       if (fileType === "csv") {
                         decisionTableService.indexCSVFileIntoDecisionTable(indexName, file, 0)
@@ -158,7 +158,7 @@ trait DecisionTableResource extends StarChatResource {
               extractRequest { request =>
                 parameters("check".as[Boolean] ? true) { check =>
                   entity(as[IndexedSeq[DTDocumentCreate]]) { documents =>
-                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                     onCompleteWithBreakerFuture(breaker)(
                       decisionTableService.bulkCreate(indexName = indexName, documents = documents, check = check)) {
                       case Success(t) =>

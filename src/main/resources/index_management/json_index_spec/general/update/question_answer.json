@@ -1,0 +1,9 @@
+{
+  "properties": {
+    "starchatAnnotations": {
+      "type": "object",
+      "dynamic": true,
+      "enabled": true
+    }
+  }
+}
