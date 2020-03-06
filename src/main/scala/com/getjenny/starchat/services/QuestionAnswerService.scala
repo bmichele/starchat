@@ -930,7 +930,8 @@ trait QuestionAnswerService extends AbstractDataService {
         case Some(core) => if(core.question.getOrElse("") =/= "") {
           updateByQuery(
             indexName = indexName,
-            searchReq = QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
+            searchReq =
+              QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
             documentUpdate = QADocumentUpdateByQuery(),
             script =  Some(incrementConvIdxCounterScript),
             refresh = refresh
