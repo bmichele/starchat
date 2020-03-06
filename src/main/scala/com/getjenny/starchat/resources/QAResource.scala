@@ -146,32 +146,34 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                parameters("refresh".as[Int] ? 0) { refresh =>
-                  entity(as[QADocument]) { document =>
-                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(questionAnswerService.create(indexName, document, refresh)) {
-                      case Success(t) =>
-                        t match {
-                          case Some(v) =>
-                            completeResponse(StatusCodes.Created, StatusCodes.BadRequest, Option {
-                              v
-                            })
-                          case None =>
-                            log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri))
-                            completeResponse(StatusCodes.BadRequest,
-                              Option {
-                                ReturnMessageData(code = 104, message = "Error indexing new document, empty response")
+                parameters("updateAnnotations".as[Boolean] ? true, "refresh".as[Int] ? 0) {
+                  (updateAnnotations, refresh) =>
+                    entity(as[QADocument]) { document =>
+                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                      onCompleteWithBreakerFuture(breaker)(
+                        questionAnswerService.create(indexName, document, updateAnnotations, refresh)) {
+                        case Success(t) =>
+                          t match {
+                            case Some(v) =>
+                              completeResponse(StatusCodes.Created, StatusCodes.BadRequest, Option {
+                                v
                               })
-                        }
-                      case Failure(e) =>
-                        val message = logTemplate(user.id, indexName, routeName, request.method, request.uri)
-                        log.error(message, e)
-                        completeResponse(StatusCodes.BadRequest,
-                          Option {
-                            ReturnMessageData(code = 105, message = message)
-                          })
+                            case None =>
+                              log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri))
+                              completeResponse(StatusCodes.BadRequest,
+                                Option {
+                                  ReturnMessageData(code = 104, message = "Error indexing new document, empty response")
+                                })
+                          }
+                        case Failure(e) =>
+                          val message = logTemplate(user.id, indexName, routeName, request.method, request.uri)
+                          log.error(message, e)
+                          completeResponse(StatusCodes.BadRequest,
+                            Option {
+                              ReturnMessageData(code = 105, message = message)
+                            })
+                      }
                     }
-                  }
                 }
               }
             }
@@ -312,7 +314,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                   entity(as[UpdateQAByQueryReq]) { updateReq =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                     onCompleteWithBreakerFuture(breaker)(
-                      questionAnswerService.updateByQuery(indexName = indexName, updateReq = updateReq, refresh = refresh)
+                      questionAnswerService.updateByQueryFullResults(indexName = indexName, updateReq = updateReq, refresh = refresh)
                     ) {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {

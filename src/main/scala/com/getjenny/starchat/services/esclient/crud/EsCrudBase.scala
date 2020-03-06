@@ -14,7 +14,8 @@ import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.common.unit.TimeValue
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.index.query.QueryBuilder
-import org.elasticsearch.index.reindex.{BulkByScrollResponse, DeleteByQueryRequest}
+import org.elasticsearch.index.reindex.{BulkByScrollResponse, DeleteByQueryRequest, UpdateByQueryRequest}
+import org.elasticsearch.script.Script
 import org.elasticsearch.search.aggregations.AggregationBuilder
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.SortBuilder
@@ -155,6 +156,25 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
     log.debug("Delete request: {}", request)
 
     client.httpClient.deleteByQuery(request, RequestOptions.DEFAULT)
+  }
+
+  def updateByQuery(queryBuilder: QueryBuilder, builder: XContentBuilder,
+                    script: Option[Script], batchSize: Option[Int]): BulkByScrollResponse = {
+    val request = new UpdateByQueryRequest(index)
+    request.setConflicts("proceed")
+    request.setQuery(queryBuilder)
+    script match {
+      case Some(s) => request.setScript(s)
+      case _ =>
+    }
+    batchSize match {
+      case Some(bs) => request.setBatchSize(bs)
+      case _ =>
+    }
+
+    log.debug("UpdateByQuery request: {}", request)
+
+    client.httpClient.updateByQuery(request, RequestOptions.DEFAULT)
   }
 
   def delete(id: String): DeleteResponse = {

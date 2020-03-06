@@ -17,19 +17,27 @@ import org.apache.lucene.search.join._
 import org.elasticsearch.action.search.SearchType
 import org.elasticsearch.index.query.functionscore._
 import org.elasticsearch.index.query.{BoolQueryBuilder, InnerHitBuilder, QueryBuilder, QueryBuilders}
-import org.elasticsearch.script._
+import org.elasticsearch.script.Script
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval
 import org.elasticsearch.search.aggregations.{AggregationBuilder, AggregationBuilders}
 import org.elasticsearch.search.sort.{FieldSortBuilder, ScoreSortBuilder, SortOrder}
+import scalaz.Scalaz._
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-
 case class QuestionAnswerServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
 trait QuestionAnswerService extends AbstractDataService {
+  private[this] val incrementConvIdxCounterScriptBody: String = "if (ctx._source.starchatAnnotations == null)" +
+    "{ctx._source.starchatAnnotations = new HashMap() } " +
+    "if(ctx._source.index_in_conversation==1) { " +
+    "if (ctx._source.starchatAnnotations.convIdxCounter == null)" +
+    "{ ctx._source.starchatAnnotations.convIdxCounter = 0 } " +
+    "ctx._source.starchatAnnotations.convIdxCounter ++}"
+  private[this] val incrementConvIdxCounterScript: Script = new Script(incrementConvIdxCounterScriptBody)
+
   val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
 
   override val elasticClient: QuestionAnswerElasticClient
@@ -912,8 +920,26 @@ trait QuestionAnswerService extends AbstractDataService {
     aggregationBuilderList.toList
   }
 
-  def create(indexName: String, document: QADocument, refresh: Int): Option[IndexDocumentResult] = {
+  def create(indexName: String, document: QADocument,
+             updateAnnotation: Boolean = true, refresh: Int): Option[IndexDocumentResult] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
+
+    /* increment conversation counter */
+    if(updateAnnotation) {
+      document.coreData match {
+        case Some(core) => if(core.question.getOrElse("") =/= "") {
+          updateByQuery(
+            indexName = indexName,
+            searchReq = QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
+            documentUpdate = QADocumentUpdateByQuery(),
+            script =  Some(incrementConvIdxCounterScript),
+            refresh = refresh
+          )
+        }
+        case _ =>
+      }
+    }
+
     val response = indexLanguageCrud.create(document, new QaDocumentEntityManager(indexName), refresh)
 
     Option {
@@ -923,7 +949,7 @@ trait QuestionAnswerService extends AbstractDataService {
 
   def update(indexName: String, document: QADocumentUpdate, refresh: Int): UpdateDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val qaDocumentList = QADocumentUpdateEntity.fromQADocumentUpdate(document)
+    val qaDocumentList = QADocumentUpdateEntity.fromQADocumentUpdateList(document)
     val bulkResponse = indexLanguageCrud.bulkUpdate(qaDocumentList.map(x => x.id -> x),
       entityManager = new QaDocumentEntityManager(indexName),
       refresh = 1)
@@ -931,7 +957,9 @@ trait QuestionAnswerService extends AbstractDataService {
     UpdateDocumentsResult(data = bulkResponse)
   }
 
-  def updateByQuery(indexName: String, updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
+  @deprecated("this function is slow for big updates, see updateByQuery instead", "StarChat v6.0.0")
+  def updateByQueryFullResults(indexName: String,
+                               updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, updateReq.documentSearch)
     searchRes match {
       case Some(r) =>
@@ -944,6 +972,20 @@ trait QuestionAnswerService extends AbstractDataService {
         }
       case _ => UpdateDocumentsResult(data = List.empty[UpdateDocumentResult])
     }
+  }
+
+  // TODO: to be implemented: extend the QaDocumentEntityManager to support an update request without ids
+  def updateByQuery(indexName: String, searchReq: QADocumentSearch, documentUpdate: QADocumentUpdateByQuery,
+                    script: Option[Script], refresh: Int): UpdateByQueryResult = {
+    val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
+    val query = queryBuilder(searchReq) //TODO: verify the instance field is forced in search
+    indexLanguageCrud.updateByQuery(
+      entity = documentUpdate,
+      entityManager = new QaDocumentEntityManager(indexName),
+      queryBuilder = query,
+      script = script,
+      batchSize = None,
+      refresh = refresh)
   }
 
   def read(indexName: String, ids: List[String]): Option[SearchQADocumentsResults] = {

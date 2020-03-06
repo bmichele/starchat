@@ -330,7 +330,7 @@ object DecisionTableService extends AbstractDataService {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     if (check) {
-      //TODO: to be implemented
+      //TODO: to be implemented checks on state, analyzers, actions ...
     }
 
     val response = indexLanguageCrud.update(document, upsert = true,
@@ -350,7 +350,7 @@ object DecisionTableService extends AbstractDataService {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     if (check) {
-      //TODO: to be implemented
+      //TODO: to be implemented checks on state, analyzers, actions ...
     }
 
     val response = indexLanguageCrud.update(document,
