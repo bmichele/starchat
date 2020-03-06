@@ -1,8 +1,8 @@
 package com.getjenny.starchat.services
 
 /**
-  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
-  */
+ * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
+ */
 
 import java.time.{ZoneId, ZoneOffset}
 
@@ -59,11 +59,11 @@ trait QuestionAnswerService extends AbstractDataService {
     mutable.LinkedHashMap[String, (Long, TotalTerms)]()
 
   /** Calculate the dictionary size for one index i.e. the number of unique terms
-    * in the fields question, answer and in the union of both the fields
-    *
-    * @param indexName the index name
-    * @return a data structure with the unique terms counts
-    */
+   * in the fields question, answer and in the union of both the fields
+   *
+   * @param indexName the index name
+   * @return a data structure with the unique terms counts
+   */
   private[this] def calcDictSize(indexName: String): DictSize = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
@@ -83,13 +83,13 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** Return the the dictionary size for one index i.e. the number of unique terms
-    * in the fields question, answer and in the union of both the fields
-    * The function returns cached results.
-    *
-    * @param indexName the index name
-    * @param stale     the max cache age in milliseconds
-    * @return a data structure with the unique terms counts
-    */
+   * in the fields question, answer and in the union of both the fields
+   * The function returns cached results.
+   *
+   * @param indexName the index name
+   * @param stale     the max cache age in milliseconds
+   * @return a data structure with the unique terms counts
+   */
   def dictSize(indexName: String, stale: Long = cacheStealTimeMillis): DictSize = {
     val key = indexName
 
@@ -122,10 +122,10 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** Calculate the total number of terms in the fields question and answer, including duplicates.
-    *
-    * @param indexName the index name
-    * @return a data structure with the terms counting and the total number of documents
-    */
+   *
+   * @param indexName the index name
+   * @return a data structure with the terms counting and the total number of documents
+   */
   private[this] def calcTotalTerms(indexName: String): TotalTerms = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
@@ -141,11 +141,11 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** Returns the total number of terms in the fields question and answer, including duplicates.
-    *
-    * @param indexName the index name
-    * @param stale     the max cache age in milliseconds
-    * @return a data structure with the terms counting and the total number of documents
-    */
+   *
+   * @param indexName the index name
+   * @param stale     the max cache age in milliseconds
+   * @return a data structure with the terms counting and the total number of documents
+   */
   def totalTerms(indexName: String, stale: Long = cacheStealTimeMillis): TotalTerms = {
     val key = indexName
 
@@ -178,13 +178,13 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** calculate the occurrence of a term in the document fields questions or answer and the number of document
-    * in which the term occur
-    *
-    * @param indexName index name
-    * @param field     the field: question, answer or all for both
-    * @param term      the term to search
-    * @return the occurrence of term in the documents and the number of documents
-    */
+   * in which the term occur
+   *
+   * @param indexName index name
+   * @param field     the field: question, answer or all for both
+   * @param term      the term to search
+   * @return the occurrence of term in the documents and the number of documents
+   */
   def calcTermCount(indexName: String,
                     field: TermCountFields.Value = TermCountFields.question, term: String): TermCount = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
@@ -209,14 +209,14 @@ trait QuestionAnswerService extends AbstractDataService {
     mutable.LinkedHashMap[String, (Long, TermCount)]()
 
   /** Return the occurrence of a term in the document fields questions or answer and the number of document
-    * in which the term occur
-    *
-    * @param indexName index name
-    * @param field     the field: question, answer or all for both
-    * @param term      the term to search
-    * @param stale     the max cache age in milliseconds
-    * @return the occurrence of term in the documents and the number of documents
-    */
+   * in which the term occur
+   *
+   * @param indexName index name
+   * @param field     the field: question, answer or all for both
+   * @param term      the term to search
+   * @param stale     the max cache age in milliseconds
+   * @return the occurrence of term in the documents and the number of documents
+   */
   def termCount(indexName: String, field: TermCountFields.Value, term: String,
                 stale: Long = cacheStealTimeMillis): TermCount = {
     val key = indexName + field + term
@@ -238,10 +238,10 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** set the number of terms counter's cached entries
-    *
-    * @param parameters the max number of cache entries
-    * @return the parameters set
-    */
+   *
+   * @param parameters the max number of cache entries
+   * @return the parameters set
+   */
   def countersCacheParameters(parameters: CountersCacheParameters): CountersCacheParameters = {
     parameters.dictSizeCacheMaxSize match {
       case Some(v) => this.dictSizeCacheMaxSize = v
@@ -887,11 +887,11 @@ trait QuestionAnswerService extends AbstractDataService {
           val filterQ = QueryBuilders.rangeQuery("feedbackConvScore").gte(0)
           aggregationBuilderList +=
             AggregationBuilders.filter("filtered", filterQ).subAggregation(
-            AggregationBuilders
-              .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
-              .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-              .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
+              AggregationBuilders
+                .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+                .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
         }
         if (reqAggs.contains(QAAggregationsTypes.avgAlgorithmAnswerScoreOverTime)) {
           aggregationBuilderList += AggregationBuilders
