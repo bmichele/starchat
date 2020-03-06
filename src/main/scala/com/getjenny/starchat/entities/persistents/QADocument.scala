@@ -5,12 +5,13 @@ package com.getjenny.starchat.entities.persistents
  */
 
 import com.getjenny.analyzer.util.Time
-import com.getjenny.starchat.entities.io.QADocumentUpdate
+import com.getjenny.starchat.entities.io.{QADocumentUpdate, QADocumentUpdateByQuery}
 import com.getjenny.starchat.services.QuestionAnswerServiceException
 import org.elasticsearch.action.get.GetResponse
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder
+import org.elasticsearch.script.Script
 import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
@@ -508,5 +509,55 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
     builder.endObject()
 
     createId(instance, document.id) -> builder
+  }
+  private val coreDataMapping = {
+    Map("questionNegative" -> "question_negative",
+      "questionScoredTerms" -> "question_scored_terms",
+      "answerScoredTerms" -> "answer_scored_terms")
+  }
+
+  private def extractFields(c: Any): Map[String, Any] = {
+    c.getClass.getDeclaredFields.foldLeft(Map.empty[String, Any]) { (a, f) =>
+      f.setAccessible(true)
+      f.get(c) match {
+        case Some(v) => v match {
+          case l: List[_] => if(l.isEmpty) a else a + (f.getName -> v)
+          case x: QADocumentCore  =>
+            a ++ extractFields(x)
+          case x: QADocumentAnnotations  =>
+            a ++ extractFields(x)
+          case _ => a + (f.getName -> v)
+        }
+        case None => a
+        case v => a + (f.getName -> v)
+      }
+    }
+  }
+
+  def createUpdateScript(document: QADocumentUpdateByQuery): Script = {
+    val nested: Map[String, Any] = extractFields(document)
+    val allValues = nested.flatten {
+      case (_, map: Map[String, Any]) => map
+      case (key, value) => Map(key -> value)
+    }.toMap
+
+    val scriptBody = allValues
+      .mapKeys(k => coreDataMapping.getOrElse(k, k))
+      .map { case (k, v) =>
+        val valueString = v match {
+          case x: String => s"'$x'"
+          case x: List[_] => x.head match {
+            case _: String =>
+              val array = x.map(el => s"['query':'$el']").mkString(",")
+              s"[$array]"
+            case (_: String, _: Double) =>
+              val array = x.map { case (k, v) => s"['term':'$k', 'score': $v]" }.mkString(",")
+              s"[$array]"
+          }
+          case x => s"$x"
+        }
+        s"ctx._source.$k=$valueString"
+      }.mkString(";")
+    new Script(scriptBody)
   }
 }

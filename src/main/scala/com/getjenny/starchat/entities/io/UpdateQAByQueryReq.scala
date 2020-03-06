@@ -6,5 +6,5 @@ package com.getjenny.starchat.entities.io
 
 case class UpdateQAByQueryReq(
                                documentSearch: QADocumentSearch,
-                               document: QADocumentUpdate
+                               document: QADocumentUpdateByQuery
                              )

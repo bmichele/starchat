@@ -26,6 +26,7 @@ import scalaz.Scalaz._
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+
 case class QuestionAnswerServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
@@ -36,6 +37,8 @@ trait QuestionAnswerService extends AbstractDataService {
     "if (ctx._source.starchatAnnotations.convIdxCounter == null)" +
     "{ ctx._source.starchatAnnotations.convIdxCounter = 0 } " +
     "ctx._source.starchatAnnotations.convIdxCounter ++}"
+
+
   private[this] val incrementConvIdxCounterScript: Script = new Script(incrementConvIdxCounterScriptBody)
 
   val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
@@ -594,7 +597,7 @@ trait QuestionAnswerService extends AbstractDataService {
             case QASearchSortBy.TIMESTAMP =>
               new FieldSortBuilder("timestamp").order(SortOrder.DESC)
             case QASearchSortBy.SCORE =>
-              new ScoreSortBuilder ().order(SortOrder.DESC)
+              new ScoreSortBuilder().order(SortOrder.DESC)
             case _ =>
               throw QuestionAnswerServiceException("Bad QA SortBy value: " + sortByList)
           }
@@ -887,11 +890,11 @@ trait QuestionAnswerService extends AbstractDataService {
           val filterQ = QueryBuilders.rangeQuery("feedbackConvScore").gte(0)
           aggregationBuilderList +=
             AggregationBuilders.filter("filtered", filterQ).subAggregation(
-            AggregationBuilders
-              .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
-              .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-              .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
+              AggregationBuilders
+                .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+                .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
         }
         if (reqAggs.contains(QAAggregationsTypes.avgAlgorithmAnswerScoreOverTime)) {
           aggregationBuilderList += AggregationBuilders
@@ -925,15 +928,13 @@ trait QuestionAnswerService extends AbstractDataService {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     /* increment conversation counter */
-    if(updateAnnotation) {
+    if (updateAnnotation) {
       document.coreData match {
-        case Some(core) => if(core.question.getOrElse("") =/= "") {
+        case Some(core) => if (core.question.getOrElse("") =/= "") {
           updateByQuery(
             indexName = indexName,
-            searchReq =
-              QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
-            documentUpdate = QADocumentUpdateByQuery(),
-            script =  Some(incrementConvIdxCounterScript),
+            searchReq = QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
+            script = incrementConvIdxCounterScript,
             refresh = refresh
           )
         }
@@ -960,33 +961,18 @@ trait QuestionAnswerService extends AbstractDataService {
 
   @deprecated("this function is slow for big updates, see updateByQuery instead", "StarChat v6.0.0")
   def updateByQueryFullResults(indexName: String,
-                               updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
-    val searchRes: Option[SearchQADocumentsResults] = search(indexName, updateReq.documentSearch)
-    searchRes match {
-      case Some(r) =>
-        val id = r.hits.map(_.document.id)
-        if (id.nonEmpty) {
-          val updateDoc = updateReq.document.copy(id = id)
-          update(indexName = indexName, document = updateDoc, refresh = refresh)
-        } else {
-          UpdateDocumentsResult(data = List.empty[UpdateDocumentResult])
-        }
-      case _ => UpdateDocumentsResult(data = List.empty[UpdateDocumentResult])
-    }
+                               updateReq: UpdateQAByQueryReq, refresh: Int): UpdateByQueryResult = {
+
+    val em = new QaDocumentEntityManager(indexName)
+    updateByQuery(indexName, updateReq.documentSearch, em.createUpdateScript(updateReq.document), refresh)
+
   }
 
   // TODO: to be implemented: extend the QaDocumentEntityManager to support an update request without ids
-  def updateByQuery(indexName: String, searchReq: QADocumentSearch, documentUpdate: QADocumentUpdateByQuery,
-                    script: Option[Script], refresh: Int): UpdateByQueryResult = {
+  def updateByQuery(indexName: String, searchReq: QADocumentSearch, script: Script, refresh: Int): UpdateByQueryResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val query = queryBuilder(searchReq) //TODO: verify the instance field is forced in search
-    indexLanguageCrud.updateByQuery(
-      entity = documentUpdate,
-      entityManager = new QaDocumentEntityManager(indexName),
-      queryBuilder = query,
-      script = script,
-      batchSize = None,
-      refresh = refresh)
+    val query = queryBuilder(searchReq)
+    indexLanguageCrud.updateByQuery(script, query, None, refresh)
   }
 
   def read(indexName: String, ids: List[String]): Option[SearchQADocumentsResults] = {

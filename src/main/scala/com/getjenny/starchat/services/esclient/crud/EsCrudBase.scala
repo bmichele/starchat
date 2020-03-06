@@ -158,15 +158,11 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
     client.httpClient.deleteByQuery(request, RequestOptions.DEFAULT)
   }
 
-  def updateByQuery(queryBuilder: QueryBuilder, builder: XContentBuilder,
-                    script: Option[Script], batchSize: Option[Int]): BulkByScrollResponse = {
+  def updateByQuery(queryBuilder: QueryBuilder, script: Script, batchSize: Option[Int]): BulkByScrollResponse = {
     val request = new UpdateByQueryRequest(index)
     request.setConflicts("proceed")
     request.setQuery(queryBuilder)
-    script match {
-      case Some(s) => request.setScript(s)
-      case _ =>
-    }
+    request.setScript(script)
     batchSize match {
       case Some(bs) => request.setBatchSize(bs)
       case _ =>

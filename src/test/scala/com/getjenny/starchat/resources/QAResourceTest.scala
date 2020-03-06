@@ -271,10 +271,11 @@ class QAResourceTest extends TestEnglishBase {
           coreData = Some(QADocumentCore(question = Some("I forgot my password"))),
           size = Some(2)
         )
-        val update = QADocumentUpdate(
-          id = List("id1", "id2"),
+        val update = QADocumentUpdateByQuery(
           coreData = Some(QADocumentCore(
             question = Some("I think I forgot my password"),
+            questionNegative = Some(List("no", "no2")),
+            questionScoredTerms = Some(List("a" -> 2.0)),
             answer = Some("did you try hunter3?"),
             verified = Some(true)
           )),
@@ -288,7 +289,8 @@ class QAResourceTest extends TestEnglishBase {
         val request = UpdateQAByQueryReq(search, update)
         Put(s"/index_getjenny_english_0/$qaRoute/conversations?refresh=1", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          responseAs[UpdateDocumentsResult]
+          val updateResponse = responseAs[UpdateByQueryResult]
+          println(updateResponse)
         }
 
         val searchRequest = QADocumentSearch(
@@ -301,9 +303,16 @@ class QAResourceTest extends TestEnglishBase {
           response.totalHits should be (3)
           response.hitsCount should be (2)
           response.hits.size should be (2)
+          response.hits.foreach(x => println(x.document))
           response.hits.map(_.document
             .coreData.getOrElse(fail)
             .question.getOrElse(fail)) should contain only "I think I forgot my password"
+          response.hits.map(_.document
+            .coreData.getOrElse(fail)
+            .questionNegative.getOrElse(List.empty)) shouldEqual List(List("no", "no2"), List("no", "no2"))
+          response.hits.map(_.document
+            .coreData.getOrElse(fail)
+            .questionScoredTerms.getOrElse(List.empty)) shouldEqual List(List("a" -> 2.0), List("a" -> 2.0))
         }
       }
     }
