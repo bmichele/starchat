@@ -22,24 +22,35 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
 import scala.collection.{concurrent, mutable}
 import scala.util.{Failure, Success, Try}
+import spray.json.JsObject
 
 case class AnalyzerServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
 case class AnalyzerItem(declaration: String,
-                        analyzer: Option[StarChatAnalyzer],
+                        analyzer: Option[StarChatAnalyzer] = None,
                         build: Boolean,
                         message: String)
 
-case class DecisionTableRuntimeItem(executionOrder: Int = -1,
-                                    maxStateCounter: Int = -1,
-                                    analyzer: AnalyzerItem = AnalyzerItem(
-                                      declaration = "", analyzer = None, build = false, message = ""
-                                    ),
-                                    version: Long = -1L,
-                                    evaluationClass: String = "default",
-                                    queries: List[String] = List.empty[String],
-                                    queriesTerms: List[TextTerms] = List.empty[TextTerms]
+case class DecisionTableRuntimeItem(
+                                     executionOrder: Int = -1,
+                                     maxStateCounter: Int = -1,
+                                     analyzer: AnalyzerItem = AnalyzerItem(
+                                       declaration = "", analyzer = None, build = false, message = ""
+                                     ),
+
+                                     queries: List[String] = List.empty[String],
+                                     queriesTerms: List[TextTerms] = List.empty[TextTerms],
+                                     bubble: String = "",
+
+                                     action: String = "",
+                                     actionInput: Seq[JsObject] = Seq.empty[JsObject],
+                                     stateData: Map[String, String] = Map.empty[String, String],
+                                     successValue: String = "",
+                                     failureValue: String = "",
+
+                                     evaluationClass: String = "default",
+                                     version: Long = -1L
                                    )
 
 case class ActiveAnalyzers(
@@ -67,7 +78,8 @@ object AnalyzerService extends AbstractDataService {
       maxItems = Option(10000),
       version = Option(true),
       fetchSource = Option(Array("state", "execution_order", "max_state_counter",
-        "analyzer", "queries", "evaluation_class")),
+        "analyzer", "queries", "bubble", "evaluation_class", "action", "action_input",
+        "state_data", "success_value", "failure_value")),
       scroll = true,
       entityManager = DecisionTableEntityManager
     )
@@ -84,10 +96,14 @@ object AnalyzerService extends AbstractDataService {
             executionOrder = item.executionOrder,
             maxStateCounter = item.maxStateCounter,
             analyzer = AnalyzerItem(declaration = item.analyzerDeclaration, build = false,
-              analyzer = None,
               message = "Analyzer index(" + indexName + ") state(" + item.state + ") not built"),
             queries = item.queries,
+            bubble = item.bubble,
+            action = item.action,
+            actionInput = item.actionInput,
             queriesTerms = queriesTerms,
+            successValue = item.successValue,
+            failureValue = item.failureValue,
             evaluationClass = item.evaluationClass,
             version = item.version)
         (item.state, decisionTableRuntimeItem)
@@ -111,13 +127,8 @@ object AnalyzerService extends AbstractDataService {
     val inPlaceIndexAnalyzers = AnalyzerService.analyzersMap.getOrElse(indexName,
       ActiveAnalyzers(mutable.LinkedHashMap.empty[String, DecisionTableRuntimeItem]))
     val result = analyzersMap.map { case (stateId, runtimeItem) =>
-      val executionOrder = runtimeItem.executionOrder
-      val maxStateCounter = runtimeItem.maxStateCounter
       val analyzerDeclaration = runtimeItem.analyzer.declaration
-      val queries = runtimeItem.queries
-      val queriesTerms = runtimeItem.queriesTerms
       val version: Long = runtimeItem.version
-      val evaluationClass: String = runtimeItem.evaluationClass
       val buildAnalyzerResult: BuildAnalyzerResult =
         if (analyzerDeclaration =/= "") {
           val restrictedArgs: Map[String, String] = SystemConfiguration
@@ -152,19 +163,14 @@ object AnalyzerService extends AbstractDataService {
           BuildAnalyzerResult(analyzer = None, version = version, message = msg, build = true)
         }
 
-      val decisionTableRuntimeItem = DecisionTableRuntimeItem(executionOrder = executionOrder,
-        maxStateCounter = maxStateCounter,
+      val decisionTableRuntimeItem = runtimeItem.copy(
         analyzer =
           AnalyzerItem(
             declaration = analyzerDeclaration,
             build = buildAnalyzerResult.build,
             analyzer = buildAnalyzerResult.analyzer,
             message = buildAnalyzerResult.message
-          ),
-        version = version,
-        queries = queries,
-        queriesTerms = queriesTerms,
-        evaluationClass = evaluationClass
+          )
       )
       (stateId, decisionTableRuntimeItem)
     }.filter { case (_, decisionTableRuntimeItem) => decisionTableRuntimeItem.analyzer.build }
@@ -207,6 +213,7 @@ object AnalyzerService extends AbstractDataService {
     dtAnalyzerLoad
   }
 
+  //TODO: extend DTAnalyzerItem to include more informations like action, action input and version
   def getDTAnalyzerMap(indexName: String): DTAnalyzerMap = {
     DTAnalyzerMap(AnalyzerService.analyzersMap(indexName).analyzerMap
       .map {

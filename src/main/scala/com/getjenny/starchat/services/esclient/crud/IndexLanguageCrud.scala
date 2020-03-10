@@ -179,14 +179,18 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       }.toList
   }
 
-  def updateByQuery[T](entity: T, entityManager: WriteEntityManager[T],
-                       queryBuilder: QueryBuilder,
+  def updateByQuery(queryBuilder: QueryBuilder,
                        script: Option[Script] = None,
                        batchSize: Option[Int] = None,
                        refresh: Int): UpdateByQueryResult = {
-    val (_, builder) = entityManager.documentBuilder(entity, instance)
-    val result = esCrudBase.updateByQuery(queryBuilder = queryBuilder, builder = builder,
-      script = script, batchSize = batchSize)
+    val finalQuery = QueryBuilders.boolQuery()
+      .must(QueryBuilders.matchQuery(instanceFieldName, instance))
+      .must(queryBuilder)
+
+    val result = esCrudBase.updateByQuery(finalQuery,
+      script,
+      batchSize)
+    this.refresh(refresh)
 
     UpdateByQueryResult(
       timedOut = result.isTimedOut,

@@ -210,7 +210,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val responseRequestUserInputFormat = jsonFormat3(ResponseRequestInUserInput)
   implicit val responseRequestInputFormat = jsonFormat9(ResponseRequestIn)
   implicit val responseRequestOutputFormat = jsonFormat14(ResponseRequestOut)
-  implicit val dtDocumentFormat = jsonFormat13(DTDocumentCreate)
+  implicit val dtDocumentFormat = jsonFormat13(DTDocument)
   implicit val dtDocumentUpdateFormat = jsonFormat12(DTDocumentUpdate)
   implicit val qaDocumentAnnotationsSearchFormat = jsonFormat20(QADocumentAnnotationsSearch)
   implicit val qaDocumentCoreFormat = jsonFormat8(QADocumentCore)

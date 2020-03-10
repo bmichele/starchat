@@ -13,6 +13,7 @@ object DtHistoryType extends Enumeration {
   def value(`type`: String): DtHistoryType.Value = values.find(_.toString === `type`).getOrElse(DEFAULT)
 }
 
+//TODO: replace the history item with this new structured value
 case class DtHistoryItem(
                           state: String,
                           `type`: DtHistoryType.Value

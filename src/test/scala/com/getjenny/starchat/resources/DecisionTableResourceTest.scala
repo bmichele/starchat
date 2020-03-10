@@ -30,7 +30,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 201 when creating a new document" in {
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
@@ -46,7 +46,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         version = None
       )
 
-      val decisionTableRequest2 = DTDocumentCreate(
+      val decisionTableRequest2 = DTDocument(
         state = "dont_tell_password",
         executionOrder = 0,
         maxStateCount = 0,
@@ -86,7 +86,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       val actionInput = Seq(
         Map("text to be shown on button" -> "password_recovery").toJson.asJsObject
       )
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
@@ -422,7 +422,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       val actionInput = Seq(
         Map("text to be shown on button" -> "password_recovery").toJson.asJsObject
       )
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
@@ -476,7 +476,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         Map("action1" -> "action1").toJson.asJsObject,
         Map("action2" -> "action2").toJson.asJsObject
       )
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
@@ -496,6 +496,10 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
       Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
+      }
+
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
@@ -525,7 +529,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       val actionInput = Seq(
         Map("text to be shown on button number: %number%" -> "test action %action%").toJson.asJsObject
       )
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
@@ -545,6 +549,10 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
       Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
+      }
+
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
@@ -569,7 +577,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 200 and call an http atom" in {
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,

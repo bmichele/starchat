@@ -29,14 +29,7 @@ import scala.collection.mutable.ListBuffer
 case class QuestionAnswerServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
-trait QuestionAnswerService extends AbstractDataService {
-  private[this] val incrementConvIdxCounterScriptBody: String = "if (ctx._source.starchatAnnotations == null)" +
-    "{ctx._source.starchatAnnotations = new HashMap() } " +
-    "if(ctx._source.index_in_conversation==1) { " +
-    "if (ctx._source.starchatAnnotations.convIdxCounter == null)" +
-    "{ ctx._source.starchatAnnotations.convIdxCounter = 0 } " +
-    "ctx._source.starchatAnnotations.convIdxCounter ++}"
-  private[this] val incrementConvIdxCounterScript: Script = new Script(incrementConvIdxCounterScriptBody)
+trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScripts {
 
   val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
 
@@ -282,9 +275,9 @@ trait QuestionAnswerService extends AbstractDataService {
         dictSizeCacheSize = dictSizeCache.size,
         totalTermsCacheSize = totalTermsCache.size,
         countTermCacheSize = countTermCache.size
-      ))
+      )
+    )
   }
-
 
   def countersCacheReset: (CountersCacheParameters, CountersCacheSize) = {
     dictSizeCache.clear()
@@ -928,11 +921,10 @@ trait QuestionAnswerService extends AbstractDataService {
     if(updateAnnotation) {
       document.coreData match {
         case Some(core) => if(core.question.getOrElse("") =/= "") {
-          updateByQuery(
+          updateByQuery( //increment annotation
             indexName = indexName,
             searchReq =
               QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
-            documentUpdate = QADocumentUpdateByQuery(),
             script =  Some(incrementConvIdxCounterScript),
             refresh = refresh
           )
@@ -958,7 +950,6 @@ trait QuestionAnswerService extends AbstractDataService {
     UpdateDocumentsResult(data = bulkResponse)
   }
 
-  @deprecated("this function is slow for big updates, see updateByQuery instead", "StarChat v6.0.0")
   def updateByQueryFullResults(indexName: String,
                                updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, updateReq.documentSearch)
@@ -975,23 +966,54 @@ trait QuestionAnswerService extends AbstractDataService {
     }
   }
 
-  // TODO: to be implemented: extend the QaDocumentEntityManager to support an update request without ids
-  def updateByQuery(indexName: String, searchReq: QADocumentSearch, documentUpdate: QADocumentUpdateByQuery,
-                    script: Option[Script], refresh: Int): UpdateByQueryResult = {
+  //TODO: add the parameter "documentUpdate: QADocumentUpdateByQuery" once supported by APIs
+  private[this] def updateByQuery(indexName: String, searchReq: QADocumentSearch,
+                                  script: Option[Script],
+                                  refresh: Int): UpdateByQueryResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val query = queryBuilder(searchReq) //TODO: verify the instance field is forced in search
+    val query = queryBuilder(searchReq)
     indexLanguageCrud.updateByQuery(
-      entity = documentUpdate,
-      entityManager = new QaDocumentEntityManager(indexName),
       queryBuilder = query,
       script = script,
       batchSize = None,
       refresh = refresh)
   }
 
+  def updateConvAnnotations(indexName: String,
+                            conversation: String, refresh: Int): UpdateByQueryResult = {
+    val documentSearch = QADocumentSearch(size = Some(10000),
+      conversation=Some(List(conversation)))
+    val searchRes: Option[SearchQADocumentsResults] = search(indexName, documentSearch)
+    searchRes match {
+      case Some(r) =>
+        val count = r.hits.map( e => {
+          e.document.coreData match {
+            case Some(cd) => cd.question.getOrElse("") =/= ""
+            case _ => false
+          }
+        }).count(_ === true)
+        if (count >= 1) {
+          updateByQuery(indexName, documentSearch, Some(setIdxCounterScript(count)), refresh)
+        } else {
+          UpdateByQueryResult(
+            timedOut = false,
+            totalDocs = 0,
+            updatedDocs = 0,
+            versionConflicts = 0
+          )
+        }
+      case _ =>
+        UpdateByQueryResult(
+          timedOut = false,
+          totalDocs = 0,
+          updatedDocs = 0,
+          versionConflicts = 0
+        )
+    }
+  }
+
   def read(indexName: String, ids: List[String]): Option[SearchQADocumentsResults] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-
     indexLanguageCrud.readAll(ids, new SearchQADocumentEntityManager(indexName)).headOption
   }
 

@@ -22,7 +22,6 @@ case class DtActionException(message: String = "", cause: Throwable = None.orNul
 
 trait DtAction {
   protected val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
-
   def apply(indexName: String, stateName: String, params: Seq[JsObject]): DtActionResult
 }
 

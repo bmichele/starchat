@@ -57,7 +57,7 @@ object DecisionTableService extends AbstractDataService {
       }).max
       (searchDocument, score)
     }.map { case (searchDtDocument, score) =>
-      val document: DTDocumentCreate = searchDtDocument.document
+      val document: DTDocument = searchDtDocument.document
       SearchDTDocument(score = score.toFloat, document = document)
     }
   }
@@ -325,7 +325,7 @@ object DecisionTableService extends AbstractDataService {
     )
   }
 
-  def create(indexName: String, document: DTDocumentCreate, check: Boolean = true,
+  def create(indexName: String, document: DTDocument, check: Boolean = true,
              refresh: Int = 0): IndexDocumentResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
@@ -429,19 +429,19 @@ object DecisionTableService extends AbstractDataService {
 
   def indexCSVFileIntoDecisionTable(indexName: String, file: File,
                                     skipLines: Int = 1, separator: Char = ','): IndexDocumentListResult = {
-    val documents: IndexedSeq[DTDocumentCreate] = FileToDocuments.getDTDocumentsFromCSV(log = log, file = file,
+    val documents: IndexedSeq[DTDocument] = FileToDocuments.getDTDocumentsFromCSV(log = log, file = file,
       skipLines = skipLines, separator = separator)
 
     bulkCreate(indexName, documents)
   }
 
   def indexJSONFileIntoDecisionTable(indexName: String, file: File): IndexDocumentListResult = {
-    val documents: IndexedSeq[DTDocumentCreate] = FileToDocuments.getDTDocumentsFromJSON(log = log, file = file)
+    val documents: IndexedSeq[DTDocument] = FileToDocuments.getDTDocumentsFromJSON(log = log, file = file)
 
     bulkCreate(indexName = indexName, documents = documents, check = false)
   }
 
-  def bulkCreate(indexName: String, documents: IndexedSeq[DTDocumentCreate],
+  def bulkCreate(indexName: String, documents: IndexedSeq[DTDocument],
                  check: Boolean = true, refresh: Int = 0): IndexDocumentListResult = {
     val indexDocumentListResult = documents.map(dtDocument => {
       create(indexName = indexName, document = dtDocument, check = check, refresh = refresh)
