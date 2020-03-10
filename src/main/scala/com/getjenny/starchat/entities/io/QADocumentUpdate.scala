@@ -1,6 +1,6 @@
 package com.getjenny.starchat.entities.io
 
-import com.getjenny.starchat.entities.persistents.{QADocumentAnnotations, QADocumentCore}
+import com.getjenny.starchat.entities.persistents.{AggAnnnotations, QADocumentAnnotations, QADocumentCore}
 
 trait QADocumentUpdateBase {
   /* list of document ids to update (bulk editing) */
@@ -9,6 +9,8 @@ trait QADocumentUpdateBase {
   val indexInConversation: Option[Int]
   /* the index of the document in the conversation flow */
   val coreData: Option[QADocumentCore] = None
+  /* aggregated annotations */
+  val aggAnnotations: Option[AggAnnnotations] = None
   /* core question answer fields */
   val annotations: Option[QADocumentAnnotations] = None
   /* qa and conversation annotations */
@@ -23,6 +25,7 @@ case class QADocumentUpdate (
                               override val conversation: Option[String] = None,
                               override val indexInConversation: Option[Int] = None,
                               override val coreData: Option[QADocumentCore] = None,
+                              override val aggAnnotations: Option[AggAnnnotations] = None,
                               override val annotations: Option[QADocumentAnnotations] = None,
                               override val status: Option[Int] = None,
                               override val timestamp: Option[Long] = None,
@@ -32,6 +35,7 @@ case class QADocumentUpdateByQuery(
                                     override val conversation: Option[String] = None,
                                     override val indexInConversation: Option[Int] = None,
                                     override val coreData: Option[QADocumentCore] = None,
+                                    override val aggAnnotations: Option[AggAnnnotations] = None,
                                     override val annotations: Option[QADocumentAnnotations] = None,
                                     override val status: Option[Int] = None,
                                     override val timestamp: Option[Long] = None,
