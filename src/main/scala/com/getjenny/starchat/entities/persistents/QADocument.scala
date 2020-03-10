@@ -150,10 +150,15 @@ trait QADocumentBase {
   val timestamp: Option[Long] = None /* indexing timestamp, automatically calculated if not provided */
 }
 
+case class AggAnnnotations(
+                            convIdxCounter: Option[Long]
+                          )
+
 case class QADocument(override val id: String,
                       conversation: String, /* ID of the conversation (multiple q&a may be inside a conversation) */
                       indexInConversation: Int = -1, /* the index of the document in the conversation flow */
                       override val coreData: Option[QADocumentCore] = None,
+                      aggAnnotations: Option[AggAnnnotations] = None, /* aggregated annotaions */
                       override val annotations: Option[QADocumentAnnotations] = Some(QADocumentAnnotations()),
                       override val status: Option[Int] = Some(0),
                       override val timestamp: Option[Long] = None

@@ -2102,6 +2102,47 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
+  '/<index_name>/conv/annotations/<qa_route>':
+    post:
+      tags:
+        - customer
+      operationId: post_conv_annotations_qa_route
+      summary: "update aggregated annotations"
+      description: "update aggregated annotation for a conversation"
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: qa_route
+          description: question anser route
+          required: true
+          schema:
+            type: string
+            enum:
+              - conversation_logs
+              - knowledgebase
+              - prior_data
+      requestBody:
+        description: conversation id
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateByQueryResult'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
   '/<index_name>/analytics/<qa_route>':
     post:
       tags:
@@ -4905,6 +4946,26 @@ components:
           description: the conversation has marked as done, this field is expected to set for each item of the conversation
           example: true
           default: false
+    AggAnnnotations:
+      type: object
+      properties:
+        convIdxCounter:
+          type: number
+          format: long
+          description: the number of items in the conversation
+    AggAnnnotationsSearch:
+      type: object
+      properties:
+        convIdxCounterGte:
+          type: number
+          format: long
+          description: the minimum number of items in the conversation, default no limit
+          example: 1
+        convIdxCounterLte:
+          type: number
+          format: long
+          description: the maximum number of items in the conversation, default no limit
+          example: 1
     QADocumentAnnotations:
       type: object
       properties:
@@ -5165,6 +5226,9 @@ components:
         coreData:
           type: object
           $ref: '#/components/schemas/QADocumentCore'
+        aggAnnotations:
+          type: object
+          $ref: '#/components/schemas/AggAnnnotations'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotations'
@@ -5215,6 +5279,29 @@ components:
           format: long
           description: record insertion timestamp
           example: 1549283768918
+    UpdateByQueryResult:
+      type: object
+      properties:
+        timedOut:
+          type: boolean
+          description: whether the operation returned after a timeout
+          default: false
+          example: false
+        totalDocs:
+          type: number
+          format: long
+          description: the total number of documents
+          example: 10
+        updatedDocs:
+          type: number
+          format: long
+          description: the number of documents updated
+          example: 10
+        versionConflicts:
+          type: number
+          format: long
+          description: the number of update conflicts
+          example: 0
     QADocumentUpdateByQuery:
       type: object
       properties:
@@ -5384,6 +5471,9 @@ components:
         coreData:
           type: object
           $ref: '#/components/schemas/QADocumentCoreSearch'
+        aggAnnnotations:
+          type: object
+          $ref: '#/components/schemas/AggAnnnotationsSearch'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'

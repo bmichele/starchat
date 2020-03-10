@@ -21,7 +21,6 @@ import org.elasticsearch.script.Script
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval
 import org.elasticsearch.search.aggregations.{AggregationBuilder, AggregationBuilders}
 import org.elasticsearch.search.sort.{FieldSortBuilder, ScoreSortBuilder, SortOrder}
-import scalaz.Scalaz._
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
@@ -294,18 +293,18 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val convIdBoolQ = QueryBuilders.boolQuery()
         convIds.foreach { cId => convIdBoolQ.should(QueryBuilders.termQuery("conversation", cId)) }
         boolQueryBuilder.must(convIdBoolQ)
-      case _ => ;
+      case _ =>
     }
 
     documentSearch.indexInConversation match {
       case Some(value) =>
         boolQueryBuilder.must(QueryBuilders.matchQuery("index_in_conversation", value))
-      case _ => ;
+      case _ =>
     }
 
     documentSearch.status match {
       case Some(status) => boolQueryBuilder.filter(QueryBuilders.termQuery("status", status))
-      case _ => ;
+      case _ =>
     }
 
     documentSearch.timestampGte match {
@@ -313,7 +312,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("timestamp")
             .gte(ts))
-      case _ => ;
+      case _ =>
     }
 
     documentSearch.timestampLte match {
@@ -321,7 +320,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("timestamp")
             .lte(ts))
-      case _ => ;
+      case _ =>
     }
 
     documentSearch.random.filter(identity) match {
@@ -329,11 +328,12 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val randomBuilder = new RandomScoreFunctionBuilder().seed(RandomNumbers.integer)
         val functionScoreQuery: QueryBuilder = QueryBuilders.functionScoreQuery(randomBuilder)
         boolQueryBuilder.must(functionScoreQuery)
-      case _ => ;
+      case _ =>
     }
 
     val coreDataIn = documentSearch.coreData.getOrElse(QADocumentCore())
     val annotationsIn = documentSearch.annotations.getOrElse(QADocumentAnnotationsSearch())
+    val aggsAnnotationsIn = documentSearch.aggAnnotations.getOrElse(AggAnnnotationsSearch())
 
     // begin core data
     coreDataIn.question match {
@@ -357,7 +357,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             questionNegativeNestedQuery
           ).negativeBoost(elasticClient.questionNegativeBoost)
         )
-      case _ => ;
+      case _ =>
     }
 
     coreDataIn.questionScoredTerms match {
@@ -374,13 +374,13 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           nested_score_mode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Total)
         ).ignoreUnmapped(true).innerHit(new InnerHitBuilder().setSize(100))
         boolQueryBuilder.should(nestedQuery)
-      case _ => ;
+      case _ =>
     }
 
     coreDataIn.answer match {
       case Some(value) =>
         boolQueryBuilder.must(QueryBuilders.matchQuery("answer.stem", value))
-      case _ => ;
+      case _ =>
     }
 
     coreDataIn.answerScoredTerms match {
@@ -397,17 +397,17 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           nested_score_mode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Total)
         ).ignoreUnmapped(true).innerHit(new InnerHitBuilder().setSize(100))
         boolQueryBuilder.should(nestedQuery)
-      case _ => ;
+      case _ =>
     }
 
     coreDataIn.topics match {
       case Some(topics) => boolQueryBuilder.filter(QueryBuilders.termQuery("topics.base", topics))
-      case _ => ;
+      case _ =>
     }
 
     coreDataIn.verified match {
       case Some(verified) => boolQueryBuilder.filter(QueryBuilders.termQuery("verified", verified))
-      case _ => ;
+      case _ =>
     }
 
     coreDataIn.done match {
@@ -416,10 +416,21 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     }
     // end core data
 
+    // begin aggs annotations
+    aggsAnnotationsIn.convIdxCounterGte match {
+      case Some(t) => boolQueryBuilder.filter(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gte(t))
+      case _ =>
+    }
+    aggsAnnotationsIn.convIdxCounterLte match {
+      case Some(t) => boolQueryBuilder.filter(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(t))
+      case _ =>
+    }
+    // end aggs annotations
+
     // begin annotations
     annotationsIn.dclass match {
       case Some(dclass) => boolQueryBuilder.filter(QueryBuilders.termQuery("dclass", dclass))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.doctype match {
@@ -427,12 +438,12 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("doctype", i.toString)))
         boolQueryBuilder.filter(orQuery)
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.state match {
       case Some(state) => boolQueryBuilder.filter(QueryBuilders.termQuery("state", state))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.agent match {
@@ -440,7 +451,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("agent", i.toString)))
         boolQueryBuilder.filter(orQuery)
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.escalated match {
@@ -448,7 +459,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("escalated", i.toString)))
         boolQueryBuilder.filter(orQuery)
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.answered match {
@@ -456,7 +467,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("answered", i.toString)))
         boolQueryBuilder.filter(orQuery)
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.triggered match {
@@ -464,7 +475,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("triggered", i.toString)))
         boolQueryBuilder.filter(orQuery)
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.followup match {
@@ -472,12 +483,12 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("followup", i.toString)))
         boolQueryBuilder.filter(orQuery)
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.feedbackConv match {
       case Some(feedbackConv) => boolQueryBuilder.filter(QueryBuilders.termQuery("feedbackConv", feedbackConv))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.feedbackScoreConvGte match {
@@ -485,7 +496,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("feedbackConvScore")
             .gte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.feedbackScoreConvGte match {
@@ -493,7 +504,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("feedbackConvScore")
             .lte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.algorithmScoreConvGte match {
@@ -501,7 +512,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("algorithmConvScore")
             .gte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.algorithmScoreConvLte match {
@@ -509,7 +520,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("algorithmConvScore")
             .lte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.feedbackScoreAnswerGte match {
@@ -517,7 +528,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("feedbackAnswerScore")
             .gte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.feedbackScoreAnswerLte match {
@@ -525,7 +536,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("feedbackAnswerScore")
             .lte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.algorithmScoreAnswerGte match {
@@ -533,7 +544,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("algorithmAnswerScore")
             .gte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.algorithmScoreAnswerLte match {
@@ -541,7 +552,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("algorithmAnswerScore")
             .lte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.responseScoreGte match {
@@ -549,7 +560,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("responseScore")
             .gte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.responseScoreLte match {
@@ -557,12 +568,12 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         boolQueryBuilder.filter(
           QueryBuilders.rangeQuery("responseScore")
             .lte(ts))
-      case _ => ;
+      case _ =>
     }
 
     annotationsIn.start match {
       case Some(start) => boolQueryBuilder.filter(QueryBuilders.termQuery("start", start))
-      case _ => ;
+      case _ =>
     }
     // end annotations
 
@@ -729,7 +740,10 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
         if (reqAggs.contains(QAAggregationsTypes.conversationsHistogram)) {
           aggregationBuilderList +=
             AggregationBuilders.filter("conversationsHistogram",
-              QueryBuilders.termQuery("index_in_conversation", firstIndexInConv)).subAggregation(
+              QueryBuilders.boolQuery()
+                .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
+            ).subAggregation(
               AggregationBuilders
                 .dateHistogram("conversationsHistogram").field("timestamp")
                 .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
@@ -741,26 +755,28 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             AggregationBuilders.filter("conversationsNotTransferredHistogram",
               QueryBuilders.boolQuery()
                 .mustNot(QueryBuilders.termQuery("escalated", Escalated.TRANSFERRED.toString))
-                .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv)))
-              .subAggregation(
-                AggregationBuilders
-                  .dateHistogram("conversationsNotTransferredHistogram").field("timestamp")
-                  .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-                  .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              )
+                .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
+            ).subAggregation(
+              AggregationBuilders
+                .dateHistogram("conversationsNotTransferredHistogram").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+            )
         }
         if (reqAggs.contains(QAAggregationsTypes.conversationsTransferredHistogram)) {
           aggregationBuilderList +=
             AggregationBuilders.filter("conversationsTransferredHistogram",
               QueryBuilders.boolQuery()
                 .must(QueryBuilders.termQuery("escalated", Escalated.TRANSFERRED.toString))
-                .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv)))
-              .subAggregation(
-                AggregationBuilders
-                  .dateHistogram("conversationsTransferredHistogram").field("timestamp")
-                  .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-                  .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              )
+                .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
+            ).subAggregation(
+              AggregationBuilders
+                .dateHistogram("conversationsTransferredHistogram").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+            )
         }
         if (reqAggs.contains(QAAggregationsTypes.qaPairHistogram)) {
           aggregationBuilderList +=
@@ -919,18 +935,13 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
 
     /* increment conversation counter */
     if(updateAnnotation) {
-      document.coreData match {
-        case Some(core) => if(core.question.getOrElse("") =/= "") {
-          updateByQuery( //increment annotation
-            indexName = indexName,
-            searchReq =
-              QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
-            script =  Some(incrementConvIdxCounterScript),
-            refresh = refresh
-          )
-        }
-        case _ =>
-      }
+      updateByQuery( //increment annotation
+        indexName = indexName,
+        searchReq =
+          QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
+        script =  Some(incrementConvIdxCounterScript),
+        refresh = refresh
+      )
     }
 
     val response = indexLanguageCrud.create(document, new QaDocumentEntityManager(indexName), refresh)
@@ -986,22 +997,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, documentSearch)
     searchRes match {
       case Some(r) =>
-        val count = r.hits.map( e => {
-          e.document.coreData match {
-            case Some(cd) => cd.question.getOrElse("") =/= ""
-            case _ => false
-          }
-        }).count(_ === true)
-        if (count >= 1) {
-          updateByQuery(indexName, documentSearch, Some(setIdxCounterScript(count)), refresh)
-        } else {
-          UpdateByQueryResult(
-            timedOut = false,
-            totalDocs = 0,
-            updatedDocs = 0,
-            versionConflicts = 0
-          )
-        }
+        val count = r.hits.length
+        updateByQuery(indexName, documentSearch, Some(setIdxCounterScript(count)), refresh)
       case _ =>
         UpdateByQueryResult(
           timedOut = false,
