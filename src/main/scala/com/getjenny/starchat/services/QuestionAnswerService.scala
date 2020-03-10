@@ -783,13 +783,18 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             AggregationBuilders.filter("qaPairHistogram",
               QueryBuilders.boolQuery()
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
-                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString)))
-              .subAggregation(
-                AggregationBuilders
-                  .dateHistogram("qaPairHistogram").field("timestamp")
-                  .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-                  .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              )
+                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
+                .mustNot(
+                  QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
+                )
+            ).subAggregation(
+              AggregationBuilders
+                .dateHistogram("qaPairHistogram").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+            )
         }
         if (reqAggs.contains(QAAggregationsTypes.qaPairAnsweredHistogram)) {
           aggregationBuilderList +=
@@ -797,13 +802,18 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
               QueryBuilders.boolQuery()
                 .must(QueryBuilders.termQuery("answered", Answered.ANSWERED.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
-                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString)))
-              .subAggregation(
-                AggregationBuilders
-                  .dateHistogram("qaPairAnsweredHistogram").field("timestamp")
-                  .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-                  .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              )
+                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
+                .mustNot(
+                  QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
+                )
+            ).subAggregation(
+              AggregationBuilders
+                .dateHistogram("qaPairAnsweredHistogram").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+            )
         }
         if (reqAggs.contains(QAAggregationsTypes.qaPairUnansweredHistogram)) {
           aggregationBuilderList +=
@@ -811,23 +821,33 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
               QueryBuilders.boolQuery()
                 .must(QueryBuilders.termQuery("answered", Answered.UNANSWERED.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
-                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString)))
-              .subAggregation(
-                AggregationBuilders
-                  .dateHistogram("qaPairUnansweredHistogram").field("timestamp")
-                  .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-                  .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              )
+                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
+                .mustNot(
+                  QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
+                )
+            ).subAggregation(
+              AggregationBuilders
+                .dateHistogram("qaPairUnansweredHistogram").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+            )
         }
         if (reqAggs.contains(QAAggregationsTypes.qaMatchedStatesHistogram)) {
           aggregationBuilderList +=
             AggregationBuilders.filter("qaMatchedStatesHistogram",
               QueryBuilders.boolQuery()
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
-                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString)))
-              .subAggregation(
-                AggregationBuilders.terms("qaMatchedStatesHistogram").field("state")
-              )
+                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
+                .mustNot(
+                  QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
+                )
+            ).subAggregation(
+              AggregationBuilders.terms("qaMatchedStatesHistogram").field("state")
+            )
         }
         if (reqAggs.contains(QAAggregationsTypes.qaMatchedStatesWithScoreHistogram)) {
           aggregationBuilderList +=
@@ -835,10 +855,15 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
               QueryBuilders.boolQuery()
                 .must(QueryBuilders.rangeQuery("feedbackAnswerScore").gte(0.0))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
-                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString)))
-              .subAggregation(
-                AggregationBuilders.terms("qaMatchedStatesWithScoreHistogram").field("state")
-              )
+                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
+                .mustNot(
+                  QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
+                )
+            ).subAggregation(
+              AggregationBuilders.terms("qaMatchedStatesWithScoreHistogram").field("state")
+            )
         }
         if (reqAggs.contains(QAAggregationsTypes.avgFeedbackNotTransferredConvScoreOverTime)) {
           aggregationBuilderList +=
