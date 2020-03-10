@@ -21,6 +21,7 @@ import org.elasticsearch.script.Script
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval
 import org.elasticsearch.search.aggregations.{AggregationBuilder, AggregationBuilders}
 import org.elasticsearch.search.sort.{FieldSortBuilder, ScoreSortBuilder, SortOrder}
+import scalaz.Scalaz._
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
@@ -682,10 +683,20 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
   private[this] def createAggregations(request: QAAggregatedAnalyticsRequest, firstIndexInConv: Long,
                                        dateHistInterval: DateHistogramInterval, minDocInBuckets: Long): List[AggregationBuilder] = {
     val aggregationBuilderList = new ListBuffer[AggregationBuilder]()
-    aggregationBuilderList += (AggregationBuilders.cardinality("totalDocuments")
-      .field("_id").precisionThreshold(40000),
-      AggregationBuilders.cardinality("totalConversations")
-        .field("conversation").precisionThreshold(4000))
+
+    aggregationBuilderList +=
+      AggregationBuilders.filter("filteredCounts",
+        QueryBuilders.boolQuery().mustNot(
+          QueryBuilders.boolQuery()
+            .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+            .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1)))
+      ).subAggregation(
+        AggregationBuilders.cardinality("totalDocuments")
+          .field("_id").precisionThreshold(40000)
+      ).subAggregation(
+        AggregationBuilders.cardinality("totalConversations")
+          .field("conversation").precisionThreshold(4000)
+      )
 
     val dateHistTimezone = request.timezone match {
       case Some(tz) => ZoneId.ofOffset("UTC", ZoneOffset.of(tz))
@@ -958,18 +969,23 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
              updateAnnotation: Boolean = true, refresh: Int): Option[IndexDocumentResult] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
+    val newDoc = if(document.indexInConversation === 1) {
+      document.copy(aggAnnotations = Some(AggAnnnotations(convIdxCounter = Some(1))))
+    } else {
+      document.copy(aggAnnotations = Some(AggAnnnotations(convIdxCounter = Some(0))))
+    }
+    val response = indexLanguageCrud.create(newDoc, new QaDocumentEntityManager(indexName), refresh)
+
     /* increment conversation counter */
-    if(updateAnnotation) {
+    if(updateAnnotation && response.created) {
       updateByQuery( //increment annotation
         indexName = indexName,
         searchReq =
-          QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
+          QADocumentSearch(conversation = Some(List(newDoc.conversation)), indexInConversation = Some(1)),
         script =  Some(incrementConvIdxCounterScript),
         refresh = refresh
       )
     }
-
-    val response = indexLanguageCrud.create(document, new QaDocumentEntityManager(indexName), refresh)
 
     Option {
       response
