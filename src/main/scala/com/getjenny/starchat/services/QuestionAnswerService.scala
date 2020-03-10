@@ -1,8 +1,8 @@
 package com.getjenny.starchat.services
 
 /**
-  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
-  */
+ * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
+ */
 
 import java.time.{ZoneId, ZoneOffset}
 
@@ -17,19 +17,20 @@ import org.apache.lucene.search.join._
 import org.elasticsearch.action.search.SearchType
 import org.elasticsearch.index.query.functionscore._
 import org.elasticsearch.index.query.{BoolQueryBuilder, InnerHitBuilder, QueryBuilder, QueryBuilders}
-import org.elasticsearch.script._
+import org.elasticsearch.script.Script
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval
 import org.elasticsearch.search.aggregations.{AggregationBuilder, AggregationBuilders}
 import org.elasticsearch.search.sort.{FieldSortBuilder, ScoreSortBuilder, SortOrder}
+import scalaz.Scalaz._
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-
 case class QuestionAnswerServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
-trait QuestionAnswerService extends AbstractDataService {
+trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScripts {
+
   val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
 
   override val elasticClient: QuestionAnswerElasticClient
@@ -51,11 +52,11 @@ trait QuestionAnswerService extends AbstractDataService {
     mutable.LinkedHashMap[String, (Long, TotalTerms)]()
 
   /** Calculate the dictionary size for one index i.e. the number of unique terms
-    * in the fields question, answer and in the union of both the fields
-    *
-    * @param indexName the index name
-    * @return a data structure with the unique terms counts
-    */
+   * in the fields question, answer and in the union of both the fields
+   *
+   * @param indexName the index name
+   * @return a data structure with the unique terms counts
+   */
   private[this] def calcDictSize(indexName: String): DictSize = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
@@ -75,13 +76,13 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** Return the the dictionary size for one index i.e. the number of unique terms
-    * in the fields question, answer and in the union of both the fields
-    * The function returns cached results.
-    *
-    * @param indexName the index name
-    * @param stale     the max cache age in milliseconds
-    * @return a data structure with the unique terms counts
-    */
+   * in the fields question, answer and in the union of both the fields
+   * The function returns cached results.
+   *
+   * @param indexName the index name
+   * @param stale     the max cache age in milliseconds
+   * @return a data structure with the unique terms counts
+   */
   def dictSize(indexName: String, stale: Long = cacheStealTimeMillis): DictSize = {
     val key = indexName
 
@@ -114,10 +115,10 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** Calculate the total number of terms in the fields question and answer, including duplicates.
-    *
-    * @param indexName the index name
-    * @return a data structure with the terms counting and the total number of documents
-    */
+   *
+   * @param indexName the index name
+   * @return a data structure with the terms counting and the total number of documents
+   */
   private[this] def calcTotalTerms(indexName: String): TotalTerms = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
@@ -133,11 +134,11 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** Returns the total number of terms in the fields question and answer, including duplicates.
-    *
-    * @param indexName the index name
-    * @param stale     the max cache age in milliseconds
-    * @return a data structure with the terms counting and the total number of documents
-    */
+   *
+   * @param indexName the index name
+   * @param stale     the max cache age in milliseconds
+   * @return a data structure with the terms counting and the total number of documents
+   */
   def totalTerms(indexName: String, stale: Long = cacheStealTimeMillis): TotalTerms = {
     val key = indexName
 
@@ -170,13 +171,13 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** calculate the occurrence of a term in the document fields questions or answer and the number of document
-    * in which the term occur
-    *
-    * @param indexName index name
-    * @param field     the field: question, answer or all for both
-    * @param term      the term to search
-    * @return the occurrence of term in the documents and the number of documents
-    */
+   * in which the term occur
+   *
+   * @param indexName index name
+   * @param field     the field: question, answer or all for both
+   * @param term      the term to search
+   * @return the occurrence of term in the documents and the number of documents
+   */
   def calcTermCount(indexName: String,
                     field: TermCountFields.Value = TermCountFields.question, term: String): TermCount = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
@@ -201,14 +202,14 @@ trait QuestionAnswerService extends AbstractDataService {
     mutable.LinkedHashMap[String, (Long, TermCount)]()
 
   /** Return the occurrence of a term in the document fields questions or answer and the number of document
-    * in which the term occur
-    *
-    * @param indexName index name
-    * @param field     the field: question, answer or all for both
-    * @param term      the term to search
-    * @param stale     the max cache age in milliseconds
-    * @return the occurrence of term in the documents and the number of documents
-    */
+   * in which the term occur
+   *
+   * @param indexName index name
+   * @param field     the field: question, answer or all for both
+   * @param term      the term to search
+   * @param stale     the max cache age in milliseconds
+   * @return the occurrence of term in the documents and the number of documents
+   */
   def termCount(indexName: String, field: TermCountFields.Value, term: String,
                 stale: Long = cacheStealTimeMillis): TermCount = {
     val key = indexName + field + term
@@ -230,10 +231,10 @@ trait QuestionAnswerService extends AbstractDataService {
   }
 
   /** set the number of terms counter's cached entries
-    *
-    * @param parameters the max number of cache entries
-    * @return the parameters set
-    */
+   *
+   * @param parameters the max number of cache entries
+   * @return the parameters set
+   */
   def countersCacheParameters(parameters: CountersCacheParameters): CountersCacheParameters = {
     parameters.dictSizeCacheMaxSize match {
       case Some(v) => this.dictSizeCacheMaxSize = v
@@ -274,9 +275,9 @@ trait QuestionAnswerService extends AbstractDataService {
         dictSizeCacheSize = dictSizeCache.size,
         totalTermsCacheSize = totalTermsCache.size,
         countTermCacheSize = countTermCache.size
-      ))
+      )
+    )
   }
-
 
   def countersCacheReset: (CountersCacheParameters, CountersCacheSize) = {
     dictSizeCache.clear()
@@ -879,11 +880,11 @@ trait QuestionAnswerService extends AbstractDataService {
           val filterQ = QueryBuilders.rangeQuery("feedbackConvScore").gte(0)
           aggregationBuilderList +=
             AggregationBuilders.filter("filtered", filterQ).subAggregation(
-            AggregationBuilders
-              .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
-              .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
-              .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
-              .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
+              AggregationBuilders
+                .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+                .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
         }
         if (reqAggs.contains(QAAggregationsTypes.avgAlgorithmAnswerScoreOverTime)) {
           aggregationBuilderList += AggregationBuilders
@@ -912,8 +913,26 @@ trait QuestionAnswerService extends AbstractDataService {
     aggregationBuilderList.toList
   }
 
-  def create(indexName: String, document: QADocument, refresh: Int): Option[IndexDocumentResult] = {
+  def create(indexName: String, document: QADocument,
+             updateAnnotation: Boolean = true, refresh: Int): Option[IndexDocumentResult] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
+
+    /* increment conversation counter */
+    if(updateAnnotation) {
+      document.coreData match {
+        case Some(core) => if(core.question.getOrElse("") =/= "") {
+          updateByQuery( //increment annotation
+            indexName = indexName,
+            searchReq =
+              QADocumentSearch(conversation = Some(List(document.conversation)), indexInConversation = Some(1)),
+            script =  Some(incrementConvIdxCounterScript),
+            refresh = refresh
+          )
+        }
+        case _ =>
+      }
+    }
+
     val response = indexLanguageCrud.create(document, new QaDocumentEntityManager(indexName), refresh)
 
     Option {
@@ -923,7 +942,7 @@ trait QuestionAnswerService extends AbstractDataService {
 
   def update(indexName: String, document: QADocumentUpdate, refresh: Int): UpdateDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val qaDocumentList = QADocumentUpdateEntity.fromQADocumentUpdate(document)
+    val qaDocumentList = QADocumentUpdateEntity.fromQADocumentUpdateList(document)
     val bulkResponse = indexLanguageCrud.bulkUpdate(qaDocumentList.map(x => x.id -> x),
       entityManager = new QaDocumentEntityManager(indexName),
       refresh = 1)
@@ -931,7 +950,8 @@ trait QuestionAnswerService extends AbstractDataService {
     UpdateDocumentsResult(data = bulkResponse)
   }
 
-  def updateByQuery(indexName: String, updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
+  def updateByQueryFullResults(indexName: String,
+                               updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, updateReq.documentSearch)
     searchRes match {
       case Some(r) =>
@@ -946,9 +966,54 @@ trait QuestionAnswerService extends AbstractDataService {
     }
   }
 
+  //TODO: add the parameter "documentUpdate: QADocumentUpdateByQuery" once supported by APIs
+  private[this] def updateByQuery(indexName: String, searchReq: QADocumentSearch,
+                                  script: Option[Script],
+                                  refresh: Int): UpdateByQueryResult = {
+    val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
+    val query = queryBuilder(searchReq)
+    indexLanguageCrud.updateByQuery(
+      queryBuilder = query,
+      script = script,
+      batchSize = None,
+      refresh = refresh)
+  }
+
+  def updateConvAnnotations(indexName: String,
+                            conversation: String, refresh: Int): UpdateByQueryResult = {
+    val documentSearch = QADocumentSearch(size = Some(10000),
+      conversation=Some(List(conversation)))
+    val searchRes: Option[SearchQADocumentsResults] = search(indexName, documentSearch)
+    searchRes match {
+      case Some(r) =>
+        val count = r.hits.map( e => {
+          e.document.coreData match {
+            case Some(cd) => cd.question.getOrElse("") =/= ""
+            case _ => false
+          }
+        }).count(_ === true)
+        if (count >= 1) {
+          updateByQuery(indexName, documentSearch, Some(setIdxCounterScript(count)), refresh)
+        } else {
+          UpdateByQueryResult(
+            timedOut = false,
+            totalDocs = 0,
+            updatedDocs = 0,
+            versionConflicts = 0
+          )
+        }
+      case _ =>
+        UpdateByQueryResult(
+          timedOut = false,
+          totalDocs = 0,
+          updatedDocs = 0,
+          versionConflicts = 0
+        )
+    }
+  }
+
   def read(indexName: String, ids: List[String]): Option[SearchQADocumentsResults] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-
     indexLanguageCrud.readAll(ids, new SearchQADocumentEntityManager(indexName)).headOption
   }
 

@@ -170,10 +170,9 @@ case class QADocumentUpdateEntity(
                            ) extends QADocumentBase
 
 object QADocumentUpdateEntity {
-  def fromQADocumentUpdate(document: QADocumentUpdate): List[QADocumentUpdateEntity] = {
+  def fromQADocumentUpdateList(document: QADocumentUpdate): List[QADocumentUpdateEntity] = {
     document.id.map(id => QADocumentUpdateEntity(id, document.conversation,
       document.indexInConversation, document.coreData, document.annotations, document.status, document.timestamp))
-
   }
 }
 

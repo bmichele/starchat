@@ -17,46 +17,13 @@ import scala.collection.immutable.{List, Map}
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
 
-trait DTDocument{
-  val state: String
-}
-
-case class DTDocumentCreate(override val state: String,
-                            executionOrder: Int,
-                            maxStateCount: Int,
-                            analyzer: String,
-                            queries: List[String],
-                            bubble: String,
-                            action: String,
-                            actionInput: Seq[JsObject],
-                            stateData: Map[String, String],
-                            successValue: String,
-                            failureValue: String,
-                            evaluationClass: Option[String] = Some("default"),
-                            version: Option[Long] = Some(0L)
-                           ) extends DTDocument
-
-case class DTDocumentUpdate(override val state: String,
-                            executionOrder: Option[Int],
-                            maxStateCount: Option[Int],
-                            analyzer: Option[String],
-                            queries: Option[List[String]],
-                            bubble: Option[String],
-                            action: Option[String],
-                            actionInput: Option[Seq[JsObject]],
-                            stateData: Option[Map[String, String]],
-                            successValue: Option[String],
-                            failureValue: Option[String],
-                            evaluationClass: Option[String]
-                           ) extends DTDocument
-
-case class SearchDTDocument(score: Float, document: DTDocumentCreate)
+case class SearchDTDocument(score: Float, document: DTDocument)
 
 case class SearchDTDocumentsResults(total: Int, maxScore: Float, hits: List[SearchDTDocument])
 
 case class SearchDTDocumentsAndNgrams(documents: SearchDTDocument, ngrams: List[List[String]])
 
-class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[String, Any]) => (List[String], List[List[String]])) extends EsEntityManager[DTDocument, SearchDTDocumentsAndNgrams] {
+class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[String, Any]) => (List[String], List[List[String]])) extends EsEntityManager[DTDocumentBase, SearchDTDocumentsAndNgrams] {
   override def fromSearchResponse(response: SearchResponse): List[SearchDTDocumentsAndNgrams] = {
     response.getHits.getHits.toList.map { item: SearchHit =>
       val version: Option[Long] = Some(item.getVersion)
@@ -126,7 +93,7 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
 
     val state = extractId(id)
 
-    val document: DTDocumentCreate = DTDocumentCreate(state = state,
+    val document: DTDocument = DTDocument(state = state,
       executionOrder = executionOrder,
       maxStateCount = maxStateCount,
       analyzer = analyzer,
@@ -156,12 +123,12 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       }
   }
 
-  override def toXContentBuilder(entity: DTDocument, instance: String): (String, XContentBuilder) = entity match {
-    case document: DTDocumentCreate => createBuilder(document, instance)
+  override def toXContentBuilder(entity: DTDocumentBase, instance: String): (String, XContentBuilder) = entity match {
+    case document: DTDocument => createBuilder(document, instance)
     case document: DTDocumentUpdate => updateBuilder(document, instance)
   }
 
-  private[this] def createBuilder(document: DTDocumentCreate, instance: String): (String, XContentBuilder) = {
+  private[this] def createBuilder(document: DTDocument, instance: String): (String, XContentBuilder) = {
     val builder: XContentBuilder = jsonBuilder().startObject()
 
     builder.field("instance", instance)
