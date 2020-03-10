@@ -17,8 +17,9 @@ trait QuestionAnswerESScripts {
   val incrementConvIdxCounterScript = getScript(incrementConvIdxCounterScriptBody)
 
   private[this] def setIdxCounterScriptBody(value: Int): String =
-    "if (ctx._source.starchatAnnotations == null) {ctx._source.starchatAnnotations = new HashMap() } " +
-      s"if(ctx._source.index_in_conversation==1) { ctx._source.starchatAnnotations.convIdxCounter=$value}"
+    "if (ctx._source.starchatAnnotations == null) {ctx._source.starchatAnnotations = new HashMap()} " +
+      s"if(ctx._source.index_in_conversation==1) {ctx._source.starchatAnnotations.convIdxCounter=$value} " +
+      s"else {ctx._source.starchatAnnotations.convIdxCounter=0}"
   def setIdxCounterScript(value: Int): Script = {
     getScript(setIdxCounterScriptBody(value))
   }
