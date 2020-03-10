@@ -97,7 +97,7 @@ class QAResourceTest extends TestEnglishBase {
         Put(s"/index_getjenny_english_0/$qaRoute?refresh=1", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           val response = responseAs[IndexDocumentListResult]
-          response.data.map(_.version) should be (List(2,2,2,-1))
+          response.data.map(_.version) should be (List(3,2,2,-1)) // the insert of items in conversation increment the counter on the first conv. item
           response.data.map(_.id) should be (List("id1","id2","id3","id123"))
           response.data.map(_.created) should contain only false
         }

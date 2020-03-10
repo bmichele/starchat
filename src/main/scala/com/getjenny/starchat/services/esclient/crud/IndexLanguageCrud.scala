@@ -13,6 +13,7 @@ import org.elasticsearch.common.xcontent._
 import org.elasticsearch.index.query.{QueryBuilder, QueryBuilders}
 import org.elasticsearch.index.reindex.BulkByScrollResponse
 import org.elasticsearch.rest.RestStatus
+import org.elasticsearch.script.Script
 import org.elasticsearch.search.aggregations.AggregationBuilder
 import org.elasticsearch.search.sort.SortBuilder
 import scalaz.Scalaz._
@@ -176,6 +177,27 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
         DeleteDocumentResult(x.getIndex, entityManager.extractId(x.getId),
           x.getVersion, x.status =/= RestStatus.NOT_FOUND)
       }.toList
+  }
+
+  def updateByQuery(queryBuilder: QueryBuilder,
+                       script: Option[Script] = None,
+                       batchSize: Option[Int] = None,
+                       refresh: Int): UpdateByQueryResult = {
+    val finalQuery = QueryBuilders.boolQuery()
+      .must(QueryBuilders.matchQuery(instanceFieldName, instance))
+      .must(queryBuilder)
+
+    val result = esCrudBase.updateByQuery(finalQuery,
+      script,
+      batchSize)
+    this.refresh(refresh)
+
+    UpdateByQueryResult(
+      timedOut = result.isTimedOut,
+      totalDocs = result.getTotal,
+      updatedDocs = result.getUpdated,
+      versionConflicts = result.getVersionConflicts
+    )
   }
 
   def refresh(enable: Int): Unit = {

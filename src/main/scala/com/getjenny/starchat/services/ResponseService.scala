@@ -9,7 +9,6 @@ import com.getjenny.analyzer.analyzers._
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context, Result}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
-import com.getjenny.starchat.entities.persistents.DTDocumentCreate
 import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
@@ -45,8 +44,8 @@ object ResponseService extends AbstractDataService {
   }
 
   private[this] def extractRequiredStarChatVarNames(input: Seq[JsObject]): Set[StarChatVariables.Value] = {
-      input.map(jo => extractRequiredStarChatVarNames(jo.toString))
-        .fold(Set.empty[StarChatVariables.Value])((acc, cur) => acc ++ cur)
+    input.map(jo => extractRequiredStarChatVarNames(jo.toString))
+      .fold(Set.empty[StarChatVariables.Value])((acc, cur) => acc ++ cur)
   }
 
   private[this] def extractSCVariables(indexName: String,
@@ -75,10 +74,10 @@ object ResponseService extends AbstractDataService {
             case Some(value) => value.docs.map(c =>
               c.coreData match {
                 case Some(core) =>
-                  "Question(" + c.indexInConversation + "): " + core.question.getOrElse("EMPTY") + "\\r\\n" +
-                    "Answer(" + c.indexInConversation + "): " + core.answer.getOrElse("EMPTY") + "\\r\\n"
+                  "Question(" + c.indexInConversation + "): " + core.question.getOrElse("EMPTY") + "\r\n" +
+                    "Answer(" + c.indexInConversation + "): " + core.answer.getOrElse("EMPTY") + "\r\n"
                 case _ => ""
-              }).filter(_.nonEmpty).mkString("---\\r\\n")
+              }).filter(_.nonEmpty).mkString("---\r\n")
             case _ => "EMPTY CONVERSATION"
           }
         (StarChatVariables.GJ_CONVERSATION_V1.toString, conversation)
@@ -127,7 +126,6 @@ object ResponseService extends AbstractDataService {
   }
 
   def getNextResponse(indexName: String, request: ResponseRequestIn): ResponseRequestOutOperationResult = {
-
     val evaluationClass = request.evaluationClass match {
       case Some(c) => c
       case _ => "default"
@@ -173,7 +171,6 @@ object ResponseService extends AbstractDataService {
       traversedStates = traversedStates,
       data = analyzersInternalData)
 
-
     val (evaluationList, reqState) = request.state match {
       case Some(states) =>
         (
@@ -200,8 +197,7 @@ object ResponseService extends AbstractDataService {
       .filter { case (stateName, runtimeAnalyzerItem) =>
         val traversedStateCount = traversedStatesCount.getOrElse(stateName, 0)
         val maxStateCount = runtimeAnalyzerItem.maxStateCounter
-        maxStateCount === 0 ||
-          traversedStateCount < maxStateCount // skip states already evaluated too much times
+        maxStateCount === 0 || traversedStateCount < maxStateCount // skip states already evaluated too much times
       }.map { case (stateName, runtimeAnalyzerItem) =>
       val analyzerEvaluation = runtimeAnalyzerItem.analyzer.analyzer match {
         case Some(starchatAnalyzer) =>
@@ -236,41 +232,41 @@ object ResponseService extends AbstractDataService {
         "The analyzers evaluation list is empty, threshold could be too high")
     }
 
-    val docResults = decisionTableService.read(indexName, analyzersEvalData.keys.toList)
-    val dtDocumentsList = docResults.hits.par.map { item =>
-      val doc: DTDocumentCreate = item.document
-      val state = doc.state
-      val evaluationRes: Result = analyzersEvalData(state)
-      val maxStateCount: Int = doc.maxStateCount
-      val analyzer: String = doc.analyzer
-      val stateData: Map[String, String] = doc.stateData
+    val dtDocumentsList = analyzersEvalData.keys.map(state => {
+      AnalyzerService.analyzersMap(indexName).analyzerMap.get(state) match {
+        case Some(item) =>
+          val evaluationRes: Result = analyzersEvalData(state)
+          val maxStateCount: Int = item.maxStateCounter
+          val analyzer: String = item.analyzer.declaration
+          val stateData: Map[String, String] = item.stateData
 
-      val merged = searchResAnalyzers.extractedVariables ++ evaluationRes.data.extractedVariables
-      val randomizedBubbleValue = randomizeBubble(doc.bubble)
-      val bubble = replaceTemplates(randomizedBubbleValue, merged)
-      val action = replaceTemplates(doc.action, merged) //FIXME: action shouldn't contain templates
+          val merged = searchResAnalyzers.extractedVariables ++ evaluationRes.data.extractedVariables
+          val randomizedBubbleValue = randomizeBubble(item.bubble)
+          val bubble = replaceTemplates(randomizedBubbleValue, merged)
+          val action = replaceTemplates(item.action, merged) //FIXME: action shouldn't contain templates
 
-      val onDemandStarChatVariables = merged ++ extractSCVariables(indexName, doc.actionInput, request)
-      val actionInput = replaceTemplates(doc.actionInput, onDemandStarChatVariables)
+          val onDemandStarChatVariables = merged ++ extractSCVariables(indexName, item.actionInput, request)
+          val actionInput = replaceTemplates(item.actionInput, onDemandStarChatVariables)
 
-      val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
+          val cleanedData = merged.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
-      val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
-      ResponseRequestOut(conversationId = conversationId,
-        state = state,
-        maxStateCount = maxStateCount,
-        traversedStates = traversedStatesUpdated,
-        analyzer = analyzer,
-        bubble = bubble,
-        action = action,
-        data = cleanedData,
-        actionInput = actionInput,
-        stateData = stateData,
-        successValue = doc.successValue,
-        failureValue = doc.failureValue,
-        score = evaluationRes.score)
-    }.toList
-      .sortWith(_.score > _.score)
+          val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
+          ResponseRequestOut(conversationId = conversationId,
+            state = state,
+            maxStateCount = maxStateCount,
+            traversedStates = traversedStatesUpdated,
+            analyzer = analyzer,
+            bubble = bubble,
+            action = action,
+            data = cleanedData,
+            actionInput = actionInput,
+            stateData = stateData,
+            successValue = item.successValue,
+            failureValue = item.failureValue,
+            score = evaluationRes.score)
+        case _ => throw ResponseServiceDocumentNotFoundException("DTDocument not in runtime map: " + state)
+      }
+    }).toList.sortWith(_.score > _.score)
       .flatMap { document =>
         executeAction(indexName, document = document, userText, request.copy(threshold = Option(threshold)))
       }
@@ -280,11 +276,7 @@ object ResponseService extends AbstractDataService {
         "The analyzers evaluation list is empty, it is possible that no states were found for the evaluationClass")
     }
 
-    ResponseRequestOutOperationResult(ReturnMessageData(200, ""),
-      Option {
-        dtDocumentsList
-      })
-
+    ResponseRequestOutOperationResult(ReturnMessageData(200, ""), Some(dtDocumentsList))
   }
 
   private[this] def escapeJson(input: String): String = JsString(input).toString.replaceAll("^\"|\"$", "")

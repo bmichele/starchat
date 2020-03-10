@@ -55,7 +55,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 201 when creating a new document" in {
-      val decisionTableRequest = DTDocumentCreate(
+      val decisionTableRequest = DTDocument(
         state = "S1",
         executionOrder = 0,
         maxStateCount = 0,
@@ -71,7 +71,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
         version = None
       )
 
-      val decisionTableRequest2 = DTDocumentCreate(
+      val decisionTableRequest2 = DTDocument(
         state = "S2",
         executionOrder = 0,
         maxStateCount = 0,
@@ -87,7 +87,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
         version = None
       )
 
-      val decisionTableRequest3 = DTDocumentCreate(
+      val decisionTableRequest3 = DTDocument(
         state = "S3",
         executionOrder = 0,
         maxStateCount = 0,

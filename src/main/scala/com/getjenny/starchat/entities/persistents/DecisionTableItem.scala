@@ -6,6 +6,7 @@ import com.getjenny.starchat.utils.Base64
 import org.elasticsearch.action.get.GetResponse
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.search.SearchHit
+import spray.json.{JsObject, _}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
@@ -16,9 +17,14 @@ case class DecisionTableItem(state: String,
                              maxStateCounter: Int = -1,
                              evaluationClass: String = "default",
                              version: Long = -1L,
-                             queries: List[String] = List.empty[String]
+                             queries: List[String] = List.empty[String],
+                             bubble: String,
+                             action: String,
+                             actionInput: Seq[JsObject] = Seq.empty[JsObject],
+                             stateData: Map[String, String] = Map.empty[String, String],
+                             successValue: String,
+                             failureValue: String
                             )
-
 
 object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
   override def fromSearchResponse(response: SearchResponse): List[DecisionTableItem] = {
@@ -58,6 +64,38 @@ object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
       case None => List[String]()
     }
 
+    val bubble: String = source.get("bubble") match {
+      case Some(t) => t.asInstanceOf[String]
+      case None => ""
+    }
+
+    val action: String = source.get("action") match {
+      case Some(t) => t.asInstanceOf[String]
+      case None => ""
+    }
+
+    val actionInput: Seq[JsObject] = source.get("action_input") match {
+      case Some(t) => t.asInstanceOf[util.List[util.HashMap[String, String]]]
+        .asScala.map{ v => v.getOrDefault("json", "").parseJson.asJsObject }
+      case Some(null) | None => Seq[JsObject]()
+    }
+
+    val stateData: Map[String, String] = source.get("state_data") match {
+      case Some(null) => Map[String, String]()
+      case Some(t) => t.asInstanceOf[util.HashMap[String, String]].asScala.toMap
+      case None => Map[String, String]()
+    }
+
+    val successValue: String = source.get("success_value") match {
+      case Some(t) => t.asInstanceOf[String]
+      case None => ""
+    }
+
+    val failureValue: String = source.get("failure_value") match {
+      case Some(t) => t.asInstanceOf[String]
+      case None => ""
+    }
+
     val state = extractId(id)
 
     val decisionTableRuntimeItem: DecisionTableItem =
@@ -67,6 +105,12 @@ object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
         maxStateCounter = maxStateCounter,
         queries = queries,
         evaluationClass = evaluationClass,
+        bubble = bubble,
+        action = action,
+        actionInput = actionInput,
+        stateData = stateData,
+        successValue = successValue,
+        failureValue = failureValue,
         version = version)
     decisionTableRuntimeItem
   }
@@ -79,5 +123,4 @@ object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
         fromSearch(source, item.getId, item.getVersion)
       }
   }
-
 }

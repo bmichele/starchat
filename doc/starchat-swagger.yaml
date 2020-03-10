@@ -5353,16 +5353,13 @@ components:
           description: a threshold which exclude the results with a too low score
           default: 0
         sortBy:
-          type: object
-          description: list of fields used to sort the search result
-          additionalProperties:
-            type: array
-            description: if empty, SCORE will be used by default
-            items:
-              $ref: '#/components/schemas/QASearchSortBy'
-            example:
-              - TIMESTAMP
-              - IDX_IN_CONVERSATION
+          type: array
+          description: list of fields used to sort the search result. If empty, SCORE will be used by default
+          items:
+            $ref: '#/components/schemas/QASearchSortBy'
+          example:
+            - TIMESTAMP
+            - IDX_IN_CONVERSATION
         sortByConvIdIdx:
           type: boolean
           deprecated: true

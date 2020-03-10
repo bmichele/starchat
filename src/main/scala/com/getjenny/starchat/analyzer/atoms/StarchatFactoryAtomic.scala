@@ -6,7 +6,7 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms._
 import com.getjenny.analyzer.interfaces._
-import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
 import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic}
 
 class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAtomic, Map[String, String]] {
@@ -37,6 +37,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "matchDateDDMMYYYY",
     "matchPatternRegex",
     "parseDate",
+    "parseName",
     "prevTravStateIs",
     "readRemoteData",
     "regex",
@@ -83,6 +84,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "matchDateDDMMYYYY" => new MatchDateDDMMYYYYAtomic(argument, restrictedArgs)
     case "matchPatternRegex" => new MatchPatternRegexAtomic(argument, restrictedArgs)
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
+    case "parseName" => new HttpRequestAtomic(argument, restrictedArgs) with ParseNameVariableManager
     case "prevTravStateIs" => new PrevTravStateIsAtomic(argument, restrictedArgs)
     case "readRemoteData" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)

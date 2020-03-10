@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseDateVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseNameVariableManager, ParseDateVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.{Matchers, WordSpec}
 import scalaz.Scalaz._
@@ -445,6 +445,22 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
 
     }*/
 
+    /*
+    "test nameParser" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List(), systemConf) with ParseNameVariableManager
+
+      val result = atom.evaluate("my name is titus, caius")
+      println(result)
+
+    }
+
+     */
+
+    /*
     "test s3 atom" in {
 
       val systemConf = SystemConfiguration
@@ -456,6 +472,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       println(result)
       result.data.extractedVariables.foreach(println)
     }
+    
+     */
   }
 
 }
