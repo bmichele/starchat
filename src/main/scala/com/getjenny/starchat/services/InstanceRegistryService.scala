@@ -256,7 +256,7 @@ object InstanceRegistryService extends AbstractDataService {
     }
     boolQueryBuilder.filter(QueryBuilders.termQuery("enabled", true))
     val response = esCrudBase.read(boolQueryBuilder,
-      maxItems = maxItems.orElse(100L.some).map(_.toInt),
+      maxItems = maxItems.orElse(10000L.some).map(_.toInt),
       version = true.some,
       sort = List(new FieldSortBuilder(elasticClient.dtReloadTimestampFieldName).order(SortOrder.DESC))
     )
