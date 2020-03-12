@@ -29,6 +29,9 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass)
   private[this] val timeout: FiniteDuration = restrictedArgs.getOrElse("http-atom.default-timeout", "10").toInt seconds
 
+  private val errorScore = "0"
+  private val successScore = "1"
+
 
   override def evaluate(query: String, analyzerData: AnalyzersDataInternal): Result = {
     val extractedVariables = analyzerData.extractedVariables
@@ -38,10 +41,16 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
       case Success(conf) =>
           serviceCall(query, conf)
             .map { outputData =>
-              val score = outputData.getOrElse(conf.outputConf.score, "0").toInt
-              Result(score, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
+              //if there haven't been previous invocations, the score will be 0
+              val previousInvocationScore = conf.outputConf.getScoreValue(extractedVariables)
+              val score = outputData.getOrElse(conf.outputConf.score, errorScore).toInt
+              if(previousInvocationScore === successScore.toInt && score === errorScore.toInt) {
+                Result(previousInvocationScore, analyzerData)
+              } else {
+                Result(score, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
+              }
             }.getOrElse(Result(0, analyzerData
-            .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> "0"))
+            .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> errorScore))
           ))
       case Failure(errors) =>
         log.error(s"Error in parameter list: ${errors.toList.mkString("; ")}")
