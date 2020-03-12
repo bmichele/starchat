@@ -15,7 +15,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
 
   "HttpRequestAtomic" should {
 
-    val variableManager = new GenericVariableManager{}
+    val variableManager = new GenericVariableManager {}
     "fail if no arguments are present in argument list" in {
 
       val validation = variableManager.validateAndBuild(List.empty, Map.empty, Map.empty, "")
@@ -26,13 +26,13 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
     "fail if no url is present in argument list" in {
       val validation = variableManager.validateAndBuild(List("http-atom.test.http-method"), Map.empty, Map.empty, "")
       validation.isFailure shouldBe true
-      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("url not found in configuration")
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain("url not found in configuration")
     }
 
     "fail if no http-method is in argument list" in {
       val validation = variableManager.validateAndBuild(List("http-atom.test.url"), Map.empty, Map.empty, "")
       validation.isFailure shouldBe true
-      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("http-method not found in configuration")
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain("http-method not found in configuration")
     }
 
     "fail if http-method is not valid" in {
@@ -45,7 +45,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty, "")
       validation.isFailure shouldBe true
       validation.fold(_.toSet, _ => Set.empty[String]) should
-        contain ("Error while extracting key <http-method>: GOT is an invalid method")
+        contain("Error while extracting key <http-method>: GOT is an invalid method")
     }
 
     "fail if input template is present but has no substitutions" in {
@@ -78,10 +78,10 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.authorization-type" -> "basic")
 
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty, "")
-      validation shouldBe a [Failure[_]]
+      validation shouldBe a[Failure[_]]
       validation.fold(_.toSet, _ => Set.empty[String]) should contain allOf
         ("username not found in configuration",
-        "password not found in configuration")
+          "password not found in configuration")
     }
 
     "fail if bearer auth type present but not token" in {
@@ -94,8 +94,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.authorization-type" -> "bearer")
 
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty, "")
-      validation shouldBe a [Failure[_]]
-      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("token not found in configuration")
+      validation shouldBe a[Failure[_]]
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain("token not found in configuration")
     }
 
     "fail if api key auth type present but not token" in {
@@ -108,8 +108,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.authorization-type" -> "apiKey")
 
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty, "")
-      validation shouldBe a [Failure[_]]
-      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("token not found in configuration")
+      validation shouldBe a[Failure[_]]
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain("token not found in configuration")
     }
 
     "fail if api key auth type present but invalid store to option" in {
@@ -129,8 +129,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       )
 
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty, "")
-      validation shouldBe a [Failure[_]]
-      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("Error while extracting key <store-to>: No value found for 'aaa'")
+      validation shouldBe a[Failure[_]]
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain("Error while extracting key <store-to>: No value found for 'aaa'")
     }
 
     "fail if authorization type not supported" in {
@@ -143,9 +143,9 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.authorization-type" -> "asd")
 
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty, "")
-      validation shouldBe a [Failure[_]]
+      validation shouldBe a[Failure[_]]
       validation.fold(_.toSet, _ => Set.empty[String]) should
-        contain ("Error while extracting key <authorization-type>: No value found for 'asd'")
+        contain("Error while extracting key <authorization-type>: No value found for 'asd'")
     }
 
     "fail if there is no configuration for variable" in {
@@ -153,8 +153,8 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.http-method",
         "http-atom.test.input-query-template"
       )
-      val validation = variableManager.validateAndBuild(arguments,  Map.empty, Map.empty, "")
-      validation shouldBe a [Failure[_]]
+      val validation = variableManager.validateAndBuild(arguments, Map.empty, Map.empty, "")
+      validation shouldBe a[Failure[_]]
     }
 
     val arguments = List("http-atom.test.url",
@@ -183,15 +183,15 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
 
     "validate atom if configuration is correct" in {
       val validation = variableManager.validateAndBuild(arguments, configuration, Map.empty, "")
-      validation shouldBe a [Success[_]]
+      validation shouldBe a[Success[_]]
     }
 
     "fail if http-method post and no content-type" in {
       val brokenConf = configuration + ("http-atom.test.http-method" -> "POST")
 
       val validation = variableManager.validateAndBuild(arguments, brokenConf, Map.empty, "")
-      validation shouldBe a [Failure[_]]
-      validation.fold(_.toSet, _ => Set.empty[String]) should contain ("input-content-type not found in configuration")
+      validation shouldBe a[Failure[_]]
+      validation.fold(_.toSet, _ => Set.empty[String]) should contain("input-content-type not found in configuration")
     }
 
     "fail if content-type is not a valid content type" in {
@@ -199,17 +199,17 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.input-content-type" -> "aaa")
 
       val validation = variableManager.validateAndBuild(arguments, brokenConf, Map.empty, "")
-      validation shouldBe a [Failure[_]]
+      validation shouldBe a[Failure[_]]
       validation.fold(_.toSet, _ => Set.empty[String]) should
-        contain ("Illegal HTTP header 'Content-Type': Invalid input 'EOI', expected tchar, OWS or '/' (line 1, column 4)")
+        contain("Illegal HTTP header 'Content-Type': Invalid input 'EOI', expected tchar, OWS or '/' (line 1, column 4)")
     }
 
     "format template url" in {
       val newConf = configuration + ("http-atom.test.url" -> "www.google.it/<http-atom.test.url-parameter>",
         "http-atom.test.url-parameter" -> "aaaa")
 
-     val conf: HttpRequestAtomicConfiguration = variableManager
-       .validateAndBuild(arguments, newConf, Map.empty, "") match {
+      val conf: HttpRequestAtomicConfiguration = variableManager
+        .validateAndBuild(arguments, newConf, Map.empty, "") match {
         case Success(conf) => conf
         case Failure(e) => throw new IllegalArgumentException(e.toList.mkString("; "))
       }
@@ -237,13 +237,13 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.param" -> "aaa",
         "http-atom.test.value" -> "bbb",
       )
-      val analyzerData = Map( "http-atom.test.output-content-type" -> "test.content-type",
+      val analyzerData = Map("http-atom.test.output-content-type" -> "test.content-type",
         "http-atom.test.output-status" -> "test.status",
         "http-atom.test.output-score" -> "test.score",
         "http-atom.test.output-data" -> "test.data")
 
       val validation = variableManager.validateAndBuild(arguments, systemConf, analyzerData, "")
-      validation shouldBe a [Success[_]]
+      validation shouldBe a[Success[_]]
     }
 
     "find conf with temp values" in {
@@ -258,7 +258,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.output-score"
       )
 
-      val analyzerData = Map( "http-atom.test.output-content-type" -> "test.content-type",
+      val analyzerData = Map("http-atom.test.output-content-type" -> "test.content-type",
         "http-atom.test.output-status" -> "test.status",
         "http-atom.test.output-data" -> "test.data",
         "http-atom.test.output-score" -> "test.score",
@@ -271,16 +271,16 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "A__temp__.http-atom.test.value" -> "bbb")
 
       val validation = variableManager.validateAndBuild(arguments, Map.empty, analyzerData, "")
-      validation shouldBe a [Success[_]]
+      validation shouldBe a[Success[_]]
     }
 
     "fail if contains both json and querystring" in {
       val withJsonArguments = arguments :+ "http-atom.test.input-json"
       val withJsonConf = configuration + ("http-atom.test.input-json" -> """{"aa":"bb"}""")
       val validation = variableManager.validateAndBuild(withJsonArguments, withJsonConf, Map.empty, "")
-      validation shouldBe a [Failure[_]]
+      validation shouldBe a[Failure[_]]
       validation.fold(_.toSet, _ => Set.empty[String]) should
-        contain ("Both json and query string configuration enabled")
+        contain("Both json and query string configuration enabled")
     }
 
     "fail if json has no substitutions " in {
@@ -288,9 +288,9 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       val withJsonConf = (configuration
         + ("http-atom.test.input-json" -> """{"aa":"<unavailable.param>"}""")) - "http-atom.test.input-query-template"
       val validation = variableManager.validateAndBuild(withJsonArguments, withJsonConf, Map.empty, "")
-      validation shouldBe a [Failure[_]]
+      validation shouldBe a[Failure[_]]
       validation.fold(_.toSet, _ => Set.empty[String]) should
-        contain ("""Unable to found substitution in template: {"aa":"<unavailable.param>"}""")
+        contain("""Unable to found substitution in template: {"aa":"<unavailable.param>"}""")
     }
 
     "create conf and substitute json parameters" in {
@@ -306,7 +306,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.output-score" -> "test.score"
       )
       val validation = variableManager.validateAndBuild(withJsonArguments, jsonConfiguration, Map.empty, "")
-      validation shouldBe a [Success[_]]
+      validation shouldBe a[Success[_]]
     }
 
     "create conf and substitute json parameters using argument configuration" in {
@@ -322,7 +322,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.output-score" -> "test.score"
       )
       val validation = variableManager.validateAndBuild(withJsonArguments, jsonConfiguration, Map.empty, "")
-      validation shouldBe a [Success[_]]
+      validation shouldBe a[Success[_]]
     }
 
     "create conf and substitute json parameters using argument query configuration" in {
@@ -337,15 +337,24 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
         "http-atom.test.output-score" -> "test.score"
       )
       val validation = variableManager.validateAndBuild(withJsonArguments, jsonConfiguration, Map.empty, "aaa")
-      validation shouldBe a [Success[_]]
+      validation shouldBe a[Success[_]]
     }
 
-   /* "test weather api call and do not execute call if done before" in {
+    /*"test weather api call and do not execute call if done before" in {
+      val description = "desc"
+      val humidity = "1"
+      val temperature = "10"
+      val cloudPerc = "20"
       val analyzerData = Map(
-        "location" -> "Torino,IT"
+        "location" -> "Torino,IT",
+        "weather.score" -> "1",
+        "weather.status" -> "200 OK",
+        "weather.description" -> description,
+        "weather.humidity" -> humidity,
+        "weather.temperature" -> temperature,
+        "weather.cloud-perc" -> cloudPerc
       )
-      val systemConf = SystemConfiguration
-        .createMapFromPath("starchat.atom-values")
+      val systemConf = SystemConfiguration.createMapFromPath("starchat.atom-values")
       val atom = new HttpRequestAtomic(List.empty, systemConf) with WeatherVariableManager
 
       val result = atom.evaluate("", AnalyzersDataInternal(extractedVariables = analyzerData))
@@ -353,25 +362,11 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       result.data.extractedVariables.foreach(println)
       result.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
       result.data.extractedVariables.getOrElse("weather.status", "") shouldBe "200 OK"
-      result.data.extractedVariables.contains("weather.description") shouldBe true
-      result.data.extractedVariables.contains("weather.humidity") shouldBe true
-      result.data.extractedVariables.contains("weather.temperature") shouldBe true
-      result.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
+      result.data.extractedVariables.getOrElse("weather.description", "") shouldEqual description
+      result.data.extractedVariables.getOrElse("weather.humidity", "") shouldEqual humidity
+      result.data.extractedVariables.getOrElse("weather.temperature", "") shouldEqual temperature
+      result.data.extractedVariables.getOrElse("weather.cloud-perc", "") shouldEqual cloudPerc
 
-      val atom2 = new HttpRequestAtomic(List.empty, systemConf) with WeatherVariableManager {
-        override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
-          HttpAtomUrlConf("wrongurl", HttpMethods.GET, ContentTypes.NoContentType).successNel
-        }
-      }
-
-      val result2 = atom2.evaluate("", result.data)
-      result2.data.extractedVariables.foreach(println)
-      result2.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
-      result2.data.extractedVariables.getOrElse("weather.status", "") shouldBe "200 OK"
-      result2.data.extractedVariables.contains("weather.description") shouldBe true
-      result2.data.extractedVariables.contains("weather.humidity") shouldBe true
-      result2.data.extractedVariables.contains("weather.temperature") shouldBe true
-      result2.data.extractedVariables.contains("weather.cloud-perc") shouldBe true
     }*/
 
     "create a valid weather atom configuration" in {
@@ -379,7 +374,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
       val configuration = variableManager.validateAndBuild(List("location=Torino,IT"), systemConf, Map.empty, "")
-      configuration shouldBe a [Success[_]]
+      configuration shouldBe a[Success[_]]
       configuration.map(println)
     }
 
@@ -413,7 +408,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       val analyzerData = Map("http-atom.submithubspot.input-email" -> "emanuele@getjenny.com")
 
       val configuration = variableManager.validateAndBuild(List.empty, systemConf, analyzerData, "")
-      configuration shouldBe a [Success[_]]
+      configuration shouldBe a[Success[_]]
       configuration.map(println)
     }
 
