@@ -36,9 +36,6 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
 
     validateAndBuild(arguments, restrictedArgs, extractedVariables, query) match {
       case Success(conf) =>
-        if (conf.outputConf.exists(extractedVariables)) {
-          Result(conf.outputConf.getScoreValue(extractedVariables).toDouble, analyzerData)
-        } else {
           serviceCall(query, conf)
             .map { outputData =>
               val score = outputData.getOrElse(conf.outputConf.score, "0").toInt
@@ -46,7 +43,6 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
             }.getOrElse(Result(0, analyzerData
             .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> "0"))
           ))
-        }
       case Failure(errors) =>
         log.error(s"Error in parameter list: ${errors.toList.mkString("; ")}")
         throw ExceptionAtomic(s"Error in atom configuration: $errors")
