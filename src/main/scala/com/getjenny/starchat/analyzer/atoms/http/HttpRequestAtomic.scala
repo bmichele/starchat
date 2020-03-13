@@ -45,11 +45,11 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
               val previousInvocationScore = conf.outputConf.getScoreValue(extractedVariables)
               val score = outputData.getOrElse(conf.outputConf.score, errorScore).toInt
               if(previousInvocationScore === successScore.toInt && score === errorScore.toInt) {
-                Result(previousInvocationScore, analyzerData)
+                Result(score, data = analyzerData)
               } else {
                 Result(score, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
               }
-            }.getOrElse(Result(0, analyzerData
+            }.getOrElse(Result(errorScore.toInt, analyzerData
             .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> errorScore))
           ))
       case Failure(errors) =>

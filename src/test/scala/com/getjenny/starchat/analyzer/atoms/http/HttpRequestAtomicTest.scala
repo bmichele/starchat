@@ -340,7 +340,7 @@ class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTe
       validation shouldBe a[Success[_]]
     }
 
-    /*"test weather api call and do not execute call if done before" in {
+    /*"test weather api call and do not execute call if done before and actual call is 0" in {
       val description = "desc"
       val humidity = "1"
       val temperature = "10"
