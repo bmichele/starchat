@@ -294,8 +294,8 @@ trait HttpAtomOutputConf {
     extractedVariables.contains(score)
   }
 
-  def getScoreValue(extractedVariables: Map[String, String]): String = {
-    extractedVariables.getOrElse(score, "0")
+  def getScoreValue(extractedVariables: Map[String, String]): Int = {
+    extractedVariables.getOrElse(score, "0").toInt
   }
 }
 

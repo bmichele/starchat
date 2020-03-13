@@ -29,6 +29,9 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass)
   private[this] val timeout: FiniteDuration = restrictedArgs.getOrElse("http-atom.default-timeout", "10").toInt seconds
 
+  private val errorScore = "0"
+  private val successScore = "1"
+
 
   override def evaluate(query: String, analyzerData: AnalyzersDataInternal): Result = {
     val extractedVariables = analyzerData.extractedVariables
@@ -36,17 +39,19 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
 
     validateAndBuild(arguments, restrictedArgs, extractedVariables, query) match {
       case Success(conf) =>
-        if (conf.outputConf.exists(extractedVariables)) {
-          Result(conf.outputConf.getScoreValue(extractedVariables).toDouble, analyzerData)
-        } else {
           serviceCall(query, conf)
             .map { outputData =>
-              val score = outputData.getOrElse(conf.outputConf.score, "0").toInt
-              Result(score, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
-            }.getOrElse(Result(0, analyzerData
-            .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> "0"))
+              //if there haven't been previous invocations, the score will be 0
+              val previousInvocationScore = conf.outputConf.getScoreValue(extractedVariables)
+              val score = outputData.getOrElse(conf.outputConf.score, errorScore).toInt
+              if(previousInvocationScore === successScore.toInt && score === errorScore.toInt) {
+                Result(score, data = analyzerData)
+              } else {
+                Result(score, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
+              }
+            }.getOrElse(Result(errorScore.toInt, analyzerData
+            .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> errorScore))
           ))
-        }
       case Failure(errors) =>
         log.error(s"Error in parameter list: ${errors.toList.mkString("; ")}")
         throw ExceptionAtomic(s"Error in atom configuration: $errors")
