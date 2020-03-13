@@ -911,7 +911,7 @@ paths:
       operationId: get_node_dt_update
       description: >-
         calculate if all the decision tables of the cluster were loaded by the node,
-        can be used as an Healt Check on start-up before the registration of a new node on the load balancer
+        can be used as an Health Check on start-up before the registration of a new node on the load balancer
       parameters:
         - in: query
           name: verbose
@@ -2098,6 +2098,47 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SynonymExtractionItem'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
+  '/<index_name>/conv/annotations/<qa_route>':
+    post:
+      tags:
+        - customer
+      operationId: post_conv_annotations_qa_route
+      summary: "update aggregated annotations"
+      description: "update aggregated annotation for a conversation"
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: qa_route
+          description: question anser route
+          required: true
+          schema:
+            type: string
+            enum:
+              - conversation_logs
+              - knowledgebase
+              - prior_data
+      requestBody:
+        description: conversation id
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateByQueryResult'
         '400':
           description: 'invalid input, object invalid, bad request'
         '401':
@@ -4905,6 +4946,26 @@ components:
           description: the conversation has marked as done, this field is expected to set for each item of the conversation
           example: true
           default: false
+    AggAnnnotations:
+      type: object
+      properties:
+        convIdxCounter:
+          type: number
+          format: long
+          description: the number of items in the conversation
+    AggAnnnotationsSearch:
+      type: object
+      properties:
+        convIdxCounterGte:
+          type: number
+          format: long
+          description: the minimum number of items in the conversation, default no limit
+          example: 1
+        convIdxCounterLte:
+          type: number
+          format: long
+          description: the maximum number of items in the conversation, default no limit
+          example: 1
     QADocumentAnnotations:
       type: object
       properties:
@@ -5165,6 +5226,9 @@ components:
         coreData:
           type: object
           $ref: '#/components/schemas/QADocumentCore'
+        aggAnnotations:
+          type: object
+          $ref: '#/components/schemas/AggAnnnotations'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotations'
@@ -5215,6 +5279,29 @@ components:
           format: long
           description: record insertion timestamp
           example: 1549283768918
+    UpdateByQueryResult:
+      type: object
+      properties:
+        timedOut:
+          type: boolean
+          description: whether the operation returned after a timeout
+          default: false
+          example: false
+        totalDocs:
+          type: number
+          format: long
+          description: the total number of documents
+          example: 10
+        updatedDocs:
+          type: number
+          format: long
+          description: the number of documents updated
+          example: 10
+        versionConflicts:
+          type: number
+          format: long
+          description: the number of update conflicts
+          example: 0
     QADocumentUpdateByQuery:
       type: object
       properties:
@@ -5352,9 +5439,19 @@ components:
           format: float
           description: a threshold which exclude the results with a too low score
           default: 0
+        sortBy:
+          type: array
+          description: list of fields used to sort the search result. If empty, SCORE will be used by default
+          items:
+            $ref: '#/components/schemas/QASearchSortBy'
+          example:
+            - TIMESTAMP
+            - IDX_IN_CONVERSATION
         sortByConvIdIdx:
           type: boolean
+          deprecated: true
           description: >-
+            Deprecated since version 5.3, will be removed in StarChat 6: use sortBy instead
             whether to sort the documents by ConversationID and index in conversation or if sort by score.
             Note that the score is greater than 0 only for text queries, fields matching will have no
             contribution to scoring i.e. fields matching only queries will return 0 score for all the documents.
@@ -5374,6 +5471,9 @@ components:
         coreData:
           type: object
           $ref: '#/components/schemas/QADocumentCoreSearch'
+        aggAnnnotations:
+          type: object
+          $ref: '#/components/schemas/AggAnnnotationsSearch'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'
@@ -5536,6 +5636,20 @@ components:
           format: integer
           description: cache size for index terms count
           example: 100000
+    QASearchSortBy:
+      type: string
+      enum:
+        - CONVERSATION
+        - IDX_IN_CONVERSATION
+        - TIMESTAMP
+        - SCORE
+      example: SCORE
+      description: >-
+        Sorting field for the QA documents:
+          * `CONVERSATION` - sort by conversationId
+          * `IDX_IN_CONVERSATION` - sort by indexInCoversation
+          * `TIMESTAMP` - sort by insert timestamp
+          * `SCORE` - sort by score
     SearchAlgorithm:
       type: string
       enum:

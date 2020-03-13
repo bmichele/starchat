@@ -324,6 +324,8 @@ object LangaugeIndexManagementService extends AbstractDataService {
         case _ => true
       }
     }).map(item => {
+      val fullIndexName = Index.indexName(indexName, item.indexSuffix)
+
       val jsonInStream: Option[InputStream] = Option {
         getClass.getResourceAsStream(item.updatePath)
       }
@@ -335,7 +337,7 @@ object LangaugeIndexManagementService extends AbstractDataService {
           throw new FileNotFoundException(message)
       }
 
-      val putMappingReq = new PutMappingRequest(indexName)
+      val putMappingReq = new PutMappingRequest(fullIndexName)
         .source(schemaJson, XContentType.JSON)
 
       val putMappingRes: AcknowledgedResponse = client.indices

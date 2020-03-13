@@ -1,29 +1,9 @@
 {
-   "properties" : {
-      "term" : {
-         "type" : "text",
-         "fields" : {
-            "stop" : {
-               "type" : "text",
-               "analyzer" : "jenny_stop_analyzer"
-            },
-            "base" : {
-               "analyzer" : "jenny_base_analyzer",
-               "type" : "text"
-            },
-            "space_punctuation" : {
-               "type" : "text",
-               "analyzer" : "jenny_space_punctuation_analyzer"
-            },
-            "stem" : {
-               "analyzer" : "jenny_stem_analyzer",
-               "type" : "text"
-            },
-            "raw" : {
-               "type" : "keyword"
-            }
-         },
-         "store" : true
+   "properties": {
+      "starchatAnnotations": {
+         "type": "object",
+         "dynamic": true,
+         "enabled": true
       }
    }
 }

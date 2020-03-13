@@ -186,23 +186,44 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
+  implicit val qaSortByUnmarshalling: Unmarshaller[String, QASearchSortBy.Value] =
+    Unmarshaller.strict[String, QASearchSortBy.Value] { enumValue =>
+      QASearchSortBy.value(enumValue)
+    }
+
+  implicit object qaSortByFormat extends JsonFormat[QASearchSortBy.Value] {
+    def write(obj: QASearchSortBy.Value): JsValue = JsString(obj.toString)
+
+    def read(json: JsValue): QASearchSortBy.Value = json match {
+      case JsString(str) =>
+        QASearchSortBy.values.find(_.toString === str) match {
+          case Some(t) => t
+          case _ => throw DeserializationException("SortSearch string is invalid")
+        }
+      case _ => throw DeserializationException("SortSearch string expected")
+    }
+  }
+
+  implicit val updateByQueryResultFormat = jsonFormat4(UpdateByQueryResult)
   implicit val dtActionResultFormat = jsonFormat3(DtActionResult)
   implicit val responseMessageDataFormat = jsonFormat2(ReturnMessageData)
   implicit val responseRequestUserInputFormat = jsonFormat3(ResponseRequestInUserInput)
   implicit val responseRequestInputFormat = jsonFormat9(ResponseRequestIn)
   implicit val responseRequestOutputFormat = jsonFormat14(ResponseRequestOut)
-  implicit val dtDocumentFormat = jsonFormat13(DTDocumentCreate)
+  implicit val dtDocumentFormat = jsonFormat13(DTDocument)
   implicit val dtDocumentUpdateFormat = jsonFormat12(DTDocumentUpdate)
+  implicit val qaAggAnnnotationsFormat = jsonFormat1(AggAnnnotations)
+  implicit val qaAggAnnnotationsSearchFormat = jsonFormat2(AggAnnnotationsSearch)
   implicit val qaDocumentAnnotationsSearchFormat = jsonFormat20(QADocumentAnnotationsSearch)
   implicit val qaDocumentCoreFormat = jsonFormat8(QADocumentCore)
   implicit val qaDocumentAnnotationsFormat = jsonFormat15(QADocumentAnnotations)
-  implicit val qaDocumentFormat = jsonFormat7(QADocument)
-  implicit val qaDocumentUpdateFormat = jsonFormat7(QADocumentUpdate)
+  implicit val qaDocumentFormat = jsonFormat8(QADocument)
+  implicit val qaDocumentUpdateFormat = jsonFormat8(QADocumentUpdate)
   implicit val searchQADocumentFormat = jsonFormat2(SearchQADocument)
   implicit val searchDTDocumentFormat = jsonFormat2(SearchDTDocument)
   implicit val searchQAResultsFormat = jsonFormat4(SearchQADocumentsResults)
   implicit val searchDTResultsFormat = jsonFormat3(SearchDTDocumentsResults)
-  implicit val qaDocumentSearchFormat = jsonFormat12(QADocumentSearch)
+  implicit val qaDocumentSearchFormat = jsonFormat14(QADocumentSearch)
   implicit val dtDocumentSearchFormat = jsonFormat9(DTDocumentSearch)
   implicit val indexDocumentResultFormat = jsonFormat4(IndexDocumentResult)
   implicit val updateDocumentResultFormat = jsonFormat4(UpdateDocumentResult)
@@ -284,6 +305,8 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
+
+
   implicit val observedDataSourcesUnmarshalling:
     Unmarshaller[String, ObservedDataSources.Value] = Unmarshaller.strict[String, ObservedDataSources.Value] { enumValue =>
     ObservedDataSources.value(enumValue)
@@ -355,6 +378,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val countersCacheSizeFormat = jsonFormat3(CountersCacheSize)
   implicit val conversationFormat = jsonFormat2(Conversation)
   implicit val conversationsFormat = jsonFormat2(Conversations)
+  implicit val qADocumentUpdateByQueryFormat = jsonFormat7(QADocumentUpdateByQuery)
   implicit val updateQAByQueryReqFormat = jsonFormat2(UpdateQAByQueryReq)
 
   implicit val createLanguageIndexRequestFormat = jsonFormat1(CreateLanguageIndexRequest)

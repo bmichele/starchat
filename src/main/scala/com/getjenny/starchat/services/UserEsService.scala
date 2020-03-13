@@ -4,7 +4,6 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 01/12/17.
  */
 
-import com.getjenny.analyzer.util.RandomNumbers
 import com.getjenny.starchat.entities.io.Permissions.Permission
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.auth.AbstractStarChatAuthenticator
@@ -23,6 +22,8 @@ import org.elasticsearch.rest.RestStatus
 import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.Stream
+import scala.util.Random
 
 case class UserEsServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
@@ -34,6 +35,7 @@ class UserEsService extends AbstractUserService {
   private[this] val config: Config = ConfigFactory.load()
   private[this] val elasticClient: SystemIndexManagementElasticClient.type = SystemIndexManagementElasticClient
   private[this] val indexName: String = elasticClient.indexName + "." + elasticClient.userIndexSuffix
+  private[this] val random: Random.type = scala.util.Random
 
   private[this] val admin: String = config.getString("starchat.basic_http_es.admin")
   private[this] val password: String = config.getString("starchat.basic_http_es.password")
@@ -242,11 +244,19 @@ class UserEsService extends AbstractUserService {
     response.getHits.getHits.toList.map(x => sourceToUser(x.getSourceAsMap.asScala.toMap))
   }
 
-  def generatePassword(size: Int = 16): String = {
-    RandomNumbers.string(size)
+  private[this] def randomStrGenerator: Stream[Char] = {
+    val chars: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789;:'`~-+_=[]{}\\|<,.>!@#$%^&*()"
+    def nextAlphaNum: Char = {
+      chars charAt (random.nextInt(chars.length))
+    }
+    Stream continually nextAlphaNum
   }
 
-  def generateSalt(): String = {
-    RandomNumbers.string(16)
+  def generatePassword(size: Int = 32): String = {
+    randomStrGenerator.take(size).mkString
+  }
+
+  def generateSalt(size: Int = 16): String = {
+    randomStrGenerator.take(size).mkString
   }
 }

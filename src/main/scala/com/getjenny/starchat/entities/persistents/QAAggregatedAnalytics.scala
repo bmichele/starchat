@@ -8,7 +8,7 @@ import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.search.aggregations.bucket.filter.{Filter, ParsedFilter}
 import org.elasticsearch.search.aggregations.bucket.histogram.{Histogram, ParsedDateHistogram}
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms
-import org.elasticsearch.search.aggregations.metrics.{Avg, Cardinality}
+import org.elasticsearch.search.aggregations.metrics.{Avg, Cardinality, ValueCount}
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import scala.collection.JavaConverters._
@@ -56,8 +56,9 @@ case class QAAggregatedAnalytics(
 
 class QAAggregatedAnalyticsEntityManager(aggregationsTypes: Option[List[QAAggregationsTypes.Value]]) extends ReadEntityManager[QAAggregatedAnalytics] {
   override def fromSearchResponse(response: SearchResponse): List[QAAggregatedAnalytics] = {
-    val totalDocuments: Cardinality = response.getAggregations.get("totalDocuments")
-    val totalConversations: Cardinality = response.getAggregations.get("totalConversations")
+    val filteredCounts: Filter = response.getAggregations.get("filteredCounts")
+    val totalDocuments: Cardinality = filteredCounts.getAggregations.get("totalDocuments")
+    val totalConversations: Cardinality = filteredCounts.getAggregations.get("totalConversations")
 
     aggregationsTypes match {
       case Some(aggregationsReq) =>

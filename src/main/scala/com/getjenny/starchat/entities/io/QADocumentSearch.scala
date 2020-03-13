@@ -2,9 +2,20 @@ package com.getjenny.starchat.entities.io
 
 import com.getjenny.starchat.entities.persistents._
 
+import scalaz.Scalaz._
+
 /**
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
+
+object QASearchSortBy extends Enumeration {
+  val CONVERSATION,
+  IDX_IN_CONVERSATION,
+  TIMESTAMP,
+  SCORE = QASearchSortBy.Value /* default value */
+
+  def value(v: String): QASearchSortBy.Value = values.find(_.toString === v).getOrElse(SCORE)
+}
 
 case class QADocumentAnnotationsSearch(
                                         dclass: Option[String] = None, /* document classes e.g. group0 group1 etc.*/
@@ -29,19 +40,25 @@ case class QADocumentAnnotationsSearch(
                                         start: Option[Boolean] = None /* event determined when a start state is loaded */
                                       )
 
+case class AggAnnnotationsSearch(
+                                  convIdxCounterGte: Option[Long] = None,
+                                  convIdxCounterLte: Option[Long] = None
+                                )
+
 case class QADocumentSearch(
                              from: Option[Int] = None,
                              size: Option[Int] = None,
                              minScore: Option[Float] = None,
+                             @deprecated("this attribute will be removed, see: sortBy instead", "StarChat v6.0.0")
                              sortByConvIdIdx: Option[Boolean] = None,
-
+                             sortBy: Option[List[QASearchSortBy.Value]] = None,
                              conversation: Option[List[String]] = None, /* IDs of the conversations (or query) */
                              indexInConversation: Option[Int] = None, /* the index of the document in the conversation flow */
                              coreData: Option[QADocumentCore] = None, /* core question answer fields */
+                             aggAnnotations: Option[AggAnnnotationsSearch] = None, /* aggregated annotations */
                              annotations: Option[QADocumentAnnotationsSearch] = None, /* qa and conversation annotations */
                              status: Option[Int] = None, /* tell whether the document is locked for editing or not, useful for
                                               a GUI to avoid concurrent modifications, 0 means no operations pending */
-
                              timestampGte: Option[Long] = None, /* min indexing timestamp, None means no lower bound */
                              timestampLte: Option[Long] = None, /* max indexing timestamp, None means no upper bound*/
                              random: Option[Boolean] = None

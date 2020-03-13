@@ -144,16 +144,22 @@ analysis tool (for future use) */
 trait QADocumentBase {
   val id: String /* unique id of the document */
   val coreData: Option[QADocumentCore] /* core question answer fields */
+  val aggAnnotations: Option[AggAnnnotations] /* aggregated annotations */
   val annotations: Option[QADocumentAnnotations] /* qa and conversation annotations */
   val status: Option[Int] /* tell whether the document is locked for editing or not, useful for
                           a GUI to avoid concurrent modifications, 0 means no operations pending */
   val timestamp: Option[Long] = None /* indexing timestamp, automatically calculated if not provided */
 }
 
+case class AggAnnnotations(
+                            convIdxCounter: Option[Long]
+                          )
+
 case class QADocument(override val id: String,
                       conversation: String, /* ID of the conversation (multiple q&a may be inside a conversation) */
                       indexInConversation: Int = -1, /* the index of the document in the conversation flow */
                       override val coreData: Option[QADocumentCore] = None,
+                      override val aggAnnotations: Option[AggAnnnotations] = None, /* aggregated annotations */
                       override val annotations: Option[QADocumentAnnotations] = Some(QADocumentAnnotations()),
                       override val status: Option[Int] = Some(0),
                       override val timestamp: Option[Long] = None
@@ -164,16 +170,16 @@ case class QADocumentUpdateEntity(
                              conversation: Option[String] = None, /* ID of the conversation (multiple q&a may be inside a conversation) */
                              indexInConversation: Option[Int] = None, /* the index of the document in the conversation flow */
                              override val coreData: Option[QADocumentCore] = None,
+                             override val aggAnnotations: Option[AggAnnnotations] = None, /* aggregated annotations */
                              override val annotations: Option[QADocumentAnnotations] = None,
                              override val status: Option[Int] = None,
                              override val timestamp: Option[Long] = None
                            ) extends QADocumentBase
 
 object QADocumentUpdateEntity {
-  def fromQADocumentUpdate(document: QADocumentUpdate): List[QADocumentUpdateEntity] = {
+  def fromQADocumentUpdateList(document: QADocumentUpdate): List[QADocumentUpdateEntity] = {
     document.id.map(id => QADocumentUpdateEntity(id, document.conversation,
-      document.indexInConversation, document.coreData, document.annotations, document.status, document.timestamp))
-
+      document.indexInConversation, document.coreData, document.aggAnnotations, document.annotations, document.status, document.timestamp))
   }
 }
 
@@ -209,24 +215,24 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
 
     document.conversation match {
       case Some(t) => builder.field("conversation", t)
-      case _ => ;
+      case _ =>
     }
 
     document.indexInConversation match {
       case Some(t) =>
         if (t <= 0) throw QuestionAnswerServiceException("indexInConversation cannot be < 1")
         builder.field("indexInConversation", t)
-      case _ => ;
+      case _ =>
     }
 
     document.status match {
       case Some(t) => builder.field("status", t)
-      case _ => ;
+      case _ =>
     }
 
     document.timestamp match {
       case Some(t) => builder.field("timestamp", t)
-      case _ => ;
+      case _ =>
     }
 
     // begin core data
@@ -234,7 +240,7 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
       case Some(coreData) =>
         coreData.question match {
           case Some(t) => builder.field("question", t)
-          case _ => ;
+          case _ =>
         }
         coreData.questionNegative match {
           case Some(t) =>
@@ -243,7 +249,7 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
               array.startObject().field("query", q).endObject()
             })
             array.endArray()
-          case _ => ;
+          case _ =>
         }
         coreData.questionScoredTerms match {
           case Some(t) =>
@@ -253,11 +259,11 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
                 .field("score", score).endObject()
             }
             array.endArray()
-          case _ => ;
+          case _ =>
         }
         coreData.answer match {
           case Some(t) => builder.field("answer", t)
-          case _ => ;
+          case _ =>
         }
         coreData.answerScoredTerms match {
           case Some(t) =>
@@ -267,91 +273,100 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
                 .field("score", score).endObject()
             }
             array.endArray()
-          case _ => ;
+          case _ =>
         }
         coreData.topics match {
           case Some(t) => builder.field("topics", t)
-          case _ => ;
+          case _ =>
         }
         coreData.verified match {
           case Some(t) => builder.field("verified", t)
-          case _ => ;
+          case _ =>
         }
         coreData.done match {
           case Some(t) => builder.field("done", t)
-          case _ => ;
+          case _ =>
         }
       case _ => QADocumentCore()
     }
     // end core data
+
+    // begin aggregated annotations
+    document.aggAnnotations match {
+      case Some(v) =>
+        builder.startObject("starchatAnnotations")
+          .field("convIdxCounter", v.convIdxCounter.getOrElse(0)).endObject()
+      case _ =>
+    }
+    // end aggregated annotations
 
     // begin annotations
     document.annotations match {
       case Some(annotations) =>
         annotations.dclass match {
           case Some(t) => builder.field("dclass", t)
-          case _ => ;
+          case _ =>
         }
         builder.field("doctype", annotations.doctype.toString)
         annotations.state match {
           case Some(t) =>
             builder.field("state", t)
-          case _ => ;
+          case _ =>
         }
         annotations.agent match {
           case Some(t) =>
             builder.field("agent", t.toString)
-          case _ => ;
+          case _ =>
         }
         annotations.escalated match {
           case Some(t) =>
             builder.field("escalated", t.toString)
-          case _ => ;
+          case _ =>
         }
         annotations.answered match {
           case Some(t) =>
             builder.field("answered", t.toString)
-          case _ => ;
+          case _ =>
         }
         annotations.triggered match {
           case Some(t) =>
             builder.field("triggered", t.toString)
-          case _ => ;
+          case _ =>
         }
         annotations.followup match {
           case Some(t) =>
             builder.field("followup", t.toString)
-          case _ => ;
+          case _ =>
         }
         annotations.feedbackConv match {
           case Some(t) => builder.field("feedbackConv", t)
-          case _ => ;
+          case _ =>
         }
         annotations.feedbackConvScore match {
           case Some(t) => builder.field("feedbackConvScore", t)
-          case _ => ;
+          case _ =>
         }
         annotations.algorithmConvScore match {
           case Some(t) => builder.field("algorithmConvScore", t)
-          case _ => ;
+          case _ =>
         }
         annotations.feedbackAnswerScore match {
           case Some(t) => builder.field("feedbackAnswerScore", t)
-          case _ => ;
+          case _ =>
         }
         annotations.algorithmAnswerScore match {
           case Some(t) => builder.field("algorithmAnswerScore", t)
-          case _ => ;
+          case _ =>
         }
         annotations.responseScore match {
           case Some(t) => builder.field("responseScore", t)
-          case _ => ;
+          case _ =>
         }
         annotations.start match {
           case Some(t) => builder.field("start", t)
-          case _ => ;
+          case _ =>
         }
-      case _ => ;
+      case _ =>
     }
     // end annotations
 
@@ -438,6 +453,15 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
       case _ => QADocumentCore()
     }
     // end core data
+
+    // begin aggregated annotations
+    document.aggAnnotations match {
+      case Some(v) =>
+        builder.startObject("starchatAnnotations")
+          .field("convIdxCounter", v.convIdxCounter.getOrElse(0)).endObject()
+      case _ =>
+    }
+    // end aggregated annotations
 
     // begin annotations
     document.annotations match {

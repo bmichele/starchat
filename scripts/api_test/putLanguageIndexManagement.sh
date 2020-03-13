@@ -2,9 +2,9 @@
 
 PORT=${1:-8888}
 INDEX_NAME=${2:-index_english}
-LANGUAGE=${3:-english}
-UPDATE_TYPE=${4:-settings}
-INDEX_SUFFIX=${5:-""}
+#UPDATE_TYPE=${3:-settings}
+UPDATE_TYPE=${3:-mappings}
+INDEX_SUFFIX=${4:-""}
 if [[ ! -z ${INDEX_SUFFIX} ]]; then
   SUFFIX="&indexSuffix=${INDEX_SUFFIX}"
 fi

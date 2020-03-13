@@ -12,7 +12,7 @@ import akka.pattern.CircuitBreaker
 import com.getjenny.analyzer.analyzers.AnalyzerEvaluationException
 import com.getjenny.starchat.entities.io
 import com.getjenny.starchat.entities.io._
-import com.getjenny.starchat.entities.persistents.{DTDocumentCreate, DTDocumentUpdate}
+import com.getjenny.starchat.entities.persistents.{DTDocument, DTDocumentUpdate}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services._
 import scalaz.Scalaz._
@@ -42,7 +42,7 @@ trait DecisionTableResource extends StarChatResource {
                   extractRequest { request =>
                     parameters("reset".as[Boolean] ? true,
                       "propagate".as[Boolean] ? true, "refresh".as[Int] ? 0) { (reset, propagate, refresh) =>
-                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                       onCompleteWithBreakerFuture(breaker)(
                         decisionTableService.cloneIndexContent(
                           indexNameSrc = indexNameSrc,
@@ -112,7 +112,7 @@ trait DecisionTableResource extends StarChatResource {
               extractRequest { request =>
                 storeUploadedFile(fileType, tempDestination("." + fileType)) {
                   case (_, file) =>
-                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 60.seconds)
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                     onCompleteWithBreakerFuture(breaker)(
                       if (fileType === "csv") {
                         decisionTableService.indexCSVFileIntoDecisionTable(indexName, file, 0)
@@ -157,8 +157,8 @@ trait DecisionTableResource extends StarChatResource {
               authenticator.hasPermissions(user, indexName, Permissions.read)) {
               extractRequest { request =>
                 parameters("check".as[Boolean] ? true) { check =>
-                  entity(as[IndexedSeq[DTDocumentCreate]]) { documents =>
-                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                  entity(as[IndexedSeq[DTDocument]]) { documents =>
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                     onCompleteWithBreakerFuture(breaker)(
                       decisionTableService.bulkCreate(indexName = indexName, documents = documents, check = check)) {
                       case Success(t) =>
@@ -412,7 +412,7 @@ trait DecisionTableResource extends StarChatResource {
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
                 parameters("check".as[Boolean] ? true, "refresh".as[Int] ? 0) { (check, refresh) =>
-                  entity(as[DTDocumentCreate]) { document =>
+                  entity(as[DTDocument]) { document =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                     onCompleteWithBreakerFuture(breaker)(decisionTableService.create(
                       indexName = indexName,
@@ -445,9 +445,7 @@ trait DecisionTableResource extends StarChatResource {
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                       onCompleteWithBreakerFuture(breaker)(decisionTableService.read(indexName, ids.toList)) {
                         case Success(t) =>
-                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
-                            t
-                          })
+                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
                           log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
                           completeResponse(StatusCodes.BadRequest,
@@ -459,9 +457,7 @@ trait DecisionTableResource extends StarChatResource {
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                       onCompleteWithBreakerFuture(breaker)(decisionTableService.getDTDocuments(indexName)) {
                         case Success(t) =>
-                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
-                            t
-                          })
+                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
                           log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
                           completeResponse(StatusCodes.BadRequest,

@@ -31,6 +31,23 @@ object QADocumentMapper {
       case _ => None: Option[Long]
     }
 
+    // begin aggregated annotations
+    val starchatAnnotationsMap: Map[String, Any] = source.get("starchatAnnotations") match {
+      case Some(t) => t.asInstanceOf[java.util.HashMap[String, Any]].asScala.toMap
+      case _ => Map.empty[String, Any]
+    }
+
+    val convIdxCounter: Option[Long] = if(starchatAnnotationsMap.contains("convIdxCounter"))
+      starchatAnnotationsMap.get("convIdxCounter") match {
+        case Some(t) =>
+          Some(t.asInstanceOf[Int].toLong)
+        case _ => None
+      }
+    else None
+
+    val aggAnnotations = AggAnnnotations(convIdxCounter = convIdxCounter)
+    // end aggregated annotations
+
     // begin core data
     val question: Option[String] = source.get("question") match {
       case Some(t) => Some(t.asInstanceOf[String])
@@ -212,8 +229,9 @@ object QADocumentMapper {
       conversation = conversation,
       indexInConversation = indexInConversation,
       status = status,
-      coreData = Option(coreDataOut),
-      annotations = Option(annotationsOut),
+      coreData = Some(coreDataOut),
+      aggAnnotations = Some(aggAnnotations),
+      annotations = Some(annotationsOut),
       timestamp = timestamp
     )
   }

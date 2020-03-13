@@ -91,17 +91,20 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResultReduced(clQuestionAnswerConversationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clQuestionAnswerRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clQuestionAnswerStreamRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(clAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clusterNodesRoutes) ~
     LoggingEntities.logRequestAndResultReduced(decisionTableBulkCreateRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerAnalyticsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerConversationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerStreamRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(kbAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(nodeDtLoadingStatusRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerAnalyticsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerConversationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerStreamRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(pdAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(termRoutes) ~
     LoggingEntities.logRequestAndResultReduced(termStreamRoutes) ~
     LoggingEntities.logRequestAndResultReduced(languageIndexManagementRoutes)
