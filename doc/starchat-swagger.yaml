@@ -4946,14 +4946,14 @@ components:
           description: the conversation has marked as done, this field is expected to set for each item of the conversation
           example: true
           default: false
-    AggAnnnotations:
+    AggAnnotations:
       type: object
       properties:
         convIdxCounter:
           type: number
           format: long
           description: the number of items in the conversation
-    AggAnnnotationsSearch:
+    AggAnnotationsSearch:
       type: object
       properties:
         convIdxCounterGte:
@@ -5228,7 +5228,7 @@ components:
           $ref: '#/components/schemas/QADocumentCore'
         aggAnnotations:
           type: object
-          $ref: '#/components/schemas/AggAnnnotations'
+          $ref: '#/components/schemas/AggAnnotations'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotations'
@@ -5471,9 +5471,9 @@ components:
         coreData:
           type: object
           $ref: '#/components/schemas/QADocumentCoreSearch'
-        aggAnnnotations:
+        aggnotations:
           type: object
-          $ref: '#/components/schemas/AggAnnnotationsSearch'
+          $ref: '#/components/schemas/AggAnnotationsSearch'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'

@@ -45,7 +45,7 @@ object QADocumentMapper {
       }
     else None
 
-    val aggAnnotations = AggAnnnotations(convIdxCounter = convIdxCounter)
+    val aggAnnotations = AggAnnotations(convIdxCounter = convIdxCounter)
     // end aggregated annotations
 
     // begin core data

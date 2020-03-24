@@ -4,7 +4,7 @@ package com.getjenny.starchat.entities.io
  * Created by Angelo Leto <angelo@getjenny.com> on 24/03/17.
  */
 
-import com.getjenny.starchat.entities.persistents.{AggAnnnotations, QADocumentAnnotations, QADocumentCore}
+import com.getjenny.starchat.entities.persistents.{AggAnnotations, QADocumentAnnotations, QADocumentCore}
 
 trait QADocumentUpdateBase {
   /* list of document ids to update (bulk editing) */
@@ -14,7 +14,7 @@ trait QADocumentUpdateBase {
   /* the index of the document in the conversation flow */
   val coreData: Option[QADocumentCore] = None
   /* aggregated annotations */
-  val aggAnnotations: Option[AggAnnnotations] = None
+  val aggAnnotations: Option[AggAnnotations] = None
   /* core question answer fields */
   val annotations: Option[QADocumentAnnotations] = None
   /* qa and conversation annotations */

@@ -334,7 +334,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
 
     val coreDataIn = documentSearch.coreData.getOrElse(QADocumentCore())
     val annotationsIn = documentSearch.annotations.getOrElse(QADocumentAnnotationsSearch())
-    val aggsAnnotationsIn = documentSearch.aggAnnotations.getOrElse(AggAnnnotationsSearch())
+    val aggsAnnotationsIn = documentSearch.aggAnnotations.getOrElse(AggAnnotationsSearch())
 
     // begin core data
     coreDataIn.question match {
@@ -419,11 +419,13 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
 
     // begin aggs annotations
     aggsAnnotationsIn.convIdxCounterGte match {
-      case Some(t) => boolQueryBuilder.filter(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gte(t))
+      case Some(t) => boolQueryBuilder.filter(
+        QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gte(t))
       case _ =>
     }
     aggsAnnotationsIn.convIdxCounterLte match {
-      case Some(t) => boolQueryBuilder.filter(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(t))
+      case Some(t) => boolQueryBuilder.filter(
+        QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(t))
       case _ =>
     }
     // end aggs annotations
@@ -971,9 +973,9 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     val newDoc = if(document.indexInConversation === 1) {
-      document.copy(aggAnnotations = Some(AggAnnnotations(convIdxCounter = Some(1))))
+      document.copy(aggAnnotations = Some(AggAnnotations(convIdxCounter = Some(1))))
     } else {
-      document.copy(aggAnnotations = Some(AggAnnnotations(convIdxCounter = Some(0))))
+      document.copy(aggAnnotations = Some(AggAnnotations(convIdxCounter = Some(0))))
     }
     val response = indexLanguageCrud.create(newDoc, new QaDocumentEntityManager(indexName), refresh)
 
