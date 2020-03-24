@@ -291,9 +291,9 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
 
     documentSearch.conversation match {
       case Some(convIds) =>
-        val convIdBoolQ = QueryBuilders.boolQuery()
-        convIds.foreach { cId => convIdBoolQ.should(QueryBuilders.termQuery("conversation", cId)) }
-        boolQueryBuilder.filter(convIdBoolQ)
+        val orQuery = QueryBuilders.boolQuery()
+        convIds.foreach { cId => orQuery.should(QueryBuilders.termQuery("conversation", cId)) }
+        boolQueryBuilder.must(orQuery)
       case _ =>
     }
 
@@ -438,7 +438,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       case Some(queryParam) =>
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("doctype", i.toString)))
-        boolQueryBuilder.filter(orQuery).minimumShouldMatch(1)
+        boolQueryBuilder.filter(orQuery)
       case _ =>
     }
 
@@ -451,7 +451,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       case Some(queryParam) =>
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("agent", i.toString)))
-        boolQueryBuilder.filter(orQuery).minimumShouldMatch(1)
+        boolQueryBuilder.filter(orQuery)
       case _ =>
     }
 
@@ -459,7 +459,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       case Some(queryParam) =>
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("escalated", i.toString)))
-        boolQueryBuilder.filter(orQuery).minimumShouldMatch(1)
+        boolQueryBuilder.filter(orQuery)
       case _ =>
     }
 
@@ -467,7 +467,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       case Some(queryParam) =>
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("answered", i.toString)))
-        boolQueryBuilder.filter(orQuery).minimumShouldMatch(1)
+        boolQueryBuilder.filter(orQuery)
       case _ =>
     }
 
@@ -475,7 +475,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       case Some(queryParam) =>
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("triggered", i.toString)))
-        boolQueryBuilder.filter(orQuery).minimumShouldMatch(1)
+        boolQueryBuilder.filter(orQuery)
       case _ =>
     }
 
@@ -483,13 +483,13 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       case Some(queryParam) =>
         val orQuery = QueryBuilders.boolQuery()
         queryParam.foreach(i => orQuery.should(QueryBuilders.termQuery("followup", i.toString)))
-        boolQueryBuilder.filter(orQuery).minimumShouldMatch(1)
+        boolQueryBuilder.filter(orQuery)
       case _ =>
     }
 
     annotationsIn.feedbackConv match {
       case Some(feedbackConv) =>
-        boolQueryBuilder.must(QueryBuilders.termQuery("feedbackConv", feedbackConv))
+        boolQueryBuilder.filter(QueryBuilders.termQuery("feedbackConv", feedbackConv))
       case _ =>
     }
 
