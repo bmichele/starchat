@@ -21,13 +21,23 @@ case class SearchQADocumentsResults(totalHits: Long = 0,
 class SearchQADocumentEntityManager(indexName: String) extends ReadEntityManager[SearchQADocumentsResults] {
   override def fromSearchResponse(response: SearchResponse): List[SearchQADocumentsResults] = {
     val documents = response.getHits.getHits.toList.map { item: SearchHit =>
-        val source: Map[String, Any] = item.getSourceAsMap.asScala.toMap
-        val document = QADocumentMapper.documentFromMap(indexName, extractId(item.getId), source)
-        SearchQADocument(score = item.getScore, document = document)
-      }
+      val source: Map[String, Any] = item.getSourceAsMap.asScala.toMap
+      val document = QADocumentMapper.documentFromMap(indexName, extractId(item.getId), source)
+      val score = item.getScore
+      SearchQADocument(
+        score = if(score.isNaN) 0.0f else score,
+        document = document)
+    }
 
-    val maxScore: Float = response.getHits.getMaxScore
     val totalHits = response.getHits.getTotalHits.value
+    val maxScore: Float = if (totalHits > 0) {
+      val esMaxScore = response.getHits.getMaxScore
+      if (esMaxScore.isNaN)
+        0.0f
+      else
+        esMaxScore
+    } else
+      0.0f
     val total: Int = documents.length
     List(SearchQADocumentsResults(totalHits = totalHits, hitsCount = total, maxScore = maxScore, hits = documents))
   }
