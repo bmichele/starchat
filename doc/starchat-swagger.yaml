@@ -2102,13 +2102,13 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/conv/annotations/<qa_route>':
+  '/<index_name>/conv/annotations/<qa_route>/convIdxCounter':
     post:
       tags:
         - customer
-      operationId: post_conv_annotations_qa_route
-      summary: "update aggregated annotations"
-      description: "update aggregated annotation for a conversation"
+      operationId: post_conv_annotations_qa_route_convIdxCounter
+      summary: "update aggregated annotations: convIdxCounter"
+      description: "update aggregated annotation convIdxCounter for a conversation"
       parameters:
         - in: path
           name: index_name
