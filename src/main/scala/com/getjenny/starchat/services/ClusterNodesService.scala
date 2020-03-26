@@ -8,8 +8,8 @@ import java.util.UUID.randomUUID
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.io.{ClusterNode, ClusterNodes, DeleteDocumentsSummaryResult}
-import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
+import com.getjenny.starchat.entities.io.{ClusterNode, ClusterNodes, DeleteDocumentsSummaryResult, RefreshPolicy}
+import com.getjenny.starchat.services.esclient.ClusterNodesElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.get.{GetRequest, GetResponse}
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
@@ -21,7 +21,6 @@ import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import org.elasticsearch.index.reindex.DeleteByQueryRequest
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.builder.SearchSourceBuilder
-import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
@@ -31,12 +30,12 @@ case class ClusterNodesServiceException(message: String = "", cause: Throwable =
 
 object ClusterNodesService extends AbstractDataService {
   val CLUSTER_NODE_ALIVE_TIMESTAMP_DEFAULT : Long = -1
-  override val elasticClient: SystemIndexManagementElasticClient.type = SystemIndexManagementElasticClient
+  override val elasticClient: ClusterNodesElasticClient.type = ClusterNodesElasticClient
   val uuid: String = randomUUID.toString
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
-  val indexName: String = Index.indexName(elasticClient.indexName, elasticClient.systemClusterNodesIndexSuffix)
+  val indexName: String = Index.indexName(elasticClient.indexName, elasticClient.indexSuffix)
 
-  def alive(refresh: Int = 0): ClusterNode = {
+  def alive: ClusterNode = {
     val client: RestHighLevelClient = elasticClient.httpClient
     val timestamp: Long = System.currentTimeMillis
 
@@ -54,12 +53,7 @@ object ClusterNodesService extends AbstractDataService {
 
     log.debug("set alive node status: {}", response.status())
 
-    if (refresh =/= 0) {
-      val refreshIndex = elasticClient.refresh(indexName)
-      if(refreshIndex.failedShardsN > 0) {
-        throw ClusterNodesServiceException("System: index refresh failed: (" + indexName + ")")
-      }
-    }
+    this.refresh(RefreshPolicy.`wait_for`)
 
     ClusterNode(uuid = uuid, alive = true, timestamp = timestamp)
   }
@@ -108,7 +102,7 @@ object ClusterNodesService extends AbstractDataService {
     request.setQuery(boolQueryBuilder)
 
     val bulkResponse = client.deleteByQuery(request, RequestOptions.DEFAULT)
-
+    this.refresh(RefreshPolicy.`wait_for`)
     DeleteDocumentsSummaryResult(message = "delete", deleted = bulkResponse.getTotal)
   }
 

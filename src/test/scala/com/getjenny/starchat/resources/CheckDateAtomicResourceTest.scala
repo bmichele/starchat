@@ -10,7 +10,6 @@ import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvalu
 
 class CheckDateAtomicResourceTest extends TestEnglishBase {
 
-
   "CheckDate Atomic" should {
     "return 1.0 when evaluating condition 1st december 2019 is after 1st november 2019" in {
       val evaluateRequest: AnalyzerEvaluateRequest =

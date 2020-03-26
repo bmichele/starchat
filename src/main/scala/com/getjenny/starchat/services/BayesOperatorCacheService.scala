@@ -4,8 +4,7 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
-import com.getjenny.starchat.analyzer.operators.BayesOperator
-import com.getjenny.starchat.entities.io.BayesOperatorCacheServiceResponse
+import com.getjenny.starchat.entities.io.{BayesOperatorCacheServiceResponse, RefreshIndexResult, RefreshPolicy}
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.services.esclient.{BayesOperatorCacheElasticClient, ElasticClient}
 import com.getjenny.starchat.utils.Index
@@ -14,6 +13,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder
 import org.elasticsearch.common.xcontent.XContentFactory._
 import org.elasticsearch.index.query.QueryBuilders
 import scalaz.Scalaz._
+
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
@@ -74,7 +74,6 @@ object BayesOperatorCacheService extends AbstractDataService {
     val analyzers = analyzerMap
       .map { case (state, decisionTableRuntimeItem) => state -> decisionTableRuntimeItem.analyzer.analyzer }
       .collect { case (state, Some(analyzer)) => state -> analyzer }
-      .toMap
 
     val allQueries = analyzerMap.values
       .flatMap { x => x.queries }
@@ -96,24 +95,24 @@ object BayesOperatorCacheService extends AbstractDataService {
 
     scores.map { case ((indexName, state), analyzer) => (indexName, state, analyzer) }
       .grouped(1000)
-      .foreach(x => bulkPut(x))
+      .foreach(x => bulkPut(x, RefreshPolicy.`false`))
 
     log.info("Calculated {} scores", scores.length)
     scores.length
   }
 
-  def put(index: String, state: String, value: Double): Unit = {
+  def put(index: String, state: String, value: Double, refreshPolicy: RefreshPolicy.Value): Unit = {
     val key = createKey(index, state)
     val document = BayesOperatorCacheDocument(key, Some(value))
-    val response = esCrudBase.update(document.key, document.toBuilder, upsert = true)
+    val response = esCrudBase.update(document.key, document.toBuilder, upsert = true, refreshPolicy = refreshPolicy)
     log.info("BayesOperatorCache put - key: {}, value: {}, operation status: {}", key, value, response.status())
   }
 
-  def bulkPut(scoresList: List[(String, String, Double)]): Unit = {
+  def bulkPut(scoresList: List[(String, String, Double)], refreshPolicy: RefreshPolicy.Value): Unit = {
     val elements = scoresList.map { case (index, state, v) => val key = createKey(index, state)
       key -> BayesOperatorCacheDocument(key, Some(v)).toBuilder
     }
-    val response = esCrudBase.bulkUpdate(elements, upsert = true)
+    val response = esCrudBase.bulkUpdate(elements, upsert = true, refreshPolicy)
     log.info("BayesOperatorCache bulk put {} elements, operation status: {}", response.getItems.length, response.status())
   }
 
@@ -128,22 +127,19 @@ object BayesOperatorCacheService extends AbstractDataService {
     }
   }
 
-  def getOrElseUpdate(index: String, state: String)(updateFunction: () => Double): Double = {
+  def getOrElseUpdate(index: String, state: String,
+                      refreshPolicy: RefreshPolicy.Value)(updateFunction: () => Double): Double = {
     this.get(index, state).getOrElse {
       val value = updateFunction()
-      this.put(index, state, value)
+      this.put(index, state, value, refreshPolicy)
       value
     }
   }
 
   private[this] def createKey(index: String, state: String) = s"$index-$state"
 
-  def refresh(): Unit = {
-    esCrudBase.refresh()
-  }
-
-  def clear(): Unit = {
-    val response = esCrudBase.delete(QueryBuilders.matchAllQuery())
+  def clear: Unit = {
+    val response = esCrudBase.delete(QueryBuilders.matchAllQuery(), RefreshPolicy.`false`)
     log.info("BayesOperatorCache cleared {} entries", response.getDeleted)
   }
 

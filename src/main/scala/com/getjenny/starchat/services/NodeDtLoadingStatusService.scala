@@ -8,9 +8,9 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.InstanceRegistryService.allEnabledInstanceTimestamp
-import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse, SearchType}
+import com.getjenny.starchat.services.esclient.NodeDtLoadingStatusElasticClient
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.common.xcontent.XContentBuilder
@@ -31,19 +31,20 @@ case class NodeDtLoadingHealthCheckException(message: String = "", cause: Throwa
 
 object NodeDtLoadingStatusService extends AbstractDataService {
   val DT_NODES_STATUS_TIMESTAMP_DEFAULT : Long = -1
-  override val elasticClient: SystemIndexManagementElasticClient.type = SystemIndexManagementElasticClient
+  override val elasticClient: NodeDtLoadingStatusElasticClient.type = NodeDtLoadingStatusElasticClient
   val clusterNodesService: ClusterNodesService.type = ClusterNodesService
   private[this] val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
   private[this] val analyzerService: AnalyzerService.type = AnalyzerService
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
-  val indexName: String = Index.indexName(elasticClient.indexName, elasticClient.systemDtNodesStatusIndexSuffix)
+  val indexName: String =
+    Index.indexName(elasticClient.indexName, elasticClient.indexSuffix)
 
   private[this] def calcUuid(uuid: String = ""): String = if (uuid === "") clusterNodesService.uuid else uuid
   private[this] def calcId(dtIndexName: String, uuid: String): String = {
     dtIndexName + "." + calcUuid(uuid)
   }
 
-  def update(dtNodeStatus: NodeDtLoadingStatus, refresh: Int = 0): Unit = {
+  def update(dtNodeStatus: NodeDtLoadingStatus, refreshPolicy: RefreshPolicy.Value): Unit = {
     val client: RestHighLevelClient = elasticClient.httpClient
     val uuid = calcUuid(dtNodeStatus.uuid.getOrElse(""))
     val id = calcId(dtNodeStatus.index, uuid)
@@ -66,15 +67,9 @@ object NodeDtLoadingStatusService extends AbstractDataService {
       .docAsUpsert(true)
 
     val response: UpdateResponse = client.update(updateReq, RequestOptions.DEFAULT)
+    refresh(refreshPolicy)
 
     log.debug("set update dt ({}) on node({}) timestamp({}) ", dtNodeStatus.index, uuid, timestamp, response.status())
-
-    if (refresh =/= 0) {
-      val refreshIndex = elasticClient.refresh(indexName)
-      if(refreshIndex.failedShardsN > 0) {
-        throw NodeDtLoadingStatusServiceException("System: decision table loading status update failed: (" + indexName + ")")
-      }
-    }
   }
 
   def dtUpdateStatusByIndex(dtIndexName: String = "", minTs: Long = 0): List[NodeDtLoadingStatus] = {

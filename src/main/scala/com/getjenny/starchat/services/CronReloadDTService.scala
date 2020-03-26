@@ -69,12 +69,12 @@ object CronReloadDTService extends CronService {
   }
 
   def scheduleAction(): Unit = {
-    if (systemIndexManagementService.elasticClient.dtReloadCheckFrequency > 0) {
+    if (nodeDtLoadingStatusService.elasticClient.dtReloadCheckFrequency > 0) {
       val reloadDecisionTableActorRef =
         SCActorSystem.system.actorOf(Props(new ReloadAnalyzersTickActor))
       SCActorSystem.system.scheduler.schedule(
         0 seconds,
-        systemIndexManagementService.elasticClient.dtReloadCheckFrequency seconds,
+        nodeDtLoadingStatusService.elasticClient.dtReloadCheckFrequency seconds,
         reloadDecisionTableActorRef,
         tickMessage)
     }

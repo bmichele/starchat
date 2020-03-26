@@ -38,16 +38,16 @@ class DecisionTableCloneTest extends TestEnglishBase {
       Post(s"/index_getjenny_english_0_preview/decisiontable/upload/csv", multipartForm) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[IndexDocumentListResult]
-        response.data.length should be (23)
+        response.data.length should be (22)
       }
     }
   }
 
   "return an HTTP code 200 cloning data from the preview index" in {
-    Post("/index_getjenny_english_0_preview/decisiontable/clone/index_getjenny_english_0?refresh=1") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Post("/index_getjenny_english_0_preview/decisiontable/clone/index_getjenny_english_0?refresh=wait_for") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       val response = responseAs[IndexDocumentListResult]
-      response.data.length should be (23)
+      response.data.length should be (22)
     }
   }
 
@@ -55,7 +55,7 @@ class DecisionTableCloneTest extends TestEnglishBase {
     Delete("/index_getjenny_english_0_preview/decisiontable/all") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       val response = responseAs[DeleteDocumentsSummaryResult]
-      response.deleted should be (23)
+      response.deleted should be (22)
     }
   }
 
@@ -63,7 +63,7 @@ class DecisionTableCloneTest extends TestEnglishBase {
     Delete("/index_getjenny_english_0/decisiontable/all") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
       val response = responseAs[DeleteDocumentsSummaryResult]
-      response.deleted should be (23)
+      response.deleted should be (22)
     }
   }
 

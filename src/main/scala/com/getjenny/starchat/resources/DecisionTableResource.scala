@@ -16,6 +16,7 @@ import com.getjenny.starchat.entities.persistents.{DTDocument, DTDocumentUpdate}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services._
 import scalaz.Scalaz._
+
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
@@ -41,7 +42,8 @@ trait DecisionTableResource extends StarChatResource {
                 authorizeAsync(_ => authenticator.hasPermissions(user, indexNameDst, Permissions.write)) {
                   extractRequest { request =>
                     parameters("reset".as[Boolean] ? true,
-                      "propagate".as[Boolean] ? true, "refresh".as[Int] ? 0) { (reset, propagate, refresh) =>
+                      "propagate".as[Boolean] ? true,
+                      "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { (reset, propagate, refreshPolicy) =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                       onCompleteWithBreakerFuture(breaker)(
                         decisionTableService.cloneIndexContent(
@@ -49,7 +51,7 @@ trait DecisionTableResource extends StarChatResource {
                           indexNameDst = indexNameDst,
                           reset = reset,
                           propagate = propagate,
-                          refresh = refresh
+                          refreshPolicy = refreshPolicy
                         )
                       ) {
                         case Success(t) =>
@@ -83,7 +85,7 @@ trait DecisionTableResource extends StarChatResource {
               extractRequest { request =>
                 val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                 onCompleteWithBreakerFuture(breaker)(
-                  decisionTableService.deleteAll(indexName)
+                  decisionTableService.deleteAll(indexName, RefreshPolicy.`false`)
                 ) {
                   case Success(t) =>
                     completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
@@ -115,9 +117,11 @@ trait DecisionTableResource extends StarChatResource {
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                     onCompleteWithBreakerFuture(breaker)(
                       if (fileType === "csv") {
-                        decisionTableService.indexCSVFileIntoDecisionTable(indexName, file, 0)
+                        decisionTableService.indexCSVFileIntoDecisionTable(indexName = indexName,
+                          file = file, skipLines = 0, refreshPolicy = RefreshPolicy.`wait_for`)
                       } else if (fileType === "json") {
-                        decisionTableService.indexJSONFileIntoDecisionTable(indexName, file)
+                        decisionTableService.indexJSONFileIntoDecisionTable(indexName = indexName, file = file,
+                          refreshPolicy = RefreshPolicy.`false`)
                       } else {
                         throw DecisionTableServiceException("Bad or unsupported file format: " + fileType)
                       }
@@ -156,11 +160,13 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.read)) {
               extractRequest { request =>
-                parameters("check".as[Boolean] ? true) { check =>
+                parameters("check".as[Boolean] ? true,
+                  "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { (check, refreshPolicy) =>
                   entity(as[IndexedSeq[DTDocument]]) { documents =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                     onCompleteWithBreakerFuture(breaker)(
-                      decisionTableService.bulkCreate(indexName = indexName, documents = documents, check = check)) {
+                      decisionTableService.bulkCreate(indexName = indexName, documents = documents,
+                        check = check, refreshPolicy = refreshPolicy)) {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>
@@ -191,7 +197,7 @@ trait DecisionTableResource extends StarChatResource {
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
                 val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                onCompleteWithBreakerFuture(breaker)(dtReloadService.updateTimestamp(indexName, refresh = 1)) {
+                onCompleteWithBreakerFuture(breaker)(dtReloadService.updateTimestamp(indexName)) {
                   case Success(t) =>
                     completeResponse(StatusCodes.Accepted, StatusCodes.BadRequest, Option {
                       t
@@ -411,14 +417,15 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                parameters("check".as[Boolean] ? true, "refresh".as[Int] ? 0) { (check, refresh) =>
+                parameters("check".as[Boolean] ? true,
+                  "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { (check, refreshPolicy) =>
                   entity(as[DTDocument]) { document =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                     onCompleteWithBreakerFuture(breaker)(decisionTableService.create(
                       indexName = indexName,
                       document = document,
                       check = check,
-                      refresh = refresh)) {
+                      refreshPolicy = refreshPolicy)) {
                       case Success(t) =>
                         completeResponse(StatusCodes.Created, StatusCodes.BadRequest, t)
                       case Failure(e) =>
@@ -477,9 +484,10 @@ trait DecisionTableResource extends StarChatResource {
               authorizeAsync(_ =>
                 authenticator.hasPermissions(user, indexName, Permissions.write)) {
                 extractRequest { request =>
-                  parameters("id".as[String].*, "refresh".as[Int] ? 0) { (ids, refresh) =>
+                  parameters("id".as[String].*,
+                    "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { (ids, refreshPolicy) =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(decisionTableService.delete(indexName, ids.toList, refresh)) {
+                    onCompleteWithBreakerFuture(breaker)(decisionTableService.delete(indexName, ids.toList, refreshPolicy)) {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                       case Failure(e) =>
@@ -502,11 +510,12 @@ trait DecisionTableResource extends StarChatResource {
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
                 entity(as[DTDocumentUpdate]) { document =>
-                  parameters("check".as[Boolean] ? true, "refresh".as[Int] ? 0) { (check, refresh) =>
+                  parameters("check".as[Boolean] ? true,
+                    "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { (check, refreshPolicy) =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                     onCompleteWithBreakerFuture(breaker)(
                       decisionTableService.update(indexName = indexName,
-                        document = document, check = check, refresh = refresh)) {
+                        document = document, check = check, refreshPolicy = refreshPolicy)) {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>

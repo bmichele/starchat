@@ -136,12 +136,6 @@ trait ElasticClient {
   val priorDataIndexSuffix: String = config.getString("es.prior_data_index_suffix")
   val termIndexSuffix: String = config.getString("es.term_index_suffix")
 
-  val userIndexSuffix: String = config.getString("es.user_index_suffix")
-  val systemInstanceRegistrySuffix: String = config.getString("es.system_instance_registry_suffix")
-  val systemClusterNodesIndexSuffix: String = "cluster_nodes"
-  val systemDtNodesStatusIndexSuffix: String = "decision_table_node_status"
-  val systemBayesOperatorCacheIndexSuffix: String = "bayes_operator_cache"
-
   val enableDeleteIndex: Boolean = config.getBoolean("es.enable_delete_application_index")
-  val enableDeleteSystemIndex: Boolean = config.getBoolean("es.enable_delete_system_index")
+
 }

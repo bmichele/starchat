@@ -1,10 +1,10 @@
 package com.getjenny.starchat.utils
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 
-class SystemConfigurationTest extends WordSpec with Matchers with ScalatestRouteTest{
-
+class SystemConfigurationTest extends AnyWordSpec with Matchers with ScalatestRouteTest{
   "System configuration" should {
     "create hashmap containing configuration in a path" in {
       val conf = SystemConfiguration.createMapFromPath("starchat.atom-values")

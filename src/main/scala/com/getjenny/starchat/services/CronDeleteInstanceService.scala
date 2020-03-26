@@ -2,6 +2,7 @@ package com.getjenny.starchat.services
 
 import akka.actor.{Actor, ActorRef, Props}
 import com.getjenny.starchat.SCActorSystem
+import com.getjenny.starchat.entities.io.RefreshPolicy
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.index.query.QueryBuilders
@@ -42,8 +43,8 @@ object CronDeleteInstanceService extends CronService {
     private[this] def delete(registryEntryId: String, indexName: String): Option[DeleteInstanceResponse] = {
       val res = Try {
         val instance = Index.instanceName(registryEntryId)
-        val crud = new EsCrudBase(systemIndexManagementService.elasticClient, indexName)
-        val delete = crud.delete(QueryBuilders.matchQuery("instance", instance))
+        val crud = new EsCrudBase(clusterNodesService.elasticClient, indexName)
+        val delete = crud.delete(QueryBuilders.matchQuery("instance", instance), RefreshPolicy.`wait_for`)
         log.info("Deleting data from instance: {} index: {} - doc deleted: {}", instance,
           indexName, delete.getDeleted)
         DeleteInstanceResponse(indexName, instance, delete.getDeleted)
@@ -57,21 +58,21 @@ object CronDeleteInstanceService extends CronService {
   }
 
   def scheduleAction(): Unit = {
-    if (systemIndexManagementService.elasticClient.instanceRegistryDeleteFrequency > 0) {
+    if (instanceRegistryService.elasticClient.instanceRegistryDeleteFrequency > 0) {
       val reloadDecisionTableActorRef =
         SCActorSystem.system.actorOf(Props(new DeleteInstanceActor))
       SCActorSystem.system.scheduler.schedule(
         0 seconds,
-        systemIndexManagementService.elasticClient.instanceRegistryDeleteFrequency seconds,
+        instanceRegistryService.elasticClient.instanceRegistryDeleteFrequency seconds,
         reloadDecisionTableActorRef,
         tickMessage)
     }
   }
 
   object DeleteInstanceActor {
-    def props = Props(new DeleteInstanceActor())
+    def props: Props = Props(new DeleteInstanceActor())
 
-    def props(actorProbe: ActorRef) = Props(new DeleteInstanceActor(Some(actorProbe)))
+    def props(actorProbe: ActorRef): Props = Props(new DeleteInstanceActor(Some(actorProbe)))
   }
 
 }

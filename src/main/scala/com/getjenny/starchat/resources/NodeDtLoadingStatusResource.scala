@@ -3,7 +3,7 @@ package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
-import com.getjenny.starchat.entities.io.{NodeDtLoadingStatus, Permissions, ReturnMessageData}
+import com.getjenny.starchat.entities.io.{NodeDtLoadingStatus, Permissions, RefreshPolicy, ReturnMessageData}
 import com.getjenny.starchat.routing.{StarChatCircuitBreaker, StarChatResource}
 import com.getjenny.starchat.services.{NodeDtLoadingStatusService, NodeDtLoadingStatusServiceException}
 
@@ -86,7 +86,8 @@ trait NodeDtLoadingStatusResource extends StarChatResource {
                   extractRequest { request =>
                     entity(as[NodeDtLoadingStatus]) { document =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                      onCompleteWithBreakerFuture(breaker)(nodeDtLoadingStatusService.update(document)) {
+                      onCompleteWithBreakerFuture(breaker)(
+                        nodeDtLoadingStatusService.update(document, RefreshPolicy.`wait_for`)) {
                         case Success(_) =>
                           completeResponse(StatusCodes.OK)
                         case Failure(e) =>

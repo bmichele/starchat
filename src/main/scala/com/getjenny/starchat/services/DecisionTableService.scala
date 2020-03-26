@@ -326,7 +326,7 @@ object DecisionTableService extends AbstractDataService {
   }
 
   def create(indexName: String, document: DTDocument, check: Boolean = true,
-             refresh: Int = 0): IndexDocumentResult = {
+             refreshPolicy: RefreshPolicy.Value): IndexDocumentResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     if (check) {
@@ -335,7 +335,7 @@ object DecisionTableService extends AbstractDataService {
 
     val response = indexLanguageCrud.update(document, upsert = true,
       new SearchDTDocumentEntityManager(simpleQueryExtractor),
-      refresh = refresh)
+      refreshPolicy = refreshPolicy)
 
     val docResult: IndexDocumentResult = IndexDocumentResult(index = response.index,
       id = response.id,
@@ -346,7 +346,8 @@ object DecisionTableService extends AbstractDataService {
     docResult
   }
 
-  def update(indexName: String, document: DTDocumentUpdate, check: Boolean, refresh: Int): UpdateDocumentResult = {
+  def update(indexName: String, document: DTDocumentUpdate, check: Boolean,
+             refreshPolicy: RefreshPolicy.Value): UpdateDocumentResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     if (check) {
@@ -354,18 +355,15 @@ object DecisionTableService extends AbstractDataService {
     }
 
     val response = indexLanguageCrud.update(document,
-      refresh = refresh,
+      refreshPolicy = refreshPolicy,
       entityManager = new SearchDTDocumentEntityManager(simpleQueryExtractor))
 
     response
   }
 
-  def getDTDocuments(indexName: String, refresh: Int = 0): SearchDTDocumentsResults = {
+  def getDTDocuments(indexName: String ): SearchDTDocumentsResults = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val query = QueryBuilders.matchAllQuery
-
-    if(refresh === 1)
-      elasticClient.refresh(indexLanguageCrud.index)
 
     //get a map of stateId -> AnalyzerItem (only if there is smt in the field "analyzer")
     val decisionTableContent = indexLanguageCrud.read(query, version = Option(true), maxItems = Some(10000),
@@ -428,23 +426,25 @@ object DecisionTableService extends AbstractDataService {
   }
 
   def indexCSVFileIntoDecisionTable(indexName: String, file: File,
-                                    skipLines: Int = 1, separator: Char = ','): IndexDocumentListResult = {
+                                    skipLines: Int = 1, separator: Char = ',',
+                                    refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
     val documents: IndexedSeq[DTDocument] = FileToDocuments.getDTDocumentsFromCSV(log = log, file = file,
       skipLines = skipLines, separator = separator)
 
-    bulkCreate(indexName, documents)
+    bulkCreate(indexName = indexName, documents = documents, refreshPolicy = refreshPolicy)
   }
 
-  def indexJSONFileIntoDecisionTable(indexName: String, file: File): IndexDocumentListResult = {
+  def indexJSONFileIntoDecisionTable(indexName: String, file: File,
+                                     refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
     val documents: IndexedSeq[DTDocument] = FileToDocuments.getDTDocumentsFromJSON(log = log, file = file)
 
-    bulkCreate(indexName = indexName, documents = documents, check = false)
+    bulkCreate(indexName = indexName, documents = documents, check = false, refreshPolicy = refreshPolicy)
   }
 
   def bulkCreate(indexName: String, documents: IndexedSeq[DTDocument],
-                 check: Boolean = true, refresh: Int = 0): IndexDocumentListResult = {
+                 check: Boolean = true, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
     val indexDocumentListResult = documents.map(dtDocument => {
-      create(indexName = indexName, document = dtDocument, check = check, refresh = refresh)
+      create(indexName = indexName, document = dtDocument, check = check, refreshPolicy = refreshPolicy)
     }).toList
 
     IndexDocumentListResult(data = indexDocumentListResult)
@@ -654,42 +654,43 @@ object DecisionTableService extends AbstractDataService {
 
   def cloneIndexContent(indexNameSrc: String, indexNameDst: String,
                         reset: Boolean = true, propagate: Boolean = true,
-                        refresh: Int = 0
+                        refreshPolicy: RefreshPolicy.Value
                        ): IndexDocumentListResult = {
     val dtReloadService: InstanceRegistryService.type = InstanceRegistryService
     if (reset) {
-      IndexLanguageCrud(elasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery)
+      IndexLanguageCrud(elasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery, refreshPolicy)
     }
 
     if (indexNameSrc === indexNameDst)
       throw DecisionTableServiceException(s"Cloning index is impossible: " +
         s"src($indexNameSrc) and dst($indexNameDst) are the same")
 
-    val srcDocuments = getDTDocuments(indexName = indexNameSrc, refresh = 1)
+    val srcDocuments = getDTDocuments(indexName = indexNameSrc)
     val documents = srcDocuments.hits.map(_.document).toIndexedSeq
     val createResult = this.bulkCreate(indexName=indexNameDst,
-      documents = documents, refresh = refresh)
+      documents = documents, refreshPolicy = refreshPolicy)
 
     if(createResult.data.length =/= srcDocuments.total)
       throw DecisionTableServiceException(s"Error cloning index $indexNameSrc into " +
         s"$indexNameDst: ${createResult.data.length} != ${srcDocuments.total}")
 
     if(propagate)
-      dtReloadService.updateTimestamp(dtIndexName = indexNameDst, refresh = 1)
+      dtReloadService.updateTimestamp(dtIndexName = indexNameDst)
 
     createResult
   }
 
-  override def delete(indexName: String, ids: List[String], refresh: Int): DeleteDocumentsResult = {
+  override def delete(indexName: String, ids: List[String],
+                      refreshPolicy: RefreshPolicy.Value): DeleteDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val response = indexLanguageCrud.delete(ids, refresh, EmptyWriteEntityManager)
+    val response = indexLanguageCrud.delete(ids, refreshPolicy, EmptyWriteEntityManager)
 
     DeleteDocumentsResult(data = response)
   }
 
-  override def deleteAll(indexName: String): DeleteDocumentsSummaryResult = {
+  override def deleteAll(indexName: String, refreshPolicy: RefreshPolicy.Value): DeleteDocumentsSummaryResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val response = indexLanguageCrud.delete(QueryBuilders.matchAllQuery)
+    val response = indexLanguageCrud.delete(QueryBuilders.matchAllQuery, refreshPolicy)
 
     DeleteDocumentsSummaryResult(message = "delete", deleted = response.getTotal)
   }

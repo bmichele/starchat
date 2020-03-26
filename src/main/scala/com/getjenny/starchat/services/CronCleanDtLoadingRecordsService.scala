@@ -32,7 +32,7 @@ object CronCleanDtLoadingRecordsService extends CronService {
       SCActorSystem.system.actorOf(Props(new CleanDtLoadingStatusTickActor))
     SCActorSystem.system.scheduler.schedule(
       0 seconds,
-      systemIndexManagementService.elasticClient.clusterCleanDtLoadingRecordsInterval seconds,
+      nodeDtLoadingStatusService.elasticClient.clusterCleanDtLoadingRecordsInterval seconds,
       actorRef,
       tickMessage)
   }

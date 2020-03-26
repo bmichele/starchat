@@ -6,8 +6,7 @@ package com.getjenny.starchat.services
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse, IndexManagementStatusResponse}
-import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
+import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse, IndexManagementStatusResponse, RefreshPolicy}
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.update.UpdateResponse
@@ -20,6 +19,8 @@ import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
+import com.getjenny.starchat.services.esclient.{InstanceRegistryElasticClient, NodeDtLoadingStatusElasticClient}
+
 import scala.util.{Failure, Success, Try}
 
 class InstanceRegistryException(message: String = "", cause: Throwable = None.orNull) extends Exception(message, cause)
@@ -86,32 +87,26 @@ object InstanceRegistryStatus extends Enumeration {
 }
 
 object InstanceRegistryService extends AbstractDataService {
-  override val elasticClient: SystemIndexManagementElasticClient.type = SystemIndexManagementElasticClient
+  override val elasticClient: InstanceRegistryElasticClient.type = InstanceRegistryElasticClient
+  private[this] val nodeDtLoadingStatusElasticClient: NodeDtLoadingStatusElasticClient.type = NodeDtLoadingStatusElasticClient
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
-  private[this] val instanceRegistryIndex: String = Index.indexName(elasticClient.indexName,
-    elasticClient.systemInstanceRegistrySuffix)
+  private[this] val instanceRegistryIndex: String = Index.indexName(elasticClient.indexName, elasticClient.indexSuffix)
   private[this] val languageIndexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
   private[this] val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
   private[this] val userEsService: AbstractUserService = UserService.service
 
   def updateTimestamp(dtIndexName: String,
-                      timestamp: Long = InstanceRegistryDocument.InstanceRegistryTimestampDefault,
-                      refresh: Int = 0): Option[DtReloadTimestamp] = {
+                      timestamp: Long =
+                        InstanceRegistryDocument.InstanceRegistryTimestampDefault): Option[DtReloadTimestamp] = {
     val ts: Long = if (timestamp === InstanceRegistryDocument.InstanceRegistryTimestampDefault)
       System.currentTimeMillis
     else
       timestamp
 
-    val response = updateInstance(dtIndexName, timestamp = ts.some, enabled = None, delete = None, deleted = None)
+    val response = updateInstance(dtIndexName, timestamp = ts.some,
+      enabled = None, delete = None, deleted = None, refreshPolicy = RefreshPolicy.`wait_for`)
 
     log.debug("dt reload timestamp response status: {}", response.status())
-
-    if (refresh =/= 0) {
-      val refreshIndex = esCrudBase.refresh()
-      if (refreshIndex.failedShardsN > 0) {
-        throw new InstanceRegistryException("System: index refresh failed: (" + instanceRegistryIndex + ", " + dtIndexName + ")")
-      }
-    }
 
     DtReloadTimestamp(indexName = instanceRegistryIndex, timestamp = ts).some
   }
@@ -132,7 +127,8 @@ object InstanceRegistryService extends AbstractDataService {
     if (!instanceRegistryDocument.isEmpty)
       throw new InstanceRegistryException(s"Instance ($indexName) already exists, delete it to recreate")
 
-    val response = esCrudBase.update(indexName, document.builder, upsert = true)
+    val response = esCrudBase.update(indexName, document.builder, upsert = true,
+      refreshPolicy = RefreshPolicy.`wait_for`)
 
     IndexManagementResponse(s"Created instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -153,7 +149,7 @@ object InstanceRegistryService extends AbstractDataService {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None,
-      enabled = true.some, delete = None, deleted = None)
+      enabled = true.some, delete = None, deleted = None, refreshPolicy = RefreshPolicy.`wait_for`)
     userEsService.enablePermissionForIndex(indexName)
     IndexManagementResponse(s"Enabled instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -162,7 +158,7 @@ object InstanceRegistryService extends AbstractDataService {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None,
-      enabled = false.some, delete = None, deleted = None)
+      enabled = false.some, delete = None, deleted = None, refreshPolicy = RefreshPolicy.`wait_for`)
     userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -170,7 +166,8 @@ object InstanceRegistryService extends AbstractDataService {
   def markDeleteInstance(indexName: String): IndexManagementResponse = {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
-    val response = updateInstance(indexName, timestamp = None, enabled = false.some, delete = true.some, None)
+    val response = updateInstance(indexName, timestamp = None, enabled = false.some,
+      delete = true.some, deleted = None, refreshPolicy= RefreshPolicy.`wait_for`)
     userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -179,15 +176,17 @@ object InstanceRegistryService extends AbstractDataService {
                                    timestamp: Option[Long],
                                    enabled: Option[Boolean],
                                    delete: Option[Boolean],
-                                   deleted: Option[Boolean]): UpdateResponse = {
+                                   deleted: Option[Boolean],
+                                   refreshPolicy: RefreshPolicy.Value): UpdateResponse = {
     if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
     val toBeUpdated = InstanceRegistryDocument(timestamp = timestamp, enabled = enabled,
       delete = delete,
       deleted = deleted)
-    val response = esCrudBase.update(indexName, toBeUpdated.builder)
-    esCrudBase.refresh()
+    val response = esCrudBase.update(id = indexName,
+      builder = toBeUpdated.builder,
+      refreshPolicy = refreshPolicy)
 
     val updatedDocument = findInstance(indexName)
     log.debug("Updated instance {} with document: {}", indexName, updatedDocument)
@@ -220,7 +219,8 @@ object InstanceRegistryService extends AbstractDataService {
 
   def markAsDeleted(ids: List[String]): Unit = {
     ids.foreach { entry =>
-      updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some)
+      updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some,
+        refreshPolicy = RefreshPolicy.`wait_for`)
       userEsService.disablePermissionForIndex(entry)
     }
   }
@@ -251,14 +251,15 @@ object InstanceRegistryService extends AbstractDataService {
     val boolQueryBuilder: BoolQueryBuilder = QueryBuilders.boolQuery()
     minTimestamp match {
       case Some(minTs) => boolQueryBuilder.filter(
-        QueryBuilders.rangeQuery(elasticClient.dtReloadTimestampFieldName).gt(minTs))
+        QueryBuilders.rangeQuery(nodeDtLoadingStatusElasticClient.dtReloadTimestampFieldName).gt(minTs))
       case _ => ;
     }
     boolQueryBuilder.filter(QueryBuilders.termQuery("enabled", true))
     val response = esCrudBase.read(boolQueryBuilder,
       maxItems = maxItems.orElse(10000L.some).map(_.toInt),
       version = true.some,
-      sort = List(new FieldSortBuilder(elasticClient.dtReloadTimestampFieldName).order(SortOrder.DESC))
+      sort =
+        List(new FieldSortBuilder(nodeDtLoadingStatusElasticClient.dtReloadTimestampFieldName).order(SortOrder.DESC))
     )
 
     val dtReloadTimestamps: List[DtReloadTimestamp] = response.getHits.getHits.toList

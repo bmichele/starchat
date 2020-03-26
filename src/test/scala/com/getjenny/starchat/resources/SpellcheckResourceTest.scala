@@ -26,7 +26,7 @@ class SpellcheckResourceTest extends TestEnglishBase {
           followup = Some(Followup.UNSPECIFIED)
         ))
       )
-      Post(s"/index_getjenny_english_0/knowledgebase?refresh=1", knowledgeBaseRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/knowledgebase?refresh=wait_for", knowledgeBaseRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val response = responseAs[IndexDocumentResult]
         response.created should be (true)
@@ -112,7 +112,7 @@ class SpellcheckResourceTest extends TestEnglishBase {
 
   it should {
     val deleteRequest: ListOfDocumentId = ListOfDocumentId(ids = List("0"))
-    "return an HTTP code 200 when deleting an document from knowledgebase" in {
+    "return an HTTP code 200 when deleting a document from knowledgebase" in {
       Delete(s"/index_getjenny_english_0/knowledgebase", deleteRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsResult]

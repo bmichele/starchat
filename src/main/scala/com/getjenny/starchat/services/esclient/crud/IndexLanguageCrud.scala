@@ -4,7 +4,6 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents.{ReadEntityManager, WriteEntityManager}
-import com.getjenny.starchat.services.DeleteDataServiceException
 import com.getjenny.starchat.services.esclient.ElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.search.SearchType
@@ -79,24 +78,25 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       .flatMap(x => entityManager.from(x))
   }
 
-  def create[T](entity: T, entityManager: WriteEntityManager[T], refresh: Int = 0): IndexDocumentResult = {
+  def create[T](entity: T, entityManager: WriteEntityManager[T],
+                refreshPolicy: RefreshPolicy.Value): IndexDocumentResult = {
     val (id, builder) = entityManager.documentBuilder(entity, instance)
     require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")
 
-    val response = esCrudBase.create(id, builder)
-    this.refresh(refresh)
+    val response = esCrudBase.create(id, builder, refreshPolicy)
 
     IndexDocumentResult(response.getIndex, entityManager.extractId(response.getId),
       response.getVersion, response.status === RestStatus.CREATED)
   }
 
-  def bulkCreate[T](elems: List[(String, T)], entityManager: WriteEntityManager[T]): List[IndexDocumentResult] = {
+  def bulkCreate[T](elems: List[(String, T)], entityManager: WriteEntityManager[T],
+                    refreshPolicy: RefreshPolicy.Value): List[IndexDocumentResult] = {
     val builders = elems.map { case (_, elem) => entityManager.documentBuilder(elem, instance) }
 
     builders.foreach { case (_, builder) =>
       require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")
     }
-    esCrudBase.bulkCreate(builders)
+    esCrudBase.bulkCreate(elems = builders, refreshPolicy = refreshPolicy)
       .getItems
       .map { x =>
         IndexDocumentResult(x.getIndex, entityManager.extractId(x.getId),
@@ -104,7 +104,8 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       }.toList
   }
 
-  def update[T](document: T, upsert: Boolean = false, entityManager: WriteEntityManager[T], refresh: Int = 0): UpdateDocumentResult = {
+  def update[T](document: T, upsert: Boolean = false, entityManager: WriteEntityManager[T],
+                refreshPolicy: RefreshPolicy.Value): UpdateDocumentResult = {
     val (id, builder) = entityManager.documentBuilder(document, instance)
     require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")
 
@@ -117,9 +118,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       }
     }
 
-    val response = esCrudBase.update(id, builder, upsert)
-
-    this.refresh(refresh)
+    val response = esCrudBase.update(id = id, builder = builder, upsert = upsert, refreshPolicy = refreshPolicy)
 
     UpdateDocumentResult(response.getIndex,
       entityManager.extractId(response.getId),
@@ -128,7 +127,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
   }
 
   def bulkUpdate[T](elems: List[(String, T)], upsert: Boolean = false,
-                    entityManager: WriteEntityManager[T], refresh: Int = 0): List[UpdateDocumentResult] = {
+                    entityManager: WriteEntityManager[T], refreshPolicy: RefreshPolicy.Value): List[UpdateDocumentResult] = {
     val builders = elems.map { case (_, elem) => entityManager.documentBuilder(elem, instance) }
 
     builders.foreach { case (_, builder) =>
@@ -143,13 +142,12 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       .toSet
 
     if (otherInstancesIds.nonEmpty) {
-      log.error("Trying to update instance {} with id owned by another instance - id list: {}", instance, otherInstancesIds.mkString(";"))
+      log.error("Trying to update instance {} with id owned by another instance - id list: {}",
+        instance, otherInstancesIds.mkString(";"))
       throw new IllegalArgumentException(s"Trying to update instance: $instance with id previously created by another instance")
     }
 
-    val response = esCrudBase.bulkUpdate(builders, upsert)
-
-    this.refresh(refresh)
+    val response = esCrudBase.bulkUpdate(elems = builders, upsert = upsert, refreshPolicy = refreshPolicy)
 
     response.getItems.map(x => UpdateDocumentResult(x.getIndex,
       entityManager.extractId(x.getId),
@@ -158,19 +156,17 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       .toList
   }
 
-  def delete(queryBuilder: QueryBuilder): BulkByScrollResponse = {
+  def delete(queryBuilder: QueryBuilder, refreshPolicy: RefreshPolicy.Value): BulkByScrollResponse = {
     val finalQuery = QueryBuilders.boolQuery()
       .must(QueryBuilders.matchQuery(instanceFieldName, instance))
       .must(queryBuilder)
 
-    esCrudBase.delete(finalQuery)
+    esCrudBase.delete(finalQuery, refreshPolicy)
   }
 
-  def delete[T](ids: List[String], refresh: Int, entityManager: WriteEntityManager[T]): List[DeleteDocumentResult] = {
+  def delete[T](ids: List[String], refreshPolicy: RefreshPolicy.Value, entityManager: WriteEntityManager[T]): List[DeleteDocumentResult] = {
     val instanceIds = ids.map(entityManager.createId(instance, _))
-    val response = esCrudBase.delete(instanceIds)
-
-    this.refresh(refresh)
+    val response = esCrudBase.delete(instanceIds, refreshPolicy)
 
     response.getItems
       .map { x =>
@@ -180,17 +176,17 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
   }
 
   def updateByQuery(queryBuilder: QueryBuilder,
-                       script: Option[Script] = None,
-                       batchSize: Option[Int] = None,
-                       refresh: Int): UpdateByQueryResult = {
+                    script: Option[Script] = None,
+                    batchSize: Option[Int] = None,
+                    refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
     val finalQuery = QueryBuilders.boolQuery()
       .must(QueryBuilders.matchQuery(instanceFieldName, instance))
       .must(queryBuilder)
 
     val result = esCrudBase.updateByQuery(finalQuery,
       script,
-      batchSize)
-    this.refresh(refresh)
+      batchSize,
+      refreshPolicy)
 
     UpdateByQueryResult(
       timedOut = result.isTimedOut,
@@ -198,15 +194,6 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       updatedDocs = result.getUpdated,
       versionConflicts = result.getVersionConflicts
     )
-  }
-
-  def refresh(enable: Int): Unit = {
-    if (enable =/= 0) {
-      val refreshIndex = esCrudBase.refresh()
-      if (refreshIndex.failedShardsN > 0) {
-        throw DeleteDataServiceException(s"index refresh failed: ($index)")
-      }
-    }
   }
 
   private[this] def isInstanceEvaluated(builder: XContentBuilder, instance: String): Boolean = {

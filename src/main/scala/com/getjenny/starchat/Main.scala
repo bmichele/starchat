@@ -84,7 +84,7 @@ final class StarChatService(parameters: Option[Parameters] = None) extends RestI
   }
 
   /* activate cron job for initializing system indices */
-  if(systemIndexManagementService.elasticClient.autoInitializeSystemIndex)
+  if(clusterNodesServices.elasticClient.autoInitializeSystemIndex)
     cronInitializeSystemIndicesService.scheduleAction()
 
   /* activate cron jobs for data synchronization */
