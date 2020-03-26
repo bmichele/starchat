@@ -24,7 +24,7 @@ trait QuestionAnswerESScripts {
     "  ctx._source.starchatAnnotations.convIdxCounter = 0 ; " +
     "}" +
     s"if(ctx._source.index_in_conversation==1) {" +
-    s"  ctx._source.starchatAnnotations.convIdxCounter=$value} " +
+    s"  ctx._source.starchatAnnotations.convIdxCounter=$value ;" +
     s"}"
 
   def setIdxCounterScript(value: Int): Script = {
