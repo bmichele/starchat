@@ -37,7 +37,7 @@ class TimeBetweenAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           // Timezone is not used, but it's required
-          analyzer = """band(timeBetween("00:00", "23:59", "Europe/Helsinki", "08:44"))""",
+          analyzer = """band(timeBetween("8:00", "23:59", "Europe/Helsinki", "8:44"))""",
           data = Option {
             AnalyzersData()
           }

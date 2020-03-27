@@ -5,8 +5,11 @@
 package com.getjenny.starchat.analyzer.atoms
 
 import java.time._
+
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -27,23 +30,24 @@ class TimeBetweenAtomic(val arguments: List[String],
 
   val atomName: String = "timeBetween"
 
+  val rex: Regex = "([0-9]{1,2}):([0-9]{1,2})".r
+
   val parseArguments: () => Try[(LocalTime, LocalTime, LocalTime)] = {
     for {
-      openingTime <- arguments.headOption
-      closingTime <- arguments.lift(1)
+      rex(openingTimeH, openingTimeM) <- arguments.headOption
+      rex(closingTimeH, closingTimeM) <- arguments.lift(1)
       timeZone <- arguments.lift(2)
     }
       yield {
         () => Try {
-          val open = LocalTime.parse(openingTime)
-          val close = LocalTime.parse(closingTime)
+          val open = LocalTime.parse("%02d:%02d".format(openingTimeH.toInt, openingTimeM.toInt))
+          val close = LocalTime.parse("%02d:%02d".format(closingTimeH.toInt, closingTimeM.toInt))
           val zone = ZoneId.of(timeZone)
-          val compare = arguments.lift(4)
-            .flatMap(x => if (x.isEmpty) None else Some(x))
-            .map {
-              x => LocalTime.parse(x)
-            }.getOrElse(LocalTime.now(zone))
-
+          val compare = arguments.lift(4) match {
+            case rex(compareH, compareM) => LocalTime.parse("%02d:%02d".format(compareH.toInt, compareM.toInt))
+            case x if x.isEmpty => LocalTime.now(zone)
+            case _  => throw ExceptionAtomic(atomName + ": unparsable format (must be HH:MM) for date")
+          }
           (open, close, compare)
         }
       }

@@ -17,19 +17,19 @@ import spray.json._
   *
   */
 
-trait ParseNlpVariableManager extends GenericVariableManager {
+trait EntityExtractorVariableManager extends GenericVariableManager {
 
-  override def configurationPrefix: Option[String] = Some("http-atom.parsenlp")
+  override def configurationPrefix: Option[String] = Some("http-atom.entity-extractor")
 
   // override def createArgumentConfiguration(arguments: List[String]): Map[String, String] = Map.empty
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
-    ParseNlpOutput().successNel
+    EntityExtractorOutput().successNel
   }
 }
 
-case class ParseNlpOutput(
-                            override val score: String = "extracted_name.score",
+case class EntityExtractorOutput(
+                            override val score: String = "extracted_entities.score",
                             responseStatus: String = "extracted_name.status",
                             name: String = "extracted_name.name",
                           ) extends HttpAtomOutputConf {
