@@ -584,5 +584,39 @@ trait DecisionTableResource extends StarChatResource {
         }
       })
   }
+
+  def decisionTableRoutesBulkDeleteRoutes: Route = handleExceptions(routesExceptionHandler) {
+    pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "delete") { indexName =>
+      pathEnd {
+        post {
+          authenticateBasicAsync(realm = authRealm,
+            authenticator = authenticator.authenticator) { user =>
+            authorizeAsync(_ =>
+              authenticator.hasPermissions(user, indexName, Permissions.write)) {
+              extractRequest { request =>
+                entity(as[DocsIds]) { ids =>
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                  onCompleteWithBreakerFuture(breaker)(
+                    decisionTableService.delete(indexName,
+                      ids.ids, RefreshPolicy.`wait_for`)
+                  ) {
+                    case Success(t) =>
+                      completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
+                    case Failure(e) =>
+                      log.error(logTemplate(user.id,
+                        indexName, "decisionTableRoutesBulkDeleteRoutes", request.method, request.uri), e)
+                      completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          ReturnMessageData(code = 121, message = e.getMessage)
+                        })
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
