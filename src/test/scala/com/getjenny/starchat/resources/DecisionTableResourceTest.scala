@@ -648,11 +648,22 @@ class DecisionTableResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return an HTTP code 200 when bulk deleting documents" in {
+      val request = DocsIds(ids = List("hello2","hello3"))
+      Post("/index_getjenny_english_0/decisiontable/delete", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val response = responseAs[DeleteDocumentsResult]
+          response.data.size should be (2)
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 when deleting all documents" in {
       Delete("/index_getjenny_english_0/decisiontable/all") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsSummaryResult]
-        response.deleted should be (23)
+        response.deleted should be (21)
       }
     }
   }
