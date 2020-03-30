@@ -97,12 +97,12 @@ object Triggered extends Enumeration {
 }
 
 object Followup extends Enumeration {
+  /** follow up */
   val FOLLOWUP,
 
-  /** follow up */
+  /** follow up dependant on the time of the day */
   FOLLOWUP_BY_TIME,
 
-  /** follow up dependant on the time of the day */
   UNSPECIFIED = Followup.Value
 
   /** not applicable */
