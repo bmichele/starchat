@@ -10,7 +10,7 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.util.{RandomNumbers, Time}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
-import com.getjenny.starchat.entities.persistents.{QaDocumentEntityManager, TermCountEntityManager, _}
+import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.esclient.QuestionAnswerElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import org.apache.lucene.search.join._
@@ -980,15 +980,18 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     val response = indexLanguageCrud.create(newDoc, new QaDocumentEntityManager(indexName), refreshPolicy)
 
     if(document.indexInConversation =/= 1) {
-      /* increment conversation counter */
-      if (updateAnnotation && response.created) {
-        updateByQuery( //increment annotation
-          indexName = indexName,
-          searchReq =
-            QADocumentSearch(conversation = Some(List(newDoc.conversation)), indexInConversation = Some(1)),
-          script = Some(incrementConvIdxCounterScript),
-          refreshPolicy = refreshPolicy
-        )
+      val followup = document.annotations.getOrElse(QADocumentAnnotations()).followup.getOrElse(Followup.UNSPECIFIED)
+      if (followup == Followup.UNSPECIFIED) { // increment only if not FOLLOWUP
+        /* increment conversation counter */
+        if (updateAnnotation && response.created) {
+          updateByQuery( //increment annotation
+            indexName = indexName,
+            searchReq =
+              QADocumentSearch(conversation = Some(List(newDoc.conversation)), indexInConversation = Some(1)),
+            script = Some(incrementConvIdxCounterScript),
+            refreshPolicy = refreshPolicy
+          )
+        }
       }
     }
 
@@ -1041,7 +1044,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
   def updateConvAnnotations(indexName: String,
                             conversation: String, refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
     val documentSearch = QADocumentSearch(size = Some(10000),
-      conversation=Some(List(conversation)))
+      annotations = Some(QADocumentAnnotationsSearch(followup = Some(List(Followup.UNSPECIFIED)))),
+      conversation = Some(List(conversation)))
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, documentSearch)
     searchRes match {
       case Some(r) =>
