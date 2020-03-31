@@ -7,21 +7,21 @@ import scalaz.Scalaz._
 import spray.json._
 
 /**
-  * Connects to the service nameparser (https://github.com/GetJenny/nameparser).
+  * entityExtractor("language=it", "entity_type=LOC")
   *
-  * Query: "My name is titius or caius"
+  * Connects to the service entity-extractor (https://github.com/GetJenny/entity-extractor)
+  * and extract defined entity
   *
-  * Sets: %extracted_name.name% = Titius
+  * Query: "Milano e Roma non sono piccole"
   *
-  * TODO (not necessarily...) Extract more than one name and set variables name.0, name.1 etc
+  * %extracted_entities.LOC.0% = "Milano"
+  * %extracted_entities.LOC.1% = "Roma"
   *
   */
 
 trait EntityExtractorVariableManager extends GenericVariableManager {
 
   override def configurationPrefix: Option[String] = Some("http-atom.entity-extractor")
-
-  // override def createArgumentConfiguration(arguments: List[String]): Map[String, String] = Map.empty
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     EntityExtractorOutput().successNel
@@ -30,24 +30,22 @@ trait EntityExtractorVariableManager extends GenericVariableManager {
 
 case class EntityExtractorOutput(
                             override val score: String = "extracted_entities.score",
-                            responseStatus: String = "extracted_name.status",
-                            name: String = "extracted_name.name",
+                            responseStatus: String = "extracted_entities.status",
+                            location: String = "extracted_entities.LOC",
                           ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)){
       val json = body.parseJson.asJsObject
-      val nameList = json.fields.get("names").map {
-        case JsArray(names) => names.toArray.map(_.toString)
+      val locationList = json.fields.get("LOC").map {
+        case JsArray(locations) => locations.toArray.map(_.toString.stripPrefix("\"").stripSuffix("\""))
         case _ => Array.empty[String]
       }.getOrElse(Array.empty[String])
 
-      val s = if(nameList.isEmpty) "0" else "1"
+      val s = if(locationList.isEmpty) "0" else "1"
 
-      val extractedName = nameList.headOption.getOrElse("")
-
+      (locationList.indices.map(x => location + "." + x) zip locationList).toMap ++
       Map(
-        name -> extractedName.stripPrefix("\"").stripSuffix("\""),
         score -> s,
         responseStatus -> status.toString
       )
