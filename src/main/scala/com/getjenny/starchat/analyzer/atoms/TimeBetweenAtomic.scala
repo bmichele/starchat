@@ -42,13 +42,15 @@ class TimeBetweenAtomic(val arguments: List[String],
         () => Try {
           val open = LocalTime.parse("%02d:%02d".format(openingTimeH.toInt, openingTimeM.toInt))
           val close = LocalTime.parse("%02d:%02d".format(closingTimeH.toInt, closingTimeM.toInt))
-          val zone = ZoneId.of(timeZone)
+
           val compare = arguments.lift(3) match {
             case Some(currTimeArg) => currTimeArg match {
               case regex(compareH, compareM) => LocalTime.parse("%02d:%02d".format(compareH.toInt, compareM.toInt))
               case _ => throw ExceptionAtomic(atomName + ": unparsable format (must be HH:MM) for date")
             }
-            case _ => LocalTime.now(zone)
+            case _ =>
+              val zone = ZoneId.of(timeZone)
+              LocalTime.now(zone)
           }
           (open, close, compare)
         }
