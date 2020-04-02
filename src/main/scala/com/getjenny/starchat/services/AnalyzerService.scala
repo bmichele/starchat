@@ -61,7 +61,6 @@ case class ActiveAnalyzers(
 
 object AnalyzerService extends AbstractDataService {
   override val elasticClient: DecisionTableElasticClient.type = DecisionTableElasticClient
-
   var analyzersMap: concurrent.Map[String, ActiveAnalyzers] = new ConcurrentHashMap[String, ActiveAnalyzers]().asScala
   val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val termService: TermService.type = TermService
@@ -192,7 +191,7 @@ object AnalyzerService extends AbstractDataService {
 
     val nodeDtLoadingTimestamp = System.currentTimeMillis()
     if (propagate) {
-      Try(instanceRegistryService.updateTimestamp(indexName, nodeDtLoadingTimestamp, refresh = 1)) match {
+      Try(instanceRegistryService.updateTimestamp(indexName, nodeDtLoadingTimestamp)) match {
         case Success(dtReloadTimestamp) =>
           val ts = dtReloadTimestamp
             .getOrElse(DtReloadTimestamp(indexName, InstanceRegistryDocument.InstanceRegistryTimestampDefault))
@@ -208,7 +207,7 @@ object AnalyzerService extends AbstractDataService {
     nodeDtLoadingStatusService.update(dtNodeStatus =
       NodeDtLoadingStatus(index = indexName, timestamp = Some {
         nodeDtLoadingTimestamp
-      }))
+      }), refreshPolicy = RefreshPolicy.`wait_for`)
 
     dtAnalyzerLoad
   }

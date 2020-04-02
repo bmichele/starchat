@@ -4,9 +4,10 @@ package com.getjenny.starchat.analyzer.atoms
   * Created by Mario Alemi <mario@getjenny.com> on 29/01/2020
   */
 
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AtomsTest extends FlatSpec with Matchers {
+class AtomsTest extends AnyFlatSpec with Matchers {
 
   val restrictedArgs = Map.empty[String, String]
 

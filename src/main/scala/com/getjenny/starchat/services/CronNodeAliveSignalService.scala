@@ -18,7 +18,7 @@ object CronNodeAliveSignalService extends CronService {
     def receive: PartialFunction[Any, Unit] = {
       case `tickMessage` =>
         if(clusterNodesService.elasticClient.existsIndices(List(clusterNodesService.indexName))) {
-          clusterNodesService.alive()
+          clusterNodesService.alive
         } else log.debug("index does not exists: {}", clusterNodesService.indexName)
       case _ =>
         log.error("Unknown error communicating that node is alive")
@@ -30,7 +30,7 @@ object CronNodeAliveSignalService extends CronService {
       SCActorSystem.system.actorOf(Props(new NodeAliveSignalTickActor))
     SCActorSystem.system.scheduler.schedule(
       0 seconds,
-      systemIndexManagementService.elasticClient.clusterNodeAliveSignalInterval seconds,
+      clusterNodesService.elasticClient.clusterNodeAliveSignalInterval seconds,
       actorRef,
       tickMessage)
   }

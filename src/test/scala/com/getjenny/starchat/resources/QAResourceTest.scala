@@ -23,7 +23,7 @@ class QAResourceTest extends TestEnglishBase {
           conversation = "conv_id_2",
           indexInConversation = 1,
           annotations = Some(QADocumentAnnotations(
-            doctype = Some(Doctypes.DECISIONTABLE),
+            doctype = Some(Doctypes.NORMAL),
             agent = Some(Agent.HUMAN_REPLY)
           ))
         ),
@@ -32,7 +32,7 @@ class QAResourceTest extends TestEnglishBase {
           conversation = "conv_id_3",
           indexInConversation = 1,
           annotations = Some(QADocumentAnnotations(
-            doctype = Some(Doctypes.CANNED),
+            doctype = Some(Doctypes.NORMAL),
             agent = Some(Agent.HUMAN_REPLY)
           ))
         ),
@@ -41,7 +41,7 @@ class QAResourceTest extends TestEnglishBase {
           conversation = "conv_id_4",
           indexInConversation = 1,
           annotations = Some(QADocumentAnnotations(
-            doctype = Some(Doctypes.HIDDEN),
+            doctype = Some(Doctypes.NORMAL),
             agent = Some(Agent.HUMAN_REPLY)
           ))
         ),
@@ -50,7 +50,7 @@ class QAResourceTest extends TestEnglishBase {
           conversation = "conv_id_1",
           indexInConversation = 2,
           annotations = Some(QADocumentAnnotations(
-            doctype = Some(Doctypes.HIDDEN),
+            doctype = Some(Doctypes.NORMAL),
             agent = Some(Agent.HUMAN_REPLY)
           )),
           coreData = Some(QADocumentCore(
@@ -66,7 +66,7 @@ class QAResourceTest extends TestEnglishBase {
     "StarChat" should {
       s"return an HTTP code 201 when inserting a QA document to the $qaRoute" in {
         for(document <- documents) {
-          Post(s"/index_getjenny_english_0/$qaRoute?refresh=1", document) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+          Post(s"/index_getjenny_english_0/$qaRoute?refresh=`true`", document) ~> addCredentials(testUserCredentials) ~> routes ~> check {
             status shouldEqual StatusCodes.Created
             val response = responseAs[IndexDocumentResult]
             response.version should be (1)
@@ -94,10 +94,10 @@ class QAResourceTest extends TestEnglishBase {
             algorithmAnswerScore = Some(1.0)
           ))
         )
-        Put(s"/index_getjenny_english_0/$qaRoute?refresh=1", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        Put(s"/index_getjenny_english_0/$qaRoute?refresh=`wait_for`", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           val response = responseAs[IndexDocumentListResult]
-          response.data.map(_.version) should be (List(4,3,3,-1)) // the insert of items in conversation increment the counter on the first conv. item
+          response.data.map(_.version) should be (List(3,2,2,-1)) // the insert of items in conversation increment the counter on the first conv. item
           response.data.map(_.id) should be (List("id1","id2","id3","id123"))
           response.data.map(_.created) should contain only false
         }
@@ -110,20 +110,23 @@ class QAResourceTest extends TestEnglishBase {
       s"return an HTTP code 200 when searching documents from the $qaRoute" in {
         val request = QADocumentSearch(
           coreData = Some(QADocumentCore(question = Some("I forgot my password"))),
-          size = Some(2)
+          size = Some(3),
+          minScore = Some(0.0f)
         )
         val request2 = QADocumentSearch(
-          size = Some(0)
+          size = Some(0),
+          minScore = Some(0.0f)
         )
         val request3 = QADocumentSearch(
-          conversation = Some(List("conv_id_1", "conv_id_2", "conv_id_3", "conv_id_123"))
+          conversation = Some(List("conv_id_1", "conv_id_2", "conv_id_3", "conv_id_123")),
+          minScore = Some(0.0f)
         )
         Post(s"/index_getjenny_english_0/$qaRoute/search", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val response = responseAs[SearchQADocumentsResults]
           response.totalHits should be (3)
-          response.hitsCount should be (2)
-          response.hits.size should be (2)
+          response.hitsCount should be (3)
+          response.hits.size should be (3)
           response.hits.map(_.document
             .coreData.getOrElse(fail)
             .question.getOrElse(fail)) should contain only "I forgot my password"
@@ -286,7 +289,7 @@ class QAResourceTest extends TestEnglishBase {
           ))
         )
         val request = UpdateQAByQueryReq(search, update)
-        Put(s"/index_getjenny_english_0/$qaRoute/conversations?refresh=1", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        Put(s"/index_getjenny_english_0/$qaRoute/conversations?refresh=wait_for", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           responseAs[UpdateDocumentsResult]
         }
@@ -326,8 +329,8 @@ class QAResourceTest extends TestEnglishBase {
           response.countOverTimeHistograms should not be None
           response.scoreHistograms should not be None
           response.scoresOverTime should not be None
-          response.totalConversations should be (4)
-          response.totalDocuments should be (5)
+          response.totalConversations should be (1)
+          response.totalDocuments should be (2)
         }
       }
     }
@@ -337,7 +340,7 @@ class QAResourceTest extends TestEnglishBase {
     it should {
       s"return an HTTP code 200 when deleting documents in bulk from the $qaRoute" in {
         val request = DocsIds(ids = List("id1","id2"))
-        Delete(s"/index_getjenny_english_0/$qaRoute?refresh=1", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        Delete(s"/index_getjenny_english_0/$qaRoute?refresh=wait_for", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val response = responseAs[DeleteDocumentsResult]
           response.data.size should be (2)
@@ -392,7 +395,7 @@ class QAResourceTest extends TestEnglishBase {
     it should {
       s"return an HTTP code 200 when deleting all documents from the $qaRoute" in {
         val request = DocsIds(ids = Nil)
-        Delete(s"/index_getjenny_english_0/$qaRoute?refresh=1", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        Delete(s"/index_getjenny_english_0/$qaRoute?refresh=wait_for", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val response = responseAs[DeleteDocumentsSummaryResult]
           response.deleted should be (3)
@@ -429,7 +432,7 @@ class QAResourceTest extends TestEnglishBase {
     )
     it should {
       s"should not store empty strings in question or answer fields in the $qaRoute" in {
-        Post(s"/index_getjenny_english_0/$qaRoute?refresh=1", document) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        Post(s"/index_getjenny_english_0/$qaRoute?refresh=wait_for", document) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           val response = responseAs[IndexDocumentResult]
           response.id

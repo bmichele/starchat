@@ -44,6 +44,8 @@ object LangaugeIndexManagementService extends AbstractDataService {
       numberOfReplicas = 0
     )
 
+  //FIXME: refactor the following data structure ad done for the System indexes
+  //  JsonMappingAnalyzersIndexFiles should be deleted
   private[this] val schemaFiles: List[JsonMappingAnalyzersIndexFiles] = List[JsonMappingAnalyzersIndexFiles](
     JsonMappingAnalyzersIndexFiles(path = "/index_management/json_index_spec/general/state.json",
       updatePath = "/index_management/json_index_spec/general/update/state.json",

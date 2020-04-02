@@ -1166,6 +1166,7 @@ paths:
     delete:
       tags:
         - customer
+      deprecated: true
       summary: delete one or more entries from the DecisionTable
       operationId: delete_decisiontable_ids
       description: delete documents from the DecisionTable. The index must exists and the customer has write permissions on it.
@@ -1193,6 +1194,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteDocumentsResult'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
+  '/<index_name>/decisiontable/delete':
+    post:
+      tags:
+        - customer
+      operationId: post_decisiontable_bulk_delete
+      summary: delete one or more entries from the DecisionTable
+      description: delete documents from the DecisionTable. The index must exists and the customer has write permissions on it.
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocsIds'
+            example: {'ids': ['id1', 'id2']}
+        description: Documents to delete
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteDocumentsResult'
+              example: {
+                "data": [
+                {
+                  "index": "index_getjenny_english_usecase0",
+                  "id": "id1",
+                  "version": 1,
+                  "found": true
+                },
+                {
+                  "index": "index_getjenny_english_usecase0",
+                  "id": "id2",
+                  "version": 1,
+                  "found": true
+                }
+                ]
+              }
         '400':
           description: 'invalid input, object invalid, bad request'
         '401':
@@ -2102,13 +2151,13 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/conv/annotations/<qa_route>':
+  '/<index_name>/conv/annotations/<qa_route>/convIdxCounter':
     post:
       tags:
         - customer
-      operationId: post_conv_annotations_qa_route
-      summary: "update aggregated annotations"
-      description: "update aggregated annotation for a conversation"
+      operationId: post_conv_annotations_qa_route_convIdxCounter
+      summary: "update aggregated annotations: convIdxCounter"
+      description: "update aggregated annotation convIdxCounter for a conversation"
       parameters:
         - in: path
           name: index_name
@@ -4946,14 +4995,14 @@ components:
           description: the conversation has marked as done, this field is expected to set for each item of the conversation
           example: true
           default: false
-    AggAnnnotations:
+    AggAnnotations:
       type: object
       properties:
         convIdxCounter:
           type: number
           format: long
           description: the number of items in the conversation
-    AggAnnnotationsSearch:
+    AggAnnotationsSearch:
       type: object
       properties:
         convIdxCounterGte:
@@ -5228,7 +5277,7 @@ components:
           $ref: '#/components/schemas/QADocumentCore'
         aggAnnotations:
           type: object
-          $ref: '#/components/schemas/AggAnnnotations'
+          $ref: '#/components/schemas/AggAnnotations'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotations'
@@ -5471,9 +5520,9 @@ components:
         coreData:
           type: object
           $ref: '#/components/schemas/QADocumentCoreSearch'
-        aggAnnnotations:
+        aggnotations:
           type: object
-          $ref: '#/components/schemas/AggAnnnotationsSearch'
+          $ref: '#/components/schemas/AggAnnotationsSearch'
         annotations:
           type: object
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'

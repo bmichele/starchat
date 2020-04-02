@@ -40,7 +40,7 @@ case class QADocumentAnnotationsSearch(
                                         start: Option[Boolean] = None /* event determined when a start state is loaded */
                                       )
 
-case class AggAnnnotationsSearch(
+case class AggAnnotationsSearch(
                                   convIdxCounterGte: Option[Long] = None,
                                   convIdxCounterLte: Option[Long] = None
                                 )
@@ -55,7 +55,7 @@ case class QADocumentSearch(
                              conversation: Option[List[String]] = None, /* IDs of the conversations (or query) */
                              indexInConversation: Option[Int] = None, /* the index of the document in the conversation flow */
                              coreData: Option[QADocumentCore] = None, /* core question answer fields */
-                             aggAnnotations: Option[AggAnnnotationsSearch] = None, /* aggregated annotations */
+                             aggAnnotations: Option[AggAnnotationsSearch] = None, /* aggregated annotations */
                              annotations: Option[QADocumentAnnotationsSearch] = None, /* qa and conversation annotations */
                              status: Option[Int] = None, /* tell whether the document is locked for editing or not, useful for
                                               a GUI to avoid concurrent modifications, 0 means no operations pending */

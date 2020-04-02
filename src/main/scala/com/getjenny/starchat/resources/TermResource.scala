@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker
 import akka.stream.scaladsl.Source
-import com.getjenny.starchat.entities.io.{DocsIds, IndexManagementResponse, Permissions, ReturnMessageData}
+import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents.{SearchTerm, Term, Terms}
 import com.getjenny.starchat.routing._
 import com.getjenny.starchat.services.TermService
@@ -54,10 +54,11 @@ trait TermResource extends StarChatResource {
                 authorizeAsync(_ =>
                   authenticator.hasPermissions(user, indexName, Permissions.write)) {
                   extractRequest { request =>
-                    parameters("refresh".as[Int] ? 0) { refresh =>
+                    parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { refreshPolicy =>
                       entity(as[Terms]) { request_data =>
                         val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                        onCompleteWithBreakerFuture(breaker)(termService.indexTerm(indexName, request_data, refresh)) {
+                        onCompleteWithBreakerFuture(breaker)(
+                          termService.indexTerm(indexName, request_data, refreshPolicy)) {
                           case Success(t) =>
                             completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                           case Failure(e) =>
@@ -103,12 +104,12 @@ trait TermResource extends StarChatResource {
                   authorizeAsync(_ =>
                     authenticator.hasPermissions(user, indexName, Permissions.write)) {
                     extractRequest { request =>
-                      parameters("refresh".as[Int] ? 0) { refresh =>
+                      parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { refreshPolicy =>
                         val breaker: CircuitBreaker =
                           StarChatCircuitBreaker.getCircuitBreaker(maxFailure = 5, callTimeout = 120.seconds,
                             resetTimeout = 120.seconds)
                         onCompleteWithBreakerFuture(breaker)(
-                          termService.indexDefaultSynonyms(indexName = indexName, refresh = refresh)) {
+                          termService.indexDefaultSynonyms(indexName = indexName, refreshPolicy = refreshPolicy)) {
                           case Success(t) =>
                             completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                           case Failure(e) =>
@@ -135,7 +136,9 @@ trait TermResource extends StarChatResource {
                           val breaker: CircuitBreaker =
                             StarChatCircuitBreaker.getCircuitBreaker(maxFailure = 5,
                               callTimeout = 120.seconds, resetTimeout = 120.seconds)
-                          onCompleteWithBreakerFuture(breaker)(termService.indexSynonymsFromCsvFile(indexName, file)) {
+                          onCompleteWithBreakerFuture(breaker)(
+                            termService.indexSynonymsFromCsvFile(
+                              indexName = indexName, file = file, refreshPolicy = RefreshPolicy.`false`)) {
                             case Success(t) =>
                               file.delete()
                               completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
@@ -188,11 +191,11 @@ trait TermResource extends StarChatResource {
                 authorizeAsync(_ =>
                   authenticator.hasPermissions(user, indexName, Permissions.write)) {
                   extractRequest { request =>
-                    parameters("refresh".as[Int] ? 0) { refresh =>
+                    parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { refreshPolicy =>
                       entity(as[DocsIds]) { requestData =>
                         if (requestData.ids.nonEmpty) {
                           val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                          onCompleteWithBreakerFuture(breaker)(termService.delete(indexName, requestData.ids, refresh)) {
+                          onCompleteWithBreakerFuture(breaker)(termService.delete(indexName, requestData.ids, refreshPolicy)) {
                             case Success(t) =>
                               completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                             case Failure(e) =>
@@ -204,7 +207,7 @@ trait TermResource extends StarChatResource {
                           }
                         } else {
                           val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                          onCompleteWithBreakerFuture(breaker)(termService.deleteAll(indexName)) {
+                          onCompleteWithBreakerFuture(breaker)(termService.deleteAll(indexName, RefreshPolicy.`false`)) {
                             case Success(t) =>
                               completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                             case Failure(e) =>
@@ -287,7 +290,7 @@ trait TermResource extends StarChatResource {
               authorizeAsync(_ =>
                 authenticator.hasPermissions(user, indexName, Permissions.write)) {
                 extractRequest { request =>
-                  parameters("refresh".as[Int] ? 0) { refresh =>
+                  parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { refresh =>
                     entity(as[Terms]) { request_data =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                       onCompleteWithBreakerFuture(breaker)(termService.updateTerm(indexName, request_data, refresh)) {

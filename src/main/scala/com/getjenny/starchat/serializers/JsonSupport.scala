@@ -212,8 +212,8 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val responseRequestOutputFormat = jsonFormat14(ResponseRequestOut)
   implicit val dtDocumentFormat = jsonFormat13(DTDocument)
   implicit val dtDocumentUpdateFormat = jsonFormat12(DTDocumentUpdate)
-  implicit val qaAggAnnnotationsFormat = jsonFormat1(AggAnnnotations)
-  implicit val qaAggAnnnotationsSearchFormat = jsonFormat2(AggAnnnotationsSearch)
+  implicit val qaAggAnnotationsFormat = jsonFormat1(AggAnnotations)
+  implicit val qaAggAnnotationsSearchFormat = jsonFormat2(AggAnnotationsSearch)
   implicit val qaDocumentAnnotationsSearchFormat = jsonFormat20(QADocumentAnnotationsSearch)
   implicit val qaDocumentCoreFormat = jsonFormat8(QADocumentCore)
   implicit val qaDocumentAnnotationsFormat = jsonFormat15(QADocumentAnnotations)
@@ -305,12 +305,11 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
-
-
   implicit val observedDataSourcesUnmarshalling:
-    Unmarshaller[String, ObservedDataSources.Value] = Unmarshaller.strict[String, ObservedDataSources.Value] { enumValue =>
-    ObservedDataSources.value(enumValue)
-  }
+    Unmarshaller[String, ObservedDataSources.Value] =
+    Unmarshaller.strict[String, ObservedDataSources.Value] {
+      enumValue => ObservedDataSources.value(enumValue)
+    }
 
   implicit object ObservedSearchDestFormat extends JsonFormat[ObservedDataSources.Value] {
     def write(obj: ObservedDataSources.Value): JsValue = JsString(obj.toString)
@@ -404,5 +403,24 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   }
 
   implicit val dtHistoryItemFormat = jsonFormat2(DtHistoryItem)
+
+  implicit val refreshPolicyUnmarshalling:
+    Unmarshaller[String, RefreshPolicy.Value] =
+    Unmarshaller.strict[String, RefreshPolicy.Value] { enumValue =>
+      RefreshPolicy.value(enumValue)
+    }
+
+  implicit object RefreshPolicyFormat extends JsonFormat[RefreshPolicy.Value] {
+    def write(obj: RefreshPolicy.Value): JsValue = JsString(obj.toString)
+
+    def read(json: JsValue): RefreshPolicy.Value = json match {
+      case JsString(str) =>
+        RefreshPolicy.values.find(_.toString === str) match {
+          case Some(t) => t
+          case _ => throw DeserializationException("RefreshPolicy string is invalid")
+        }
+      case _ => throw DeserializationException("RefreshPolicy string expected")
+    }
+  }
 
 }

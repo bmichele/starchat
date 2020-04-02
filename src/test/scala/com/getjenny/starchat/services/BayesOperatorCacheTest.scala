@@ -1,6 +1,7 @@
 package com.getjenny.starchat.services
 
 import com.getjenny.starchat.TestBase
+import com.getjenny.starchat.entities.io.RefreshPolicy
 
 class BayesOperatorCacheTest extends TestBase {
 
@@ -11,7 +12,7 @@ class BayesOperatorCacheTest extends TestBase {
   "StarChat" should {
 
     "insert value in cache" in {
-      bayesOperatorCache.put(indexName, "test", 5d)
+      bayesOperatorCache.put(indexName, "test", 5d, RefreshPolicy.`wait_for`)
 
       val value = bayesOperatorCache.get(indexName, "test")
 
@@ -19,7 +20,7 @@ class BayesOperatorCacheTest extends TestBase {
     }
 
     "update value in cache" in {
-      bayesOperatorCache.put(indexName, "test", 8d)
+      bayesOperatorCache.put(indexName, "test", 8d, RefreshPolicy.`wait_for`)
 
       val value = bayesOperatorCache.get(indexName, "test")
 
@@ -27,7 +28,7 @@ class BayesOperatorCacheTest extends TestBase {
     }
 
     "get value, calculate and put it if not exists" in {
-      val value = bayesOperatorCache.getOrElseUpdate(indexName,"test2"){
+      val value = bayesOperatorCache.getOrElseUpdate(indexName,"test2", RefreshPolicy.`wait_for`){
         () => 55d
       }
 
@@ -40,7 +41,7 @@ class BayesOperatorCacheTest extends TestBase {
 
     "bulk put values in cache" in {
       val values = List((indexName,"a", 1d), (indexName, "b", 2d))
-      bayesOperatorCache.bulkPut(values)
+      bayesOperatorCache.bulkPut(values, RefreshPolicy.`wait_for`)
 
       val res = bayesOperatorCache.get(indexName,"a")
       val res2 = bayesOperatorCache.get(indexName,"b")
@@ -52,10 +53,9 @@ class BayesOperatorCacheTest extends TestBase {
     }
 
     "remove from cache" in {
-      bayesOperatorCache.put(indexName,"test2", 5d)
-      bayesOperatorCache.put(indexName,"test3", 5d)
-      bayesOperatorCache.refresh()
-      bayesOperatorCache.clear()
+      bayesOperatorCache.put(indexName,"test2", 5d, RefreshPolicy.`wait_for`)
+      bayesOperatorCache.put(indexName,"test3", 5d, RefreshPolicy.`wait_for`)
+      bayesOperatorCache.clear
 
       val value = bayesOperatorCache.get(indexName,"test")
       val value2 = bayesOperatorCache.get(indexName,"test2")

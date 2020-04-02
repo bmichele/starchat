@@ -12,7 +12,8 @@ curl -v -H "Authorization: Basic $(echo -n 'test_user:p4ssw0rd' | base64)" \
     "id": [],
     "coreData": {
       "verified": true,
-      "done": true
+      "done": true,
+      "question": "blabla"
     },
     "annotations": {
       "doctype": "CANNED"
@@ -22,4 +23,5 @@ curl -v -H "Authorization: Basic $(echo -n 'test_user:p4ssw0rd' | base64)" \
     "conversation": ["conv:1000"]
   }
 }'
+
 

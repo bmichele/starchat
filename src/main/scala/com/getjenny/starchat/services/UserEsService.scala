@@ -5,10 +5,11 @@ package com.getjenny.starchat.services
  */
 
 import com.getjenny.starchat.entities.io.Permissions.Permission
-import com.getjenny.starchat.entities.io._
+import com.getjenny.starchat.entities.io.{RefreshPolicy, _}
 import com.getjenny.starchat.services.auth.AbstractStarChatAuthenticator
-import com.getjenny.starchat.services.esclient.SystemIndexManagementElasticClient
+import com.getjenny.starchat.services.esclient.UserElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
+import com.getjenny.starchat.utils.Index
 import com.typesafe.config.{Config, ConfigFactory}
 import javax.naming.AuthenticationException
 import org.elasticsearch.action.delete.DeleteResponse
@@ -33,8 +34,8 @@ case class UserEsServiceException(message: String = "", cause: Throwable = None.
  */
 class UserEsService extends AbstractUserService {
   private[this] val config: Config = ConfigFactory.load()
-  private[this] val elasticClient: SystemIndexManagementElasticClient.type = SystemIndexManagementElasticClient
-  private[this] val indexName: String = elasticClient.indexName + "." + elasticClient.userIndexSuffix
+  private[this] val elasticClient: UserElasticClient.type = UserElasticClient
+  private[this] val indexName: String = Index.indexName(elasticClient.indexName, elasticClient.indexSuffix)
   private[this] val random: Random.type = scala.util.Random
 
   private[this] val admin: String = config.getString("starchat.basic_http_es.admin")
@@ -54,11 +55,8 @@ class UserEsService extends AbstractUserService {
     }
 
     val builder = createXContentBuilder(user.id, user.password.some, user.salt.some, user.permissions.some)
-    val response: IndexResponse = esCrudBase.create(user.id, builder)
-
-    if (esCrudBase.refresh().failedShardsN > 0) {
-      throw UserEsServiceException("User : index refresh failed: (" + indexName + ")")
-    }
+    val response: IndexResponse = esCrudBase.create(id = user.id, builder = builder,
+      refreshPolicy = RefreshPolicy.`false`)
 
     val docResult: IndexDocumentResult = IndexDocumentResult(index = response.getIndex,
       id = response.getId,
@@ -72,10 +70,8 @@ class UserEsService extends AbstractUserService {
   def update(user: UserUpdate): UpdateDocumentResult = {
     val builder = createXContentBuilder(user.id, user.password, user.salt, user.permissions)
 
-    val response: UpdateResponse = esCrudBase.update(user.id, builder)
-    if (esCrudBase.refresh().failedShardsN > 0) {
-      throw UserEsServiceException("User : index refresh failed: (" + indexName + ")")
-    }
+    val response: UpdateResponse = esCrudBase.update(id = user.id, builder = builder,
+      refreshPolicy = RefreshPolicy.`false`)
 
     UpdateDocumentResult(index = response.getIndex,
       id = response.getId,
@@ -126,10 +122,7 @@ class UserEsService extends AbstractUserService {
       throw new AuthenticationException("admin user cannot be changed")
     }
 
-    val response: DeleteResponse = esCrudBase.delete(user.id)
-    if (esCrudBase.refresh().failedShardsN > 0) {
-      throw new Exception("User: index refresh failed: (" + indexName + ")")
-    }
+    val response: DeleteResponse = esCrudBase.delete(user.id, RefreshPolicy.`true`)
 
     DeleteDocumentResult(index = response.getIndex,
       id = response.getId,
@@ -231,10 +224,10 @@ class UserEsService extends AbstractUserService {
     val allUsers = readAll()
     val updatedUsers = updateUserList(allUsers, index)(f)
     if(updatedUsers.nonEmpty){
-      esCrudBase.bulkUpdate(updatedUsers.map(u => (u.id -> createXContentBuilder(u.id, None, None, u.permissions.some))))
-      if (esCrudBase.refresh().failedShardsN > 0) {
-        throw UserEsServiceException("User : index refresh failed: (" + indexName + ")")
-      }
+      esCrudBase.bulkUpdate(
+        elems = updatedUsers.map(u => u.id -> createXContentBuilder(u.id, None, None, u.permissions.some)),
+        refreshPolicy = RefreshPolicy.`false`
+      )
     }
     updatedUsers
   }
@@ -247,7 +240,7 @@ class UserEsService extends AbstractUserService {
   private[this] def randomStrGenerator: Stream[Char] = {
     val chars: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789;:'`~-+_=[]{}\\|<,.>!@#$%^&*()"
     def nextAlphaNum: Char = {
-      chars charAt (random.nextInt(chars.length))
+      chars charAt random.nextInt(chars.length)
     }
     Stream continually nextAlphaNum
   }

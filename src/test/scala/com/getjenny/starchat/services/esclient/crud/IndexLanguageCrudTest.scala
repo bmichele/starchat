@@ -1,6 +1,7 @@
 package com.getjenny.starchat.services.esclient.crud
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.getjenny.starchat.entities.io.RefreshPolicy
 import com.getjenny.starchat.entities.persistents.EsEntityManager
 import com.getjenny.starchat.serializers.JsonSupport
 import com.getjenny.starchat.services.esclient.IndexManagementElasticClient
@@ -14,13 +15,15 @@ import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentType}
 import org.elasticsearch.index.query.QueryBuilders
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.JavaConverters._
 
 case class TestDocument(id: String, message: String)
 
-class IndexLanguageCrudTest extends FunSuite with Matchers with ScalatestRouteTest with JsonSupport with BeforeAndAfterAll {
+class IndexLanguageCrudTest extends AnyFunSuite with Matchers with ScalatestRouteTest with JsonSupport with BeforeAndAfterAll {
 
   val client: IndexManagementElasticClient.type = IndexManagementElasticClient
 
@@ -74,11 +77,9 @@ class IndexLanguageCrudTest extends FunSuite with Matchers with ScalatestRouteTe
   }
 
   test("insert test") {
-    val res = indexLanguageCrud.create(TestDocument("1", "ciao"), TestEntityManager)
-    val res2 = indexLanguageCrud.create(TestDocument("2", "aaaa"), TestEntityManager)
-    val res3 = indexLanguageCrud2.create(TestDocument("3", "bbbb"), TestEntityManager)
-
-    indexLanguageCrud.refresh(1)
+    val res = indexLanguageCrud.create(TestDocument("1", "ciao"), TestEntityManager, RefreshPolicy.`wait_for`)
+    val res2 = indexLanguageCrud.create(TestDocument("2", "aaaa"), TestEntityManager, RefreshPolicy.`wait_for`)
+    val res3 = indexLanguageCrud2.create(TestDocument("3", "bbbb"), TestEntityManager, RefreshPolicy.`wait_for`)
 
     assert(res.created === true)
     assert(res2.created === true)
@@ -88,14 +89,15 @@ class IndexLanguageCrudTest extends FunSuite with Matchers with ScalatestRouteTe
 
   test("insert with same id should fail test") {
     val caught = intercept[Exception] {
-      indexLanguageCrud.create(TestDocument("1", "ciao"), TestEntityManager)
+      indexLanguageCrud.create(TestDocument("1", "ciao"), TestEntityManager, RefreshPolicy.`wait_for`)
     }
     caught.printStackTrace()
   }
 
   test("Update document with same id and different instance test") {
     val caught = intercept[Exception] {
-      indexLanguageCrud2.update(TestDocument("1", "ciao2"), entityManager = TestEntityManager)
+      indexLanguageCrud2.update(TestDocument("1", "ciao2"), entityManager = TestEntityManager,
+        refreshPolicy = RefreshPolicy.`wait_for`)
     }
     caught.printStackTrace()
   }
@@ -105,7 +107,8 @@ class IndexLanguageCrudTest extends FunSuite with Matchers with ScalatestRouteTe
       TestDocument("1", "aaa"),
       TestDocument("2", "bbbb")
     )
-    indexLanguageCrud2.bulkUpdate(documents.map(x => x.id -> x), entityManager = TestEntityManager)
+    indexLanguageCrud2.bulkUpdate(documents.map(x => x.id -> x), entityManager = TestEntityManager,
+      refreshPolicy = RefreshPolicy.`wait_for`)
     val res = indexLanguageCrud.readAll(List("1", "2"), TestEntityManager)
 
     assert(!res.exists(_.message === "aaa"))
@@ -148,8 +151,7 @@ class IndexLanguageCrudTest extends FunSuite with Matchers with ScalatestRouteTe
   test("delete test") {
     val boolQueryBuilder = QueryBuilders.matchAllQuery()
 
-    val delete = indexLanguageCrud.delete(boolQueryBuilder)
-    indexLanguageCrud.refresh(1)
+    val delete = indexLanguageCrud.delete(boolQueryBuilder, RefreshPolicy.`wait_for`)
 
     assert(delete.getDeleted === 2L)
   }

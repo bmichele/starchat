@@ -45,15 +45,15 @@ object TermService extends AbstractDataService {
   /** Populate synonyms from resource file (a default synonyms list)
    *
    * @param indexName name of the index
-   * @param refresh whether to call an index update on ElasticSearch or not
+   * @param refreshPolicy whether to call an index update on ElasticSearch or not
    * @return a return message with the number of successfully and failed indexing operations
    */
-  def indexDefaultSynonyms(indexName: String, refresh: Int = 0): UpdateDocumentsResult = {
+  def indexDefaultSynonyms(indexName: String, refreshPolicy: RefreshPolicy.Value): UpdateDocumentsResult = {
     val (_, language, _) = Index.patternsFromIndexName(indexName)
     val synonymsPath: String = "/index_management/json_index_spec/" + language + "/synonyms.csv"
     val synonymsResource: URL = getClass.getResource(synonymsPath)
     val synFile = new File(synonymsResource.toString.replaceFirst("file:", ""))
-    this.indexSynonymsFromCsvFile(indexName = indexName, file = synFile)
+    this.indexSynonymsFromCsvFile(indexName = indexName, file = synFile, refreshPolicy = refreshPolicy)
   }
 
   /** upload a file with Synonyms, it replace existing terms but does not remove synonyms for terms not in file.
@@ -62,27 +62,29 @@ object TermService extends AbstractDataService {
    * @param file a File object with the synonyms
    * @param skipLines how many lines to skip
    * @param separator a separator, usually the comma character
+   * @param refreshPolicy the refresh policy to use after the side effect operation
    * @return the IndexDocumentListResult with the indexing result
    */
-  def indexSynonymsFromCsvFile(indexName: String, file: File, skipLines: Int = 0, separator: Char = ','): UpdateDocumentsResult = {
+  def indexSynonymsFromCsvFile(indexName: String, file: File, skipLines: Int = 0,
+                               separator: Char = ',', refreshPolicy: RefreshPolicy.Value): UpdateDocumentsResult = {
     val documents = FileToDocuments.getTermsDocumentsFromCSV(log = log,
       file = file, skipLines = skipLines, separator = separator).toList
-    updateTerm(indexName, Terms(terms = documents), 0)
+    updateTerm(indexName, Terms(terms = documents), refreshPolicy = refreshPolicy)
   }
 
   /** index terms on Elasticsearch
    *
    * @param indexName the index name
    * @param terms the terms
-   * @param refresh whether to call an index update on ElasticSearch or not
+   * @param refreshPolicy whether to call an index update on ElasticSearch or not
    * @return list of indexing responses
    */
-  def indexTerm(indexName: String, terms: Terms, refresh: Int): IndexDocumentListResult = {
+  def indexTerm(indexName: String, terms: Terms, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     val inputTerms = terms.terms.map(x => x.term -> x)
 
-    val listOfDocRes = indexLanguageCrud.bulkCreate(inputTerms, new TermEntityManager)
+    val listOfDocRes = indexLanguageCrud.bulkCreate(inputTerms, new TermEntityManager, refreshPolicy)
     IndexDocumentListResult(listOfDocRes)
   }
 
@@ -108,15 +110,16 @@ object TermService extends AbstractDataService {
    *
    * @param indexName index name
    * @param terms terms to update
-   * @param refresh whether to call an index update on ElasticSearch or not
+   * @param refreshPolicy whether to call an index update on ElasticSearch or not
    * @return result of the update operations
    */
-  def updateTerm(indexName: String, terms: Terms, refresh: Int): UpdateDocumentsResult = {
+  def updateTerm(indexName: String, terms: Terms, refreshPolicy: RefreshPolicy.Value): UpdateDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     val inputTerms = terms.terms.map(x => x.term -> x)
 
-    val listOfDocRes = indexLanguageCrud.bulkUpdate(inputTerms, upsert = true, new TermEntityManager, refresh)
+    val listOfDocRes = indexLanguageCrud.bulkUpdate(inputTerms, upsert = true,
+      new TermEntityManager, refreshPolicy)
 
 
     UpdateDocumentsResult(listOfDocRes)
@@ -287,17 +290,17 @@ object TermService extends AbstractDataService {
       .flatMap(_.terms)
   }
 
-  override def delete(indexName: String, ids: List[String], refresh: Int): DeleteDocumentsResult = {
+  override def delete(indexName: String, ids: List[String], refreshPolicy: RefreshPolicy.Value): DeleteDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
-    val response = indexLanguageCrud.delete(ids, refresh, new TermEntityManager)
+    val response = indexLanguageCrud.delete(ids, refreshPolicy, new TermEntityManager)
 
     DeleteDocumentsResult(data = response)
   }
 
-  override def deleteAll(indexName: String): DeleteDocumentsSummaryResult = {
+  override def deleteAll(indexName: String, refreshPolicy: RefreshPolicy.Value): DeleteDocumentsSummaryResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val response = indexLanguageCrud.delete(QueryBuilders.matchAllQuery)
+    val response = indexLanguageCrud.delete(QueryBuilders.matchAllQuery, refreshPolicy)
 
     DeleteDocumentsSummaryResult(message = "delete", deleted = response.getTotal)
   }

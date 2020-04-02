@@ -10,11 +10,13 @@ import com.getjenny.starchat.TestFixtures
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.serializers.JsonSupport
 import com.getjenny.starchat.utils.Index
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.duration._
 
-class SystemIndexManagementResourceTest extends WordSpec with Matchers with ScalatestRouteTest with JsonSupport with BeforeAndAfterAll{
+class SystemIndexManagementResourceTest extends AnyWordSpec with Matchers with ScalatestRouteTest with JsonSupport with BeforeAndAfterAll{
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(10.seconds.dilated(system))
 
   val service = TestFixtures.service

@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object CronCleanDeadNodesService extends CronService {
-
   class CleanDeadNodesTickActor extends Actor {
     def receive: PartialFunction[Any, Unit] = {
       case `tickMessage` =>
@@ -31,7 +30,7 @@ object CronCleanDeadNodesService extends CronService {
       SCActorSystem.system.actorOf(Props(new CleanDeadNodesTickActor))
     SCActorSystem.system.scheduler.schedule(
       0 seconds,
-      systemIndexManagementService.elasticClient.clusterNodeCleanDeadInterval seconds,
+      clusterNodesService.elasticClient.clusterNodeCleanDeadInterval seconds,
       actorRef,
       tickMessage)
   }

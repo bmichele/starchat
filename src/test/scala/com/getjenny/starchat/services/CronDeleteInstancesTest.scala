@@ -42,7 +42,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
 
     "delete instance when cron job is triggered" in {
       val crud = new EsCrudBase(client, "index_english.term")
-      crud.refresh()
+      crud.refresh
 
       instanceRegistryService.markDeleteInstance(indexName)
 
@@ -58,7 +58,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
         .filter(_.startsWith(esLanguageSpecificIndexName))
         .foreach(fullIndexName => {
           val indexLanguageCrud = new EsCrudBase(client, fullIndexName)
-          indexLanguageCrud.refresh()
+          indexLanguageCrud.refresh
           val read = indexLanguageCrud.read(QueryBuilders.matchQuery("instance", instance))
           assert(read.getHits.getHits.flatMap(_.getSourceAsMap.asScala).isEmpty)
         })

@@ -10,7 +10,7 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.util.{RandomNumbers, Time}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
-import com.getjenny.starchat.entities.persistents.{QaDocumentEntityManager, TermCountEntityManager, _}
+import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.esclient.QuestionAnswerElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import org.apache.lucene.search.join._
@@ -30,7 +30,6 @@ case class QuestionAnswerServiceException(message: String = "", cause: Throwable
   extends Exception(message, cause)
 
 trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScripts {
-
   val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
 
   override val elasticClient: QuestionAnswerElasticClient
@@ -291,15 +290,15 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
 
     documentSearch.conversation match {
       case Some(convIds) =>
-        val convIdBoolQ = QueryBuilders.boolQuery()
-        convIds.foreach { cId => convIdBoolQ.should(QueryBuilders.termQuery("conversation", cId)) }
-        boolQueryBuilder.must(convIdBoolQ)
+        val orQuery = QueryBuilders.boolQuery()
+        convIds.foreach { cId => orQuery.should(QueryBuilders.termQuery("conversation", cId)) }
+        boolQueryBuilder.must(orQuery)
       case _ =>
     }
 
     documentSearch.indexInConversation match {
       case Some(value) =>
-        boolQueryBuilder.must(QueryBuilders.matchQuery("index_in_conversation", value))
+        boolQueryBuilder.filter(QueryBuilders.matchQuery("index_in_conversation", value))
       case _ =>
     }
 
@@ -328,13 +327,13 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       case Some(true) =>
         val randomBuilder = new RandomScoreFunctionBuilder().seed(RandomNumbers.integer)
         val functionScoreQuery: QueryBuilder = QueryBuilders.functionScoreQuery(randomBuilder)
-        boolQueryBuilder.must(functionScoreQuery)
+        boolQueryBuilder.filter(functionScoreQuery)
       case _ =>
     }
 
     val coreDataIn = documentSearch.coreData.getOrElse(QADocumentCore())
     val annotationsIn = documentSearch.annotations.getOrElse(QADocumentAnnotationsSearch())
-    val aggsAnnotationsIn = documentSearch.aggAnnotations.getOrElse(AggAnnnotationsSearch())
+    val aggsAnnotationsIn = documentSearch.aggAnnotations.getOrElse(AggAnnotationsSearch())
 
     // begin core data
     coreDataIn.question match {
@@ -402,7 +401,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     }
 
     coreDataIn.topics match {
-      case Some(topics) => boolQueryBuilder.filter(QueryBuilders.termQuery("topics.base", topics))
+      case Some(topics) => boolQueryBuilder.must(QueryBuilders.termQuery("topics.base", topics))
       case _ =>
     }
 
@@ -419,11 +418,13 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
 
     // begin aggs annotations
     aggsAnnotationsIn.convIdxCounterGte match {
-      case Some(t) => boolQueryBuilder.filter(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gte(t))
+      case Some(t) => boolQueryBuilder.filter(
+        QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gte(t))
       case _ =>
     }
     aggsAnnotationsIn.convIdxCounterLte match {
-      case Some(t) => boolQueryBuilder.filter(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(t))
+      case Some(t) => boolQueryBuilder.filter(
+        QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(t))
       case _ =>
     }
     // end aggs annotations
@@ -488,7 +489,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     }
 
     annotationsIn.feedbackConv match {
-      case Some(feedbackConv) => boolQueryBuilder.filter(QueryBuilders.termQuery("feedbackConv", feedbackConv))
+      case Some(feedbackConv) =>
+        boolQueryBuilder.filter(QueryBuilders.termQuery("feedbackConv", feedbackConv))
       case _ =>
     }
 
@@ -966,25 +968,31 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
   }
 
   def create(indexName: String, document: QADocument,
-             updateAnnotation: Boolean = true, refresh: Int): Option[IndexDocumentResult] = {
+             updateAnnotation: Boolean = true,
+             refreshPolicy: RefreshPolicy.Value): Option[IndexDocumentResult] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     val newDoc = if(document.indexInConversation === 1) {
-      document.copy(aggAnnotations = Some(AggAnnnotations(convIdxCounter = Some(1))))
+      document.copy(aggAnnotations = Some(AggAnnotations(convIdxCounter = Some(1))))
     } else {
-      document.copy(aggAnnotations = Some(AggAnnnotations(convIdxCounter = Some(0))))
+      document.copy(aggAnnotations = Some(AggAnnotations(convIdxCounter = Some(0))))
     }
-    val response = indexLanguageCrud.create(newDoc, new QaDocumentEntityManager(indexName), refresh)
+    val response = indexLanguageCrud.create(newDoc, new QaDocumentEntityManager(indexName), refreshPolicy)
 
-    /* increment conversation counter */
-    if(updateAnnotation && response.created) {
-      updateByQuery( //increment annotation
-        indexName = indexName,
-        searchReq =
-          QADocumentSearch(conversation = Some(List(newDoc.conversation)), indexInConversation = Some(1)),
-        script =  Some(incrementConvIdxCounterScript),
-        refresh = refresh
-      )
+    if(document.indexInConversation =/= 1) {
+      val followup = document.annotations.getOrElse(QADocumentAnnotations()).followup.getOrElse(Followup.UNSPECIFIED)
+      if (followup == Followup.UNSPECIFIED) { // increment only if not FOLLOWUP
+        /* increment conversation counter */
+        if (updateAnnotation && response.created) {
+          updateByQuery( //increment annotation
+            indexName = indexName,
+            searchReq =
+              QADocumentSearch(conversation = Some(List(newDoc.conversation)), indexInConversation = Some(1)),
+            script = Some(incrementConvIdxCounterScript),
+            refreshPolicy = refreshPolicy
+          )
+        }
+      }
     }
 
     Option {
@@ -992,25 +1000,27 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     }
   }
 
-  def update(indexName: String, document: QADocumentUpdate, refresh: Int): UpdateDocumentsResult = {
+  def update(indexName: String, document: QADocumentUpdate,
+             refreshPolicy: RefreshPolicy.Value): UpdateDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val qaDocumentList = QADocumentUpdateEntity.fromQADocumentUpdateList(document)
     val bulkResponse = indexLanguageCrud.bulkUpdate(qaDocumentList.map(x => x.id -> x),
       entityManager = new QaDocumentEntityManager(indexName),
-      refresh = 1)
+      refreshPolicy = refreshPolicy)
 
     UpdateDocumentsResult(data = bulkResponse)
   }
 
   def updateByQueryFullResults(indexName: String,
-                               updateReq: UpdateQAByQueryReq, refresh: Int): UpdateDocumentsResult = {
+                               updateReq: UpdateQAByQueryReq,
+                               refreshPolicy: RefreshPolicy.Value): UpdateDocumentsResult = {
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, updateReq.documentSearch)
     searchRes match {
       case Some(r) =>
         val id = r.hits.map(_.document.id)
         if (id.nonEmpty) {
           val updateDoc = updateReq.document.copy(id = id)
-          update(indexName = indexName, document = updateDoc, refresh = refresh)
+          update(indexName = indexName, document = updateDoc, refreshPolicy = refreshPolicy)
         } else {
           UpdateDocumentsResult(data = List.empty[UpdateDocumentResult])
         }
@@ -1021,25 +1031,26 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
   //TODO: add the parameter "documentUpdate: QADocumentUpdateByQuery" once supported by APIs
   private[this] def updateByQuery(indexName: String, searchReq: QADocumentSearch,
                                   script: Option[Script],
-                                  refresh: Int): UpdateByQueryResult = {
+                                  refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val query = queryBuilder(searchReq)
     indexLanguageCrud.updateByQuery(
       queryBuilder = query,
       script = script,
       batchSize = None,
-      refresh = refresh)
+      refreshPolicy = refreshPolicy)
   }
 
   def updateConvAnnotations(indexName: String,
-                            conversation: String, refresh: Int): UpdateByQueryResult = {
+                            conversation: String, refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
     val documentSearch = QADocumentSearch(size = Some(10000),
-      conversation=Some(List(conversation)))
+      annotations = Some(QADocumentAnnotationsSearch(followup = Some(List(Followup.UNSPECIFIED)))),
+      conversation = Some(List(conversation)))
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, documentSearch)
     searchRes match {
       case Some(r) =>
         val count = r.hits.length
-        updateByQuery(indexName, documentSearch, Some(setIdxCounterScript(count)), refresh)
+        updateByQuery(indexName, documentSearch, Some(setIdxCounterScript(count)), refreshPolicy)
       case _ =>
         UpdateByQueryResult(
           timedOut = false,
@@ -1098,7 +1109,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
               )
             )
           )
-          val res = update(indexName = indexName, document = scoredTermsUpdateReq, refresh = 0)
+          val res = update(indexName = indexName, document = scoredTermsUpdateReq,
+            refreshPolicy = RefreshPolicy.`false`)
           res.data.headOption.getOrElse(
             UpdateDocumentResult(index = indexName, id = hit.document.id, version = -1, created = false)
           )
@@ -1131,7 +1143,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             )
           )
 
-          val res = update(indexName = indexName, document = scoredTermsUpdateReq, refresh = 0)
+          val res = update(indexName = indexName, document = scoredTermsUpdateReq,
+            refreshPolicy = RefreshPolicy.`false`)
           res.data.headOption.getOrElse(
             UpdateDocumentResult(index = indexName, id = item.id, version = -1, created = false)
           )
@@ -1141,16 +1154,16 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     }
   }
 
-  override def delete(indexName: String, ids: List[String], refresh: Int): DeleteDocumentsResult = {
+  override def delete(indexName: String, ids: List[String], refreshPolicy: RefreshPolicy.Value): DeleteDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val response = indexLanguageCrud.delete(ids, refresh, new QaDocumentEntityManager(indexName))
+    val response = indexLanguageCrud.delete(ids, refreshPolicy, new QaDocumentEntityManager(indexName))
 
     DeleteDocumentsResult(data = response)
   }
 
-  override def deleteAll(indexName: String): DeleteDocumentsSummaryResult = {
+  override def deleteAll(indexName: String, refreshPolicy: RefreshPolicy.Value): DeleteDocumentsSummaryResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val response = indexLanguageCrud.delete(QueryBuilders.matchAllQuery)
+    val response = indexLanguageCrud.delete(QueryBuilders.matchAllQuery, refreshPolicy)
 
     DeleteDocumentsSummaryResult(message = "delete", deleted = response.getTotal)
   }

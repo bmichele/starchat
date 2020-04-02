@@ -151,7 +151,8 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                     entity(as[String]) { docId =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                       onCompleteWithBreakerFuture(breaker)(
-                        questionAnswerService.updateConvAnnotations(indexName, docId, 0)) {
+                        questionAnswerService.updateConvAnnotations(
+                          indexName = indexName, conversation = docId, refreshPolicy = RefreshPolicy.`false`)) {
                         case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
                           val message = logTemplate(user.id, indexName, routeName, request.method, request.uri)
@@ -187,12 +188,13 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                parameters("updateAnnotations".as[Boolean] ? true, "refresh".as[Int] ? 0) {
-                  (updateAnnotations, refresh) =>
+                parameters("updateAnnotations".as[Boolean] ? true,
+                  "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) {
+                  (updateAnnotations, refreshPolicy) =>
                     entity(as[QADocument]) { document =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                       onCompleteWithBreakerFuture(breaker)(
-                        questionAnswerService.create(indexName, document, updateAnnotations, refresh)) {
+                        questionAnswerService.create(indexName, document, updateAnnotations, refreshPolicy)) {
                         case Success(t) =>
                           t match {
                             case Some(v) =>
@@ -248,11 +250,11 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
               authorizeAsync(_ =>
                 authenticator.hasPermissions(user, indexName, Permissions.write)) {
                 extractRequest { request =>
-                  parameters("refresh".as[Int] ? 0) { refresh =>
+                  parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { refreshPolicy =>
                     entity(as[DocsIds]) { request_data =>
                       if (request_data.ids.nonEmpty) {
                         val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                        onCompleteWithBreakerFuture(breaker)(questionAnswerService.delete(indexName, request_data.ids, refresh)) {
+                        onCompleteWithBreakerFuture(breaker)(questionAnswerService.delete(indexName, request_data.ids, refreshPolicy)) {
                           case Success(t) =>
                             completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                           case Failure(e) =>
@@ -264,7 +266,8 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         }
                       } else {
                         val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                        onCompleteWithBreakerFuture(breaker)(questionAnswerService.deleteAll(indexName)) {
+                        onCompleteWithBreakerFuture(breaker)(
+                          questionAnswerService.deleteAll(indexName, RefreshPolicy.`false`)) {
                           case Success(t) =>
                             completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                           case Failure(e) =>
@@ -289,10 +292,11 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
               authorizeAsync(_ =>
                 authenticator.hasPermissions(user, indexName, Permissions.write)) {
                 extractRequest { request =>
-                  parameters("refresh".as[Int] ? 0) { refresh =>
+                  parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { refreshPolicy =>
                     entity(as[QADocumentUpdate]) { update =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                      onCompleteWithBreakerFuture(breaker)(questionAnswerService.update(indexName, update, refresh)) {
+                      onCompleteWithBreakerFuture(breaker)(
+                        questionAnswerService.update(indexName, update, refreshPolicy)) {
                         case Success(t) =>
                           completeResponse(StatusCodes.Created, StatusCodes.BadRequest, t)
                         case Failure(e) =>
@@ -343,11 +347,12 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
             extractRequest { request =>
               authorizeAsync(_ =>
                 authenticator.hasPermissions(user, indexName, Permissions.read)) {
-                parameters("refresh".as[Int] ? 0) { refresh =>
+                parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { refreshPolicy =>
                   entity(as[UpdateQAByQueryReq]) { updateReq =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                     onCompleteWithBreakerFuture(breaker)(
-                      questionAnswerService.updateByQueryFullResults(indexName = indexName, updateReq = updateReq, refresh = refresh)
+                      questionAnswerService.updateByQueryFullResults(
+                        indexName = indexName, updateReq = updateReq, refreshPolicy = refreshPolicy)
                     ) {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))

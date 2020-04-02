@@ -6,11 +6,12 @@ import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseNameVariableManager, ParseDateVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import scalaz.Scalaz._
 import scalaz.{Failure, Success}
 
-class HttpRequestAtomicTest extends WordSpec with Matchers with ScalatestRouteTest {
+class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRouteTest {
 
 
   "HttpRequestAtomic" should {

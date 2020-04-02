@@ -2,7 +2,7 @@ package com.getjenny.starchat.services.esclient.crud
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
-import com.getjenny.starchat.entities.io.RefreshIndexResult
+import com.getjenny.starchat.entities.io.{RefreshIndexResult, RefreshPolicy}
 import com.getjenny.starchat.services.esclient.ElasticClient
 import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.delete.{DeleteRequest, DeleteResponse}
@@ -104,62 +104,99 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
     client.httpClient.mget(request, RequestOptions.DEFAULT)
   }
 
-  def create(id: String, builder: XContentBuilder): IndexResponse = {
+  def create(id: String, builder: XContentBuilder, refreshPolicy: RefreshPolicy.Value): IndexResponse = {
     log.debug("Indexing id: {}", id)
     val request: IndexRequest = createIndexRequest(id, builder)
-    client.httpClient.index(request, RequestOptions.DEFAULT)
+
+    /* FIXME: use the following code when is reliable on ES
+    refreshPolicy match {
+      case RefreshPolicy.`0` => request.setRefreshPolicy("false")
+      case RefreshPolicy.`1` => request.setRefreshPolicy("true")
+      case _ => request.setRefreshPolicy(refreshPolicy.toString)
+    }
+     */
+
+    val result = client.httpClient.index(request, RequestOptions.DEFAULT)
+    this.refresh(refreshPolicy) //FIXME: remove it when setRefreshPolicy is reliable on ES
+    result
   }
 
-  def bulkCreate(elems: List[(String, XContentBuilder)]): BulkResponse = {
+  def bulkCreate(elems: List[(String, XContentBuilder)], refreshPolicy: RefreshPolicy.Value): BulkResponse = {
     val request = new BulkRequest
     elems.foreach { case (id, builder) =>
       request.add(createIndexRequest(id, builder))
     }
-    bulkUpdate(request)
+
+    val result = bulkUpdate(request, refreshPolicy)
+    this.refresh
+    result
   }
 
-  def update(id: String, builder: XContentBuilder, upsert: Boolean = false): UpdateResponse = {
+  def update(id: String, builder: XContentBuilder, upsert: Boolean = false,
+             refreshPolicy: RefreshPolicy.Value): UpdateResponse = {
     log.debug("Update id: {}", id)
     val request: UpdateRequest = createUpdateRequest(id, builder, upsert)
-    client.httpClient.update(request, RequestOptions.DEFAULT)
+
+    /* FIXME: use the following code when is reliable on ES
+     refreshPolicy match {
+       case RefreshPolicy.`0` => request.setRefreshPolicy("false")
+       case RefreshPolicy.`1` => request.setRefreshPolicy("true")
+       case _ => request.setRefreshPolicy(refreshPolicy.toString)
+     }
+     */
+
+    val result = client.httpClient.update(request, RequestOptions.DEFAULT)
+    this.refresh(refreshPolicy) //FIXME: remove it when setRefreshPolicy is reliable on ES
+    result
   }
 
-  def bulkUpdate(elems: List[(String, XContentBuilder)], upsert: Boolean = false): BulkResponse = {
+  def bulkUpdate(elems: List[(String, XContentBuilder)], upsert: Boolean = false,
+                 refreshPolicy: RefreshPolicy.Value): BulkResponse = {
     val request = new BulkRequest
     elems.foreach { case (id, builder) =>
       request.add(createUpdateRequest(id, builder, upsert))
     }
-    bulkUpdate(request)
+
+    val result = bulkUpdate(request, refreshPolicy)
+    this.refresh
+    result
   }
 
   private[this] def createIndexRequest(id: String, builder: XContentBuilder): IndexRequest = {
-    new IndexRequest()
+    val indexReq = new IndexRequest()
       .index(index)
       .source(builder)
       .create(true)
       .id(id)
+
+    indexReq
   }
 
   private[this] def createUpdateRequest(id: String, builder: XContentBuilder, upsert: Boolean): UpdateRequest = {
-    new UpdateRequest()
+    val updateReq = new UpdateRequest()
       .index(index)
       .doc(builder)
       .id(id)
       .docAsUpsert(upsert)
+
+    updateReq
   }
 
-  def delete(queryBuilder: QueryBuilder): BulkByScrollResponse = {
+  def delete(queryBuilder: QueryBuilder, refreshPolicy: RefreshPolicy.Value): BulkByScrollResponse = {
     val request = new DeleteByQueryRequest(index)
     request.setConflicts("proceed")
     request.setQuery(queryBuilder)
 
     log.debug("Delete request: {}", request)
 
-    client.httpClient.deleteByQuery(request, RequestOptions.DEFAULT)
+    val result = client.httpClient.deleteByQuery(request, RequestOptions.DEFAULT)
+    this.refresh(refreshPolicy) //FIXME: to be replaced with wait_for when available
+    result
   }
 
   def updateByQuery(queryBuilder: QueryBuilder,
-                    script: Option[Script], batchSize: Option[Int]): BulkByScrollResponse = {
+                    script: Option[Script], batchSize: Option[Int],
+                    refreshPolicy: RefreshPolicy.Value): BulkByScrollResponse = {
     val request = new UpdateByQueryRequest(index)
     request.setConflicts("proceed")
     request.setQuery(queryBuilder)
@@ -174,18 +211,28 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
 
     log.debug("UpdateByQuery request: {}", request)
 
-    client.httpClient.updateByQuery(request, RequestOptions.DEFAULT)
+    val result = client.httpClient.updateByQuery(request, RequestOptions.DEFAULT)
+    this.refresh(refreshPolicy) //FIXME: to be replaced with wait_for when available
+    result
   }
 
-  def delete(id: String): DeleteResponse = {
+  def delete(id: String, refreshPolicy: RefreshPolicy.Value): DeleteResponse = {
     val deleteReq = new DeleteRequest()
       .index(index)
       .id(id)
 
-    client.httpClient.delete(deleteReq, RequestOptions.DEFAULT)
+    refreshPolicy match {
+      case RefreshPolicy.`0` => deleteReq.setRefreshPolicy("false")
+      case RefreshPolicy.`1` => deleteReq.setRefreshPolicy("true")
+      case _ => deleteReq.setRefreshPolicy(refreshPolicy.toString)
+    }
+
+    val result = client.httpClient.delete(deleteReq, RequestOptions.DEFAULT)
+    this.refresh
+    result
   }
 
-  def delete(ids: List[String]): BulkResponse = {
+  def delete(ids: List[String], refreshPolicy: RefreshPolicy.Value): BulkResponse = {
     val bulkRequest: BulkRequest = new BulkRequest()
     ids.foreach( id => {
       val request = new DeleteRequest()
@@ -193,15 +240,34 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
         .id(id)
       bulkRequest.add(request)
     })
-    bulkUpdate(bulkRequest)
+
+    bulkUpdate(bulkRequest, refreshPolicy)
   }
 
-  def refresh(): RefreshIndexResult = {
+  def refresh: RefreshIndexResult = {
     client.refresh(index)
   }
 
-  private[this] def bulkUpdate(request: BulkRequest): BulkResponse = {
-    client.httpClient.bulk(request, RequestOptions.DEFAULT)
+  def refresh(refreshPolicy: RefreshPolicy.Value): RefreshIndexResult = {
+    refreshPolicy match {
+      case RefreshPolicy.`1` | RefreshPolicy.`wait_for` | RefreshPolicy.`true` =>
+        refresh
+      case _ =>
+    }
+    client.refresh(index)
+  }
+
+  private[this] def bulkUpdate(request: BulkRequest, refreshPolicy: RefreshPolicy.Value): BulkResponse = {
+    /* FIXME: use the following code when is reliable on ES
+    refreshPolicy match {
+      case RefreshPolicy.`0` => request.setRefreshPolicy("false")
+      case RefreshPolicy.`1` => request.setRefreshPolicy("true")
+      case _ => request.setRefreshPolicy(refreshPolicy.toString)
+    }
+    */
+    val result = client.httpClient.bulk(request, RequestOptions.DEFAULT)
+    this.refresh(refreshPolicy)
+    result
   }
 
 }

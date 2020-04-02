@@ -62,7 +62,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         version = None
       )
 
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val response = responseAs[IndexDocumentResult]
         response.created should be (true)
@@ -70,7 +70,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         response.index should be ("index_english.state")
         response.version should be (1)
       }
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val response = responseAs[IndexDocumentResult]
         response.created should be (true)
@@ -104,7 +104,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         version = None
       )
 
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val response = responseAs[IndexDocumentResult]
         response.created should be (false)
@@ -189,7 +189,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       Get("/index_getjenny_english_0/decisiontable?dump=true") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[SearchDTDocumentsResults]
-        response.total should be (25)
+        response.total should be (24)
       }
     }
   }
@@ -440,7 +440,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         version = None
       )
 
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
 
@@ -494,7 +494,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         version = None
       )
 
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
 
@@ -547,7 +547,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         version = None
       )
 
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
 
@@ -593,7 +593,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         version = None
       )
 
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=1", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
 
@@ -624,7 +624,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 200 when deleting a document" in {
-      Delete("/index_getjenny_english_0/decisiontable?id=forgot_password&refresh=1") ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Delete("/index_getjenny_english_0/decisiontable?id=forgot_password&refresh=wait_for") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsResult]
         val headDeleteDocumentResult = response.data.headOption.getOrElse(fail)
@@ -648,11 +648,22 @@ class DecisionTableResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return an HTTP code 200 when bulk deleting documents" in {
+      val request = DocsIds(ids = List("hello2","hello3"))
+      Post("/index_getjenny_english_0/decisiontable/delete", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          val response = responseAs[DeleteDocumentsResult]
+          response.data.size should be (2)
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 when deleting all documents" in {
       Delete("/index_getjenny_english_0/decisiontable/all") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsSummaryResult]
-        response.deleted should be (24)
+        response.deleted should be (21)
       }
     }
   }

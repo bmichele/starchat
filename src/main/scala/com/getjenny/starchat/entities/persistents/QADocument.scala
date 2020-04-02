@@ -97,12 +97,12 @@ object Triggered extends Enumeration {
 }
 
 object Followup extends Enumeration {
+  /** follow up */
   val FOLLOWUP,
 
-  /** follow up */
+  /** follow up dependant on the time of the day */
   FOLLOWUP_BY_TIME,
 
-  /** follow up dependant on the time of the day */
   UNSPECIFIED = Followup.Value
 
   /** not applicable */
@@ -144,14 +144,14 @@ analysis tool (for future use) */
 trait QADocumentBase {
   val id: String /* unique id of the document */
   val coreData: Option[QADocumentCore] /* core question answer fields */
-  val aggAnnotations: Option[AggAnnnotations] /* aggregated annotations */
+  val aggAnnotations: Option[AggAnnotations] /* aggregated annotations */
   val annotations: Option[QADocumentAnnotations] /* qa and conversation annotations */
   val status: Option[Int] /* tell whether the document is locked for editing or not, useful for
                           a GUI to avoid concurrent modifications, 0 means no operations pending */
   val timestamp: Option[Long] = None /* indexing timestamp, automatically calculated if not provided */
 }
 
-case class AggAnnnotations(
+case class AggAnnotations(
                             convIdxCounter: Option[Long]
                           )
 
@@ -159,21 +159,21 @@ case class QADocument(override val id: String,
                       conversation: String, /* ID of the conversation (multiple q&a may be inside a conversation) */
                       indexInConversation: Int = -1, /* the index of the document in the conversation flow */
                       override val coreData: Option[QADocumentCore] = None,
-                      override val aggAnnotations: Option[AggAnnnotations] = None, /* aggregated annotations */
+                      override val aggAnnotations: Option[AggAnnotations] = None, /* aggregated annotations */
                       override val annotations: Option[QADocumentAnnotations] = Some(QADocumentAnnotations()),
                       override val status: Option[Int] = Some(0),
                       override val timestamp: Option[Long] = None
                      ) extends QADocumentBase
 
 case class QADocumentUpdateEntity(
-                             override val id: String,
-                             conversation: Option[String] = None, /* ID of the conversation (multiple q&a may be inside a conversation) */
-                             indexInConversation: Option[Int] = None, /* the index of the document in the conversation flow */
-                             override val coreData: Option[QADocumentCore] = None,
-                             override val aggAnnotations: Option[AggAnnnotations] = None, /* aggregated annotations */
-                             override val annotations: Option[QADocumentAnnotations] = None,
-                             override val status: Option[Int] = None,
-                             override val timestamp: Option[Long] = None
+                                   override val id: String,
+                                   conversation: Option[String] = None, /* ID of the conversation (multiple q&a may be inside a conversation) */
+                                   indexInConversation: Option[Int] = None, /* the index of the document in the conversation flow */
+                                   override val coreData: Option[QADocumentCore] = None,
+                                   override val aggAnnotations: Option[AggAnnotations] = None, /* aggregated annotations */
+                                   override val annotations: Option[QADocumentAnnotations] = None,
+                                   override val status: Option[Int] = None,
+                                   override val timestamp: Option[Long] = None
                            ) extends QADocumentBase
 
 object QADocumentUpdateEntity {
