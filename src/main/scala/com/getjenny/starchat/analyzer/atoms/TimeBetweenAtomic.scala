@@ -30,12 +30,12 @@ class TimeBetweenAtomic(val arguments: List[String],
 
   val atomName: String = "timeBetween"
 
-  val rex: Regex = "([0-9]{1,2}):([0-9]{1,2})".r
+  val regex: Regex = "([0-9]{1,2}):([0-9]{1,2})".r
 
   val parseArguments: () => Try[(LocalTime, LocalTime, LocalTime)] = {
     for {
-      rex(openingTimeH, openingTimeM) <- arguments.headOption
-      rex(closingTimeH, closingTimeM) <- arguments.lift(1)
+      regex(openingTimeH, openingTimeM) <- arguments.headOption
+      regex(closingTimeH, closingTimeM) <- arguments.lift(1)
       timeZone <- arguments.lift(2)
     }
       yield {
@@ -44,9 +44,11 @@ class TimeBetweenAtomic(val arguments: List[String],
           val close = LocalTime.parse("%02d:%02d".format(closingTimeH.toInt, closingTimeM.toInt))
           val zone = ZoneId.of(timeZone)
           val compare = arguments.lift(3) match {
-            case rex(compareH, compareM) => LocalTime.parse("%02d:%02d".format(compareH.toInt, compareM.toInt))
-            case x if x.isEmpty => LocalTime.now(zone)
-            case _  => throw ExceptionAtomic(atomName + ": unparsable format (must be HH:MM) for date")
+            case Some(currTimeArg) => currTimeArg match {
+              case regex(compareH, compareM) => LocalTime.parse("%02d:%02d".format(compareH.toInt, compareM.toInt))
+              case _ => throw ExceptionAtomic(atomName + ": unparsable format (must be HH:MM) for date")
+            }
+            case _ => LocalTime.now(zone)
           }
           (open, close, compare)
         }
