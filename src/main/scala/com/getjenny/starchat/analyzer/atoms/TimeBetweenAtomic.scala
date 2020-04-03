@@ -37,10 +37,11 @@ class TimeBetweenAtomic(val arguments: List[String],
       case Some(v) => v match {
         case regex(timeH, timeM) =>
           LocalTime.parse("%02d:%02d".format(timeH.toInt, timeM.toInt))
-        case _ => if(default.nonEmpty)
-          default.get
-        else
-          throw ExceptionAtomic(atomName + s": unparsable format for date (must be HH:MM): $hhMM")
+        case _ => default match {
+          case Some(defValue) => defValue
+          case _ => throw ExceptionAtomic(atomName + s": unparsable format for date (must be HH:MM): $hhMM")
+        }
+        case _ => throw ExceptionAtomic(atomName + s": time was no specified")
       }
     }
   }
