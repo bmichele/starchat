@@ -402,6 +402,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     }
     */
 
+  /*
     "create a valid husbot atom configuration" in {
       val variableManager = new SubmitHubspotVariableManager {}
       val systemConf = SystemConfiguration
@@ -412,7 +413,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       configuration shouldBe a[Success[_]]
       configuration.map(println)
     }
-
+   */
     /*  "test call to hubspot" in {
 
         val analyzerData = Map("http-atom.submithubspot.input-email" -> "emanuele@getjenny.com")
@@ -456,6 +457,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
 
      */
 
+    /*
     "test entityExtractor" in {
 
       val systemConf = SystemConfiguration
@@ -467,7 +469,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       println(result)
 
     }
-
+    */
     /*
     "test s3 atom" in {
 
