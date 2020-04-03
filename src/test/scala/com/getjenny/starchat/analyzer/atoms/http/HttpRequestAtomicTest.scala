@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.custom.{ParseNameVariableManager, ParseDateVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -402,6 +402,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     }
     */
 
+  /*
     "create a valid husbot atom configuration" in {
       val variableManager = new SubmitHubspotVariableManager {}
       val systemConf = SystemConfiguration
@@ -412,7 +413,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       configuration shouldBe a[Success[_]]
       configuration.map(println)
     }
-
+   */
     /*  "test call to hubspot" in {
 
         val analyzerData = Map("http-atom.submithubspot.input-email" -> "emanuele@getjenny.com")
@@ -456,6 +457,19 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
 
      */
 
+    /*
+    "test entityExtractor" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.entity-extractor")
+
+      val atom = new HttpRequestAtomic(List("language=it"), systemConf) with EntityExtractorVariableManager
+
+      val result = atom.evaluate("Milano e Roma son grandi città", AnalyzersDataInternal())
+      println(result)
+
+    }
+    */
     /*
     "test s3 atom" in {
 

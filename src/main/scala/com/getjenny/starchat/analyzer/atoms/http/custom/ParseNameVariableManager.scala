@@ -44,10 +44,13 @@ case class ParseNameOutput(
 
       val s = if(nameList.isEmpty) "0" else "1"
 
-      val extractedName = nameList.headOption.getOrElse("")
+      val extractedName = nameList.headOption.getOrElse("").stripPrefix("\"").stripSuffix("\"")
 
-      Map(
-        name -> extractedName.stripPrefix("\"").stripSuffix("\""),
+      if (extractedName.isEmpty) Map(
+        score -> s,
+        responseStatus -> status.toString
+      ) else Map(
+        name -> extractedName,
         score -> s,
         responseStatus -> status.toString
       )
