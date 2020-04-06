@@ -46,8 +46,8 @@ class DecisionTableCloneTest extends TestEnglishBase {
   "return an HTTP code 200 cloning data from the preview index" in {
     Post("/index_getjenny_english_0_preview/decisiontable/clone/index_getjenny_english_0?refresh=wait_for") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
       status shouldEqual StatusCodes.OK
-      val response = responseAs[IndexDocumentListResult]
-      response.data.length should be (22)
+      val response = responseAs[ReindexResult]
+      response.total should be (22)
     }
   }
 

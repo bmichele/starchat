@@ -12,11 +12,14 @@ import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.utils.TokenToVector
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
-import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
+import com.getjenny.starchat.services.esclient.{CloneDtElasticClient, DecisionTableElasticClient}
+import com.getjenny.starchat.utils.Index
 import org.apache.lucene.search.join._
 import org.elasticsearch.action.search.SearchType
+import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.index.query.{BoolQueryBuilder, InnerHitBuilder, QueryBuilder, QueryBuilders}
+import org.elasticsearch.index.reindex.{BulkByScrollResponse, DeleteByQueryRequest, ReindexRequest}
 import org.elasticsearch.script.Script
 import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.aggregations.AggregationBuilders
@@ -31,7 +34,7 @@ case class DecisionTableServiceException(message: String = "", cause: Throwable 
 /**
  * Implements functions, eventually used by DecisionTableResource, for searching, get next response etc
  */
-object DecisionTableService extends AbstractDataService {
+object DecisionTableService extends AbstractDataService with DecisionTableESScripts {
   override val elasticClient: DecisionTableElasticClient.type = DecisionTableElasticClient
   private[this] val termService: TermService.type = TermService
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
@@ -652,11 +655,93 @@ object DecisionTableService extends AbstractDataService {
 
   }
 
+  def cloneIndexContentReindex(indexNameSrc: String, indexNameDst: String,
+                               reset: Boolean = true, propagate: Boolean = true,
+                               refreshPolicy: RefreshPolicy.Value
+                              ): ReindexResult = {
+
+    val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
+    if (indexNameSrc === indexNameDst)
+      throw DecisionTableServiceException(s"Bad clone operation: " +
+        s"src($indexNameSrc) and dst($indexNameDst) are the same")
+
+    // reset the destination index
+    if (reset) {
+      IndexLanguageCrud(DecisionTableElasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery,
+        RefreshPolicy.wait_for)
+    }
+
+    // set index and instamce parameters
+    val srcInstance: String = Index.instanceName(indexNameSrc)
+    val dstInstance: String = Index.instanceName(indexNameDst)
+    val sourceIndex: String =
+      Index.esLanguageFromIndexName(indexNameSrc, DecisionTableElasticClient.indexSuffix)
+    val destinationIndex: String =
+      Index.indexName(CloneDtElasticClient.indexName, CloneDtElasticClient.indexSuffix)
+
+    /* reset of data on temporary table */
+    val request = new DeleteByQueryRequest(destinationIndex)
+    request.setConflicts("proceed")
+    request.setQuery(QueryBuilders.termQuery(DecisionTableElasticClient.instanceFieldName, dstInstance))
+    log.debug("Delete request: {}", request)
+    CloneDtElasticClient.httpClient
+      .deleteByQuery(request, RequestOptions.DEFAULT)
+
+    // first reindex with new id and changed instance
+    val sourceQueryReq1 = QueryBuilders.termQuery(CloneDtElasticClient.instanceFieldName, srcInstance)
+    val reindexReq1: ReindexRequest = new ReindexRequest()
+    reindexReq1
+      .setSourceIndices(sourceIndex)
+      .setDestIndex(destinationIndex)
+      .setSourceQuery(sourceQueryReq1)
+      .setScript(reindexScript(dstInstance))
+      .setDestOpType("create")
+      .setRefresh(true)
+
+    val bulkResponse1: BulkByScrollResponse =
+      CloneDtElasticClient.httpClient.reindex(reindexReq1, RequestOptions.DEFAULT);
+
+    // second reindex
+    val sourceQueryReq2 = QueryBuilders.termQuery("instance", dstInstance)
+    val reindexReq2: ReindexRequest = new ReindexRequest()
+    reindexReq2
+      .setSourceIndices(destinationIndex)
+      .setDestIndex(sourceIndex)
+      .setSourceQuery(sourceQueryReq2)
+      .setDestOpType("create")
+      .setRefresh(true)
+
+    val bulkResponse2: BulkByScrollResponse =
+      CloneDtElasticClient.httpClient.reindex(reindexReq2, RequestOptions.DEFAULT);
+
+    if(bulkResponse1.getCreated =/= bulkResponse2.getCreated ||
+      bulkResponse1.getTotal =/= bulkResponse2.getTotal ||
+      bulkResponse1.getDeleted =/= bulkResponse2.getDeleted ||
+      bulkResponse1.getUpdated =/= bulkResponse2.getUpdated ||
+      bulkResponse1.getVersionConflicts =/= bulkResponse2.getVersionConflicts
+    ){
+      throw DecisionTableServiceException(s"Error cloning index $indexNameSrc into " +
+        s"$indexNameDst")
+    }
+
+    if(propagate)
+      instanceRegistryService.updateTimestamp(dtIndexName = indexNameDst)
+
+    ReindexResult(
+      created = bulkResponse2.getCreated,
+      deleted = bulkResponse2.getDeleted,
+      updated = bulkResponse2.getUpdated,
+      total = bulkResponse2.getTotal,
+      versionConflicts = bulkResponse2.getVersionConflicts
+    )
+  }
+
+  @deprecated("this attribute will be removed, see: cloneIndexContentReindex instead", "StarChat v6.0.0")
   def cloneIndexContent(indexNameSrc: String, indexNameDst: String,
                         reset: Boolean = true, propagate: Boolean = true,
                         refreshPolicy: RefreshPolicy.Value
                        ): IndexDocumentListResult = {
-    val dtReloadService: InstanceRegistryService.type = InstanceRegistryService
+    val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
     if (reset) {
       IndexLanguageCrud(elasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery, refreshPolicy)
     }
@@ -675,7 +760,7 @@ object DecisionTableService extends AbstractDataService {
         s"$indexNameDst: ${createResult.data.length} != ${srcDocuments.total}")
 
     if(propagate)
-      dtReloadService.updateTimestamp(dtIndexName = indexNameDst)
+      instanceRegistryService.updateTimestamp(dtIndexName = indexNameDst)
 
     createResult
   }

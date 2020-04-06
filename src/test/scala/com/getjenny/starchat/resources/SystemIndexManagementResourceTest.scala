@@ -25,7 +25,8 @@ class SystemIndexManagementResourceTest extends AnyWordSpec with Matchers with S
 
   val testAdminCredentials = BasicHttpCredentials("admin", "adminp4ssw0rd")
 
-  val suffixes = Seq("user", "instance_registry", "cluster_nodes", "decision_table_node_status", "bayes_operator_cache")
+  val suffixes = Seq("user", "instance_registry", "cluster_nodes", "decision_table_node_status",
+    "bayes_operator_cache", "clone_dt_staging_table")
 
   override protected def afterAll(): Unit = {
     Delete(s"/system_index_management") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
@@ -76,7 +77,7 @@ class SystemIndexManagementResourceTest extends AnyWordSpec with Matchers with S
         status shouldEqual StatusCodes.OK
         val response = responseAs[List[String]]
         response.foreach(println)
-        response.length should be (5)
+        response.length should be (6)
       }
     }
   }

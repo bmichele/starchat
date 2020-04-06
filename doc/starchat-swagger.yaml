@@ -1343,7 +1343,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IndexDocumentListResult'
+                $ref: '#/components/schemas/ReindexResult'
         '400':
           description: 'invalid input, bad request'
         '401':
@@ -5546,6 +5546,40 @@ components:
           description: add some random sampled document in the returned document list
           example: true
           default: false
+    ReindexResult:
+      type: object
+      required:
+        - created
+        - deleted
+        - updated
+        - total
+        - versionConflicts
+      properties:
+        created:
+          type: number
+          format: long
+          description: 'number of items created'
+          example: 100
+        deleted:
+          type: number
+          format: long
+          description: 'number of items deleted'
+          example: 0
+        updated:
+          type: number
+          format: long
+          description: 'number of items updated'
+          example: 0
+        total:
+          type: number
+          format: long
+          description: 'total number of items'
+          example: 100
+        versionConflicts:
+          type: number
+          format: long
+          description: 'number of version conflicts'
+          example: 0
     UpdateQATermsRequest:
       type: object
       required:

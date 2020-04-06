@@ -46,7 +46,7 @@ trait DecisionTableResource extends StarChatResource {
                       "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { (reset, propagate, refreshPolicy) =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                       onCompleteWithBreakerFuture(breaker)(
-                        decisionTableService.cloneIndexContent(
+                        decisionTableService.cloneIndexContentReindex(
                           indexNameSrc = indexNameSrc,
                           indexNameDst = indexNameDst,
                           reset = reset,

@@ -19,6 +19,7 @@ import org.elasticsearch.client.{RequestOptions, RestClient, RestClientBuilder, 
 import scalaz.Scalaz._
 
 import scala.collection.immutable.{List, Map}
+import com.getjenny.starchat.utils.Index
 
 trait ElasticClient {
   val config: Config = ConfigFactory.load()
@@ -26,6 +27,8 @@ trait ElasticClient {
   val sniff: Boolean = config.getBoolean("es.enable_sniff")
   val ignoreClusterName: Boolean = config.getBoolean("es.ignore_cluster_name")
   val elasticsearchAuthentication: String = config.getString("es.authentication")
+
+  val instanceFieldName = "instance"
 
   val hostProto: String = config.getString("es.host_proto")
   val hostMapStr: String = config.getString("es.host_map")
@@ -84,8 +87,8 @@ trait ElasticClient {
     client
   }
 
-  def refresh(indexName: String): RefreshIndexResult = {
-    val refreshReq = new RefreshRequest(indexName)
+  def refresh(index: String): RefreshIndexResult = {
+    val refreshReq = new RefreshRequest(index)
     val refreshRes: RefreshResponse =
       esHttpClient.indices().refresh(refreshReq, RequestOptions.DEFAULT)
 
@@ -99,7 +102,7 @@ trait ElasticClient {
     }).toList
 
     val refreshIndexResult =
-      RefreshIndexResult(indexName = indexName,
+      RefreshIndexResult(indexName = index,
         failedShardsN = refreshRes.getFailedShards,
         successfulShardsN = refreshRes.getSuccessfulShards,
         totalShardsN = refreshRes.getTotalShards,
