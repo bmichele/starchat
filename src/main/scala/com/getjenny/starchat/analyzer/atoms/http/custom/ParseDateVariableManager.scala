@@ -71,12 +71,11 @@ case class ParseDateOutput(
           date -> dateIso,
           year -> "%04d".format(cal.get(Calendar.YEAR)),
           month -> "%02d".format(cal.get(Calendar.MONTH) + 1),
-          dayOfMonth -> "%02d".format(cal.get(Calendar.DAY_OF_MONTH))
-          // TODO: uncomment following quantities
-//          dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK) - 1 match {case 0 => 7; case n => n}),
-//          hour -> "%02d".format(cal.get(Calendar.HOUR_OF_DAY)),
-//          minute -> "%02d".format(cal.get(Calendar.MINUTE)),
-//          second -> "%02d".format(cal.get(Calendar.SECOND))
+          dayOfMonth -> "%02d".format(cal.get(Calendar.DAY_OF_MONTH)),
+          dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK) - 1 match {case 0 => 7; case n => n}),
+          hour -> "%02d".format(cal.get(Calendar.HOUR_OF_DAY)),
+          minute -> "%02d".format(cal.get(Calendar.MINUTE)),
+          second -> "%02d".format(cal.get(Calendar.SECOND))
         )
       }
 
