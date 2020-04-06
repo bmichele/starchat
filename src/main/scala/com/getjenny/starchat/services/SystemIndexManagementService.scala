@@ -47,7 +47,8 @@ object SystemIndexManagementService {
       ClusterNodesElasticClient,
       InstanceRegistryElasticClient,
       NodeDtLoadingStatusElasticClient,
-      UserElasticClient
+      UserElasticClient,
+      CloneDtElasticClient
     )
 
   def create(indexSuffix: Option[String] = None): IndexManagementResponse = {

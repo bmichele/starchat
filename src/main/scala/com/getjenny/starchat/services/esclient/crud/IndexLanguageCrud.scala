@@ -26,7 +26,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
 
   private[this] val esCrudBase = new EsCrudBase(client, index)
-  private[this] val instanceFieldName = "instance"
+  val instanceFieldName = client.instanceFieldName
 
   def readAll[T](ids: List[String], entityManager: ReadEntityManager[T]): List[T] = {
     val response = esCrudBase.readAll(ids.map(entityManager.createId(instance, _)))
