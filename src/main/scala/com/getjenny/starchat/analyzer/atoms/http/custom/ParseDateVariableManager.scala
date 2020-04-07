@@ -59,26 +59,47 @@ case class ParseDateOutput(
         case _ => Array.empty[String]
       }.getOrElse(Array.empty[String])
 
-      val s = if(dateList.isEmpty) "0" else "1"
+      if(dateList.isEmpty) {
+        Map(
+          score -> "0",
+          responseStatus -> status.toString
+        )
+      } else {
 
-      val dateIso = dateList.headOption.getOrElse("")
-      val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-      val dateObj = if (dateIso.isEmpty) format.parse("1970-01-01T00:00:00") else format.parse(dateIso)
-      val cal = Calendar.getInstance()
-      cal.setTime(dateObj)
+        val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
 
-      Map(
-        date -> dateIso,
-        year -> "%04d".format(cal.get(Calendar.YEAR)),
-        month -> "%02d".format(cal.get(Calendar.MONTH) + 1),
-        dayOfMonth -> "%02d".format(cal.get(Calendar.DAY_OF_MONTH)),
-        dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK) - 1 match {case 0 => 7; case n => n}),
-        hour -> "%02d".format(cal.get(Calendar.HOUR_OF_DAY)),
-        minute -> "%02d".format(cal.get(Calendar.MINUTE)),
-        second -> "%02d".format(cal.get(Calendar.SECOND)),
-        score -> s,
-        responseStatus -> status.toString
-      )
+        def dateToMap(dateIso: String) = {
+          val dateObj = format.parse(dateIso)
+          val cal = Calendar.getInstance()
+          cal.setTime(dateObj)
+          Map(
+            date -> dateIso,
+            year -> "%04d".format(cal.get(Calendar.YEAR)),
+            month -> "%02d".format(cal.get(Calendar.MONTH) + 1),
+            dayOfMonth -> "%02d".format(cal.get(Calendar.DAY_OF_MONTH)),
+            dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK) - 1 match {case 0 => 7; case n => n}),
+            hour -> "%02d".format(cal.get(Calendar.HOUR_OF_DAY)),
+            minute -> "%02d".format(cal.get(Calendar.MINUTE)),
+            second -> "%02d".format(cal.get(Calendar.SECOND))
+          )
+        }
+
+        def appendMapIndex(dateMap: Map[String, String], i: Int) = {
+          i match {
+            case 0 => dateMap
+            case _ => dateMap.map { case(key, value) => key + "." + i -> value}
+          }
+        }
+
+        val dateMapList = dateList.map(x => dateToMap(x))
+        val dateOutList = (dateMapList.indices zip dateMapList).map { case (i, d) => appendMapIndex(d, i) }
+
+        (dateOutList reduce (_ ++ _)) ++
+          Map(
+            score -> "1",
+            responseStatus -> status.toString
+          )
+      }
     } else {
       Map(
         score -> "0",

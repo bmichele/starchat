@@ -428,7 +428,6 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
 
       val analyzerData = Map(
         "language" -> "it",
-        //"timezone" -> "US/Eastern"
         "timezone" -> "GMT+3"
       )
 
@@ -437,9 +436,58 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
 
       val atom = new HttpRequestAtomic(List(), systemConf) with ParseDateVariableManager
 
-      val result = atom.evaluate("domani", AnalyzersDataInternal(extractedVariables = analyzerData))
-      println(result)
+      val result = atom.evaluate("24 Marzo 1985, 4 Aprile 2014, 2 Giugno 1989", AnalyzersDataInternal(extractedVariables = analyzerData))
 
+      result.data.extractedVariables.foreach(println)
+      result.data.extractedVariables.getOrElse("extracted_date.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_date.status", "") shouldBe "200 OK"
+
+      // 24th of March 1985
+      result.data.extractedVariables.getOrElse("extracted_date.date_iso", "") shouldBe "1985-03-24T00:00:00"
+      result.data.extractedVariables.getOrElse("extracted_date.year", "") shouldBe "1985"
+      result.data.extractedVariables.getOrElse("extracted_date.month", "") shouldBe "03"
+      result.data.extractedVariables.getOrElse("extracted_date.day_of_month", "") shouldBe "24"
+      result.data.extractedVariables.getOrElse("extracted_date.day_of_week", "") shouldBe "7"
+      result.data.extractedVariables.getOrElse("extracted_date.hour", "") shouldBe "00"
+      result.data.extractedVariables.getOrElse("extracted_date.minute", "") shouldBe "00"
+      result.data.extractedVariables.getOrElse("extracted_date.second", "") shouldBe "00"
+      // 4th of April 2014
+      result.data.extractedVariables.getOrElse("extracted_date.date_iso.1", "") shouldBe "2014-04-04T00:00:00"
+      result.data.extractedVariables.getOrElse("extracted_date.year.1", "") shouldBe "2014"
+      result.data.extractedVariables.getOrElse("extracted_date.month.1", "") shouldBe "04"
+      result.data.extractedVariables.getOrElse("extracted_date.day_of_month.1", "") shouldBe "04"
+      result.data.extractedVariables.getOrElse("extracted_date.day_of_week.1", "") shouldBe "5"
+      result.data.extractedVariables.getOrElse("extracted_date.hour.1", "") shouldBe "00"
+      result.data.extractedVariables.getOrElse("extracted_date.minute.1", "") shouldBe "00"
+      result.data.extractedVariables.getOrElse("extracted_date.second.1", "") shouldBe "00"
+      // 2nd of June 1989
+      result.data.extractedVariables.getOrElse("extracted_date.date_iso.2", "") shouldBe "1989-06-02T00:00:00"
+      result.data.extractedVariables.getOrElse("extracted_date.year.2", "") shouldBe "1989"
+      result.data.extractedVariables.getOrElse("extracted_date.month.2", "") shouldBe "06"
+      result.data.extractedVariables.getOrElse("extracted_date.day_of_month.2", "") shouldBe "02"
+      result.data.extractedVariables.getOrElse("extracted_date.day_of_week.2", "") shouldBe "5"
+      result.data.extractedVariables.getOrElse("extracted_date.hour.2", "") shouldBe "00"
+      result.data.extractedVariables.getOrElse("extracted_date.minute.2", "") shouldBe "00"
+      result.data.extractedVariables.getOrElse("extracted_date.second.2", "") shouldBe "00"
+    }
+
+    "test dateParser without date" in {
+
+      val analyzerData = Map(
+        "language" -> "en",
+        "timezone" -> "GMT+3"
+      )
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List(), systemConf) with ParseDateVariableManager
+
+      val result = atom.evaluate("asdasd", AnalyzersDataInternal(extractedVariables = analyzerData))
+
+      result.data.extractedVariables.foreach(println)
+      result.data.extractedVariables.getOrElse("extracted_date.score", "") shouldBe "0"
+      result.data.extractedVariables.getOrElse("extracted_date.status", "") shouldBe "200 OK"
     }*/
 
     /*
