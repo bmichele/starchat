@@ -52,6 +52,44 @@ case class ParseDateOutput(
                             second: String = "extracted_date.second"
                           ) extends HttpAtomOutputConf {
 
+  /** Helper function
+   *
+   * Get Map object from date string in iso format.
+   * @param dateIso date string in iso format, e.g. "1985-03-24T00:00:00"
+   * @return Map(
+   *         "extracted_date.minute" -> "00",
+   *         "extracted_date.second" -> "00",
+   *         "extracted_date.day_of_month" -> "24",
+   *         "extracted_date.hour" -> "00",
+   *         "extracted_date.month" -> "03",
+   *         "extracted_date.date_iso" -> "1985-03-24T00:00:00",
+   *         "extracted_date.year" -> "1985",
+   *         "extracted_date.day_of_week" -> "7"
+   *         )
+   */
+  def dateToMap(dateIso: String, format: SimpleDateFormat): Map[String, String] = {
+    val dateObj = format.parse(dateIso)
+    val cal = Calendar.getInstance()
+    cal.setTime(dateObj)
+    Map(
+      date -> dateIso,
+      year -> "%04d".format(cal.get(Calendar.YEAR)),
+      month -> "%02d".format(cal.get(Calendar.MONTH) + 1),
+      dayOfMonth -> "%02d".format(cal.get(Calendar.DAY_OF_MONTH)),
+      dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK) - 1 match {case 0 => 7; case n => n}),
+      hour -> "%02d".format(cal.get(Calendar.HOUR_OF_DAY)),
+      minute -> "%02d".format(cal.get(Calendar.MINUTE)),
+      second -> "%02d".format(cal.get(Calendar.SECOND))
+    )
+  }
+
+  /** Helper function
+   *
+   *  Append index to all keys of a Map[String, String] object. If index is zero, does not leaves keys unchanged.
+   */
+  def appendMapIndex(myMap: Map[String, String], i: Int): Map[String, String] =
+    if(i == 0) myMap else myMap.map{ case(key, value) => key + "." + i -> value}
+
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)){
       val json = body.parseJson.asJsObject
@@ -66,57 +104,11 @@ case class ParseDateOutput(
           responseStatus -> status.toString
         )
       } else {
+        val isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        val dateMapList = dateList.map(x => dateToMap(x, isoFormat))
+        val dateOutList = dateMapList.zipWithIndex.map { case (d, i) => appendMapIndex(d, i) }
 
-        val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-
-
-        /** Get Map object from date string in iso format.
-         *
-         * @param dateIso date string in iso format, e.g. "1985-03-24T00:00:00"
-         * @return Map(
-         *         "extracted_date.minute" -> "00",
-         *         "extracted_date.second" -> "00",
-         *         "extracted_date.day_of_month" -> "24",
-         *         "extracted_date.hour" -> "00",
-         *         "extracted_date.month" -> "03",
-         *         "extracted_date.date_iso" -> "1985-03-24T00:00:00",
-         *         "extracted_date.year" -> "1985",
-         *         "extracted_date.day_of_week" -> "7"
-         *         )
-         */
-        def dateToMap(dateIso: String): Map[String, String] = {
-          val dateObj = format.parse(dateIso)
-          val cal = Calendar.getInstance()
-          cal.setTime(dateObj)
-          Map(
-            date -> dateIso,
-            year -> "%04d".format(cal.get(Calendar.YEAR)),
-            month -> "%02d".format(cal.get(Calendar.MONTH) + 1),
-            dayOfMonth -> "%02d".format(cal.get(Calendar.DAY_OF_MONTH)),
-            dayOfWeek -> "%01d".format(cal.get(Calendar.DAY_OF_WEEK) - 1 match {case 0 => 7; case n => n}),
-            hour -> "%02d".format(cal.get(Calendar.HOUR_OF_DAY)),
-            minute -> "%02d".format(cal.get(Calendar.MINUTE)),
-            second -> "%02d".format(cal.get(Calendar.SECOND))
-          )
-        }
-
-        /** Append index to all keys of a Map[String, String] object. If index is zero, does not leaves keys unchanged.
-         *
-         * @param myMap string-to-string Map, e.g. Map("key1" -> "val1", "key2" -> "val2")
-         * @param i index to be appended at every key
-         * @return Map("key1.i" -> "val1", "key2.i" -> "val2")
-         */
-        def appendMapIndex(myMap: Map[String, String], i: Int): Map[String, String] = {
-          i match {
-            case 0 => myMap
-            case _ => myMap.map { case(key, value) => key + "." + i -> value}
-          }
-        }
-
-        val dateMapList = dateList.map(x => dateToMap(x))
-        val dateOutList = (dateMapList.indices zip dateMapList).map { case (i, d) => appendMapIndex(d, i) }
-
-        (dateOutList reduce (_ ++ _)) ++
+        dateOutList.reduce(_ ++ _) ++
           Map(
             score -> "1",
             responseStatus -> status.toString
