@@ -10,22 +10,23 @@ import java.util.Calendar
 import DefaultJsonProtocol._
 
 /**
-  * parseDate("language=it", "timezone=US/Eastern")
-  * output:
-  * "extracted_date.score" 0 if no date is found
-  * "extracted_date.status"
-  * "extracted_date.date_iso" full datetime formatted as ISO_LOCAL_DATE_TIME (yyyy-MM-ddTHH:mm:ss)
-  * "extracted_date.year" year - yyyy
-  * "extracted_date.month" month - MM
-  * "extracted_date.day_of_month" day of month - dd
-  * "extracted_date.day_of_week" day of week ([1, ..., 7] = [Monday, ..., Sunday]) - d
-  * "extracted_date.hour" hour - HH
-  * "extracted_date.minute" minutes - mm
-  * "extracted_date.second" seconds - ss
-  * Note that if no date is found output date is 1970-01-01T00:00:00
-  *
-  * TODO ATM we are using the conf template which does not allow change of input-json. It should accept also other parameter (eg timezone, prefix)
-  */
+ * parseDate("language=it", "timezone=US/Eastern")
+ * output:
+ * "extracted_date.score" 0 if no date is found
+ * "extracted_date.status"
+ * "extracted_date.date_iso" full datetime formatted as ISO_LOCAL_DATE_TIME (yyyy-MM-ddTHH:mm:ss)
+ * "extracted_date.year" year - yyyy
+ * "extracted_date.month" month - MM
+ * "extracted_date.day_of_month" day of month - dd
+ * "extracted_date.day_of_week" day of week ([1, ..., 7] = [Monday, ..., Sunday]) - d
+ * "extracted_date.hour" hour - HH
+ * "extracted_date.minute" minutes - mm
+ * "extracted_date.second" seconds - ss
+ * If multiple dates are found, the same quantities are returned for each date and an index is appended to the keys of
+ * the additional dates.
+ *
+ * TODO ATM we are using the conf template which does not allow change of input-json. It should accept also other parameter (eg timezone, prefix)
+ */
 
 trait ParseDateVariableManager extends GenericVariableManager {
 
@@ -68,7 +69,22 @@ case class ParseDateOutput(
 
         val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
 
-        def dateToMap(dateIso: String) = {
+
+        /** Get Map object from date string in iso format.
+         *
+         * @param dateIso date string in iso format, e.g. "1985-03-24T00:00:00"
+         * @return Map(
+         *         "extracted_date.minute" -> "00",
+         *         "extracted_date.second" -> "00",
+         *         "extracted_date.day_of_month" -> "24",
+         *         "extracted_date.hour" -> "00",
+         *         "extracted_date.month" -> "03",
+         *         "extracted_date.date_iso" -> "1985-03-24T00:00:00",
+         *         "extracted_date.year" -> "1985",
+         *         "extracted_date.day_of_week" -> "7"
+         *         )
+         */
+        def dateToMap(dateIso: String): Map[String, String] = {
           val dateObj = format.parse(dateIso)
           val cal = Calendar.getInstance()
           cal.setTime(dateObj)
@@ -84,10 +100,16 @@ case class ParseDateOutput(
           )
         }
 
-        def appendMapIndex(dateMap: Map[String, String], i: Int) = {
+        /** Append index to all keys of a Map[String, String] object. If index is zero, does not leaves keys unchanged.
+         *
+         * @param myMap string-to-string Map, e.g. Map("key1" -> "val1", "key2" -> "val2")
+         * @param i index to be appended at every key
+         * @return Map("key1.i" -> "val1", "key2.i" -> "val2")
+         */
+        def appendMapIndex(myMap: Map[String, String], i: Int): Map[String, String] = {
           i match {
-            case 0 => dateMap
-            case _ => dateMap.map { case(key, value) => key + "." + i -> value}
+            case 0 => myMap
+            case _ => myMap.map { case(key, value) => key + "." + i -> value}
           }
         }
 
