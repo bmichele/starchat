@@ -83,18 +83,20 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                onCompleteWithBreakerFuture(breaker)(
-                  decisionTableService.deleteAll(indexName, RefreshPolicy.`false`)
-                ) {
-                  case Success(t) =>
-                    completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
-                  case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
-                    completeResponse(StatusCodes.BadRequest,
-                      Option {
-                        ReturnMessageData(code = 105, message = e.getMessage)
-                      })
+                parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { refreshPolicy =>
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                  onCompleteWithBreakerFuture(breaker)(
+                    decisionTableService.deleteAll(indexName, refreshPolicy)
+                  ) {
+                    case Success(t) =>
+                      completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
+                    case Failure(e) =>
+                      log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
+                      completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          ReturnMessageData(code = 105, message = e.getMessage)
+                        })
+                  }
                 }
               }
             }
