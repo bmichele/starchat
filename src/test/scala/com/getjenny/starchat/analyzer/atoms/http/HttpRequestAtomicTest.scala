@@ -380,7 +380,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     }
 
     //TODO: these test can be enabled when the parameters are moved to a secret travis variable
-
+    /*
     "create a valid date parser atom configuration " in {
       val variableManager = new ParseDateVariableManager {}
       val systemConf = SystemConfiguration
@@ -389,7 +389,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       val configuration = variableManager.validateAndBuild(List("language=en","timezone=GMT+1"), systemConf, Map.empty, "July 22nd, 1947")
       configuration shouldBe a [Success[_]]
       configuration.map(println)
-    }
+    }*/
     /*
     "create a valid read s3 atom configuration" in {
       val variableManager = new ReadS3DataVariableManager {}
