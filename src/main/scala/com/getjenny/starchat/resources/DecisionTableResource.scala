@@ -154,7 +154,7 @@ trait DecisionTableResource extends StarChatResource {
   }
 
   def decisionTableBulkCreateRoutes: Route = handleExceptions(routesExceptionHandler) {
-    pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bulk") { indexName =>
+    pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bulk" ~ Slash ~ "create") { indexName =>
       pathEnd {
         post {
           authenticateBasicAsync(realm = authRealm,
@@ -173,6 +173,43 @@ trait DecisionTableResource extends StarChatResource {
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>
                         log.error(logTemplate(user.id, indexName, "decisionTableBulkCreateRoutes",
+                          request.method, request.uri), e)
+                        completeResponse(StatusCodes.BadRequest,
+                          Option {
+                            ReturnMessageData(code = 107, message = e.getMessage)
+                          })
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @deprecated("this attribute will be removed, see: cloneIndexContentReindex instead", "StarChat v6.0.0")
+  def decisionTableBulkUploadAndMultiCreateRoutes: Route = handleExceptions(routesExceptionHandler) {
+    pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bulk") { indexName =>
+      pathEnd {
+        post {
+          authenticateBasicAsync(realm = authRealm,
+            authenticator = authenticator.authenticator) { user =>
+            authorizeAsync(_ =>
+              authenticator.hasPermissions(user, indexName, Permissions.read)) {
+              extractRequest { request =>
+                parameters("check".as[Boolean] ? true,
+                  "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { (check, refreshPolicy) =>
+                  entity(as[IndexedSeq[DTDocument]]) { documents =>
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
+                    onCompleteWithBreakerFuture(breaker)(
+                      decisionTableService.bulkCreate(indexName = indexName, documents = documents,
+                        check = check, refreshPolicy = refreshPolicy)) {
+                      case Success(t) =>
+                        completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
+                      case Failure(e) =>
+                        log.error(logTemplate(user.id, indexName, "decisionTableBulkUploadAndMultiCreateRoutes",
                           request.method, request.uri), e)
                         completeResponse(StatusCodes.BadRequest,
                           Option {

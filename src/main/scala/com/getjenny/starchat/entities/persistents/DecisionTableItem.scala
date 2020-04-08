@@ -13,7 +13,7 @@ import scala.collection.immutable.{List, Map}
 
 case class DecisionTableItem(state: String,
                              analyzerDeclaration: String,
-                             executionOrder: Int = -1,
+                             executionOrder: Int = 0,
                              maxStateCounter: Int = -1,
                              evaluationClass: String = "default",
                              version: Long = -1L,

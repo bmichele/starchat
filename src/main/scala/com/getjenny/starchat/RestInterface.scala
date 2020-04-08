@@ -95,6 +95,7 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResultReduced(clAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clusterNodesRoutes) ~
     LoggingEntities.logRequestAndResultReduced(decisionTableBulkCreateRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(decisionTableBulkUploadAndMultiCreateRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerAnalyticsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerConversationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerRoutes) ~
