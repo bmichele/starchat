@@ -89,9 +89,9 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
       response.getVersion, response.status === RestStatus.CREATED)
   }
 
-  def bulkCreate[T](elems: List[(String, T)], entityManager: WriteEntityManager[T],
+  def bulkCreate[T](elems: List[T], entityManager: WriteEntityManager[T],
                     refreshPolicy: RefreshPolicy.Value): List[IndexDocumentResult] = {
-    val builders = elems.map { case (_, elem) => entityManager.documentBuilder(elem, instance) }
+    val builders = elems.map(elem => entityManager.documentBuilder(elem, instance))
 
     builders.foreach { case (_, builder) =>
       require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")

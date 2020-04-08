@@ -1388,8 +1388,53 @@ paths:
     post:
       tags:
         - customer
-      operationId: post_decisiontable_bulk_create
+      operationId: post_decisiontable_bulk_upload_multi_create
       summary: Bulk creation
+      deprecated: true
+      description: >-
+        bulk create operation, this is deprecated, use `/<index_name>/decisiontable/bulk/create`
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: refresh
+          description: >-
+            if `true` StarChat trigger an index refresh and return without waiting,
+            if `false` doesn't trigger a refresh,
+            if `wait_for` trigger a refresh and wait for the completion of the refresh operation
+            (default is `wait_for`)
+          required: false
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/DTDocument'
+        description: The array of states to create.
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexDocumentListResult'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
+  '/<index_name>/decisiontable/bulk/create':
+    post:
+      tags:
+        - customer
+      operationId: post_decisiontable_bulk_create
+      deprecated: true
       description: >-
         bulk create operation
       parameters:

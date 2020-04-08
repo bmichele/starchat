@@ -81,10 +81,7 @@ object TermService extends AbstractDataService {
    */
   def indexTerm(indexName: String, terms: Terms, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-
-    val inputTerms = terms.terms.map(x => x.term -> x)
-
-    val listOfDocRes = indexLanguageCrud.bulkCreate(inputTerms, new TermEntityManager, refreshPolicy)
+    val listOfDocRes = indexLanguageCrud.bulkCreate(terms.terms, new TermEntityManager, refreshPolicy)
     IndexDocumentListResult(listOfDocRes)
   }
 

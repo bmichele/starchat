@@ -445,12 +445,13 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   }
 
   def bulkCreate(indexName: String, documents: IndexedSeq[DTDocument],
-                 check: Boolean = true, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
-    val indexDocumentListResult = documents.map(dtDocument => {
-      create(indexName = indexName, document = dtDocument, check = check, refreshPolicy = refreshPolicy)
-    }).toList
+                               check: Boolean = true, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
+    val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
-    IndexDocumentListResult(data = indexDocumentListResult)
+    val listOfDocRes = indexLanguageCrud.bulkCreate(documents.toList,
+      new SearchDTDocumentEntityManager(simpleQueryExtractor), refreshPolicy)
+
+    IndexDocumentListResult(data = listOfDocRes)
   }
 
   def wordFrequenciesInQueries(indexName: String): Map[String, Double] = {
