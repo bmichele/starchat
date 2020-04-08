@@ -1434,7 +1434,7 @@ paths:
       tags:
         - customer
       operationId: post_decisiontable_bulk_create
-      deprecated: true
+      summary: Bulk creation
       description: >-
         bulk create operation
       parameters:
