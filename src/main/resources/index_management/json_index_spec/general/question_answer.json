@@ -75,6 +75,11 @@
             "type": "token_count",
             "analyzer": "jenny_stem_analyzer"
           },
+          "freq_shingles_2": {
+            "type": "text",
+            "analyzer": "jenny_shingles_2_analyzer",
+            "similarity": "scripted_term_freq"
+          },
           "shingles_2": {
             "type": "text",
             "fielddata": true,
@@ -84,6 +89,11 @@
             "type": "text",
             "analyzer": "jenny_stemmed_shingles_2_analyzer"
           },
+          "freq_shingles_3": {
+            "type": "text",
+            "analyzer": "jenny_shingles_3_analyzer",
+            "similarity": "scripted_term_freq"
+          },
           "shingles_3": {
             "type": "text",
             "fielddata": true,
@@ -92,6 +102,11 @@
           "stemmed_shingles_3": {
             "type": "text",
             "analyzer": "jenny_stemmed_shingles_3_analyzer"
+          },
+          "freq_shingles_4": {
+            "type": "text",
+            "analyzer": "jenny_shingles_4_analyzer",
+            "similarity": "scripted_term_freq"
           },
           "shingles_4": {
             "type": "text",
@@ -172,6 +187,11 @@
                 "type": "token_count",
                 "analyzer": "jenny_stem_analyzer"
               },
+              "freq_shingles_2": {
+                "type": "text",
+                "analyzer": "jenny_shingles_2_analyzer",
+                "similarity": "scripted_term_freq"
+              },
               "shingles_2": {
                 "type": "text",
                 "analyzer": "jenny_shingles_2_analyzer"
@@ -180,6 +200,11 @@
                 "type": "text",
                 "analyzer": "jenny_stemmed_shingles_2_analyzer"
               },
+              "freq_shingles_3": {
+                "type": "text",
+                "analyzer": "jenny_shingles_3_analyzer",
+                "similarity": "scripted_term_freq"
+              },
               "shingles_3": {
                 "type": "text",
                 "analyzer": "jenny_shingles_3_analyzer"
@@ -187,6 +212,11 @@
               "stemmed_shingles_3": {
                 "type": "text",
                 "analyzer": "jenny_stemmed_shingles_3_analyzer"
+              },
+              "freq_shingles_4": {
+                "type": "text",
+                "analyzer": "jenny_shingles_4_analyzer",
+                "similarity": "scripted_term_freq"
               },
               "shingles_4": {
                 "type": "text",
@@ -283,6 +313,11 @@
             "type": "token_count",
             "analyzer": "jenny_stem_analyzer"
           },
+          "freq_shingles_2": {
+            "type": "text",
+            "analyzer": "jenny_shingles_2_analyzer",
+            "similarity": "scripted_term_freq"
+          },
           "shingles_2": {
             "type": "text",
             "fielddata": true,
@@ -292,6 +327,11 @@
             "type": "text",
             "analyzer": "jenny_stemmed_shingles_2_analyzer"
           },
+          "freq_shingles_3": {
+            "type": "text",
+            "analyzer": "jenny_shingles_3_analyzer",
+            "similarity": "scripted_term_freq"
+          },
           "shingles_3": {
             "type": "text",
             "fielddata": true,
@@ -300,6 +340,11 @@
           "stemmed_shingles_3": {
             "type": "text",
             "analyzer": "jenny_stemmed_shingles_3_analyzer"
+          },
+          "freq_shingles_4": {
+            "type": "text",
+            "analyzer": "jenny_shingles_4_analyzer",
+            "similarity": "scripted_term_freq"
           },
           "shingles_4": {
             "type": "text",
@@ -461,6 +506,11 @@
             "type": "token_count",
             "analyzer": "jenny_stem_analyzer"
           },
+          "freq_shingles_2": {
+            "type": "text",
+            "analyzer": "jenny_shingles_2_analyzer",
+            "similarity": "scripted_term_freq"
+          },
           "shingles_2": {
             "type": "text",
             "analyzer": "jenny_shingles_2_analyzer"
@@ -469,6 +519,11 @@
             "type": "text",
             "analyzer": "jenny_stemmed_shingles_2_analyzer"
           },
+          "freq_shingles_3": {
+            "type": "text",
+            "analyzer": "jenny_shingles_3_analyzer",
+            "similarity": "scripted_term_freq"
+          },
           "shingles_3": {
             "type": "text",
             "analyzer": "jenny_shingles_3_analyzer"
@@ -476,6 +531,11 @@
           "stemmed_shingles_3": {
             "type": "text",
             "analyzer": "jenny_stemmed_shingles_3_analyzer"
+          },
+          "freq_shingles_4": {
+            "type": "text",
+            "analyzer": "jenny_shingles_4_analyzer",
+            "similarity": "scripted_term_freq"
           },
           "shingles_4": {
             "type": "text",

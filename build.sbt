@@ -11,9 +11,9 @@ resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
 libraryDependencies ++= {
   val AkkaHttpVersion	= "10.1.11"
-  val AkkaVersion	= "2.5.26"
+  val AkkaVersion	= "2.6.4"
   val AnalyzerVersion = "3.0.0"
-  val BreezeVersion	= "0.13.2"
+  val BreezeVersion	= "1.0"
   val CourierVersion = "1.0.0"
   val ESClientVersion	= "7.6.0"
   val LogbackVersion	= "1.2.3"
@@ -25,33 +25,32 @@ libraryDependencies ++= {
   val StanfordCoreNLP = "3.9.2"
   val TikaVersion	= "1.24"
   Seq(
-    "com.getjenny" %% "manaus-lib" % ManausLibVersion,
+    "ch.qos.logback" % "logback-classic" % LogbackVersion,
     "com.getjenny" %% "analyzer" % AnalyzerVersion,
+    "com.getjenny" %% "manaus-lib" % ManausLibVersion,
+    "com.github.daddykotex" %% "courier" % CourierVersion,
     "com.github.scopt" %% "scopt" % ScoptVersion,
     "com.roundeights" %% "hasher" % RoundeightsHasherVersion,
     "com.typesafe.akka" %% "akka-actor" % AkkaVersion,
-    "com.typesafe.akka" %% "akka-contrib" % AkkaVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-core" % AkkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test,
+    "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
     "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
     "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test,
-    "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-    "ch.qos.logback" % "logback-classic" % LogbackVersion,
-    "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
+    "edu.stanford.nlp" % "stanford-corenlp" % StanfordCoreNLP,
     "org.apache.tika" % "tika-app" % TikaVersion,
     "org.apache.tika" % "tika-core" % TikaVersion,
     "org.apache.tika" % "tika-parsers" % TikaVersion,
-    "edu.stanford.nlp" % "stanford-corenlp" % StanfordCoreNLP,
+    "org.elasticsearch" % "elasticsearch" % ESClientVersion,
     "org.elasticsearch.client" % "elasticsearch-rest-client" % ESClientVersion,
     "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % ESClientVersion,
-    "org.elasticsearch" % "elasticsearch" % ESClientVersion,
     "org.scalanlp" %% "breeze" % BreezeVersion,
     "org.scalanlp" %% "breeze-natives" % BreezeVersion,
     "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
-    "org.scalaz" %% "scalaz-core" % ScalazVersion,
-    "com.github.daddykotex" %% "courier" % CourierVersion
+    "org.scalaz" %% "scalaz-core" % ScalazVersion
   )
 }
 

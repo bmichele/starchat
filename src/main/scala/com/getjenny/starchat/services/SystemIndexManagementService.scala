@@ -17,7 +17,6 @@ import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.indices._
 import org.elasticsearch.common.settings._
 import org.elasticsearch.common.xcontent.XContentType
-import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
 import scala.io.Source
@@ -41,7 +40,7 @@ object SystemIndexManagementService {
       throw new FileNotFoundException(message)
   }
 
-  private[this] val indicesList: List[SystemElasticClient] =
+  private[this] val esClients: List[SystemElasticClient] =
     List(
       BayesOperatorCacheElasticClient,
       ClusterNodesElasticClient,
@@ -51,13 +50,18 @@ object SystemIndexManagementService {
       CloneDtElasticClient
     )
 
-  def create(indexSuffix: Option[String] = None): IndexManagementResponse = {
-    val operationsMessage: List[(String, Boolean)] = indicesList.filter(item => {
-      indexSuffix match {
-        case Some(t) => t === item.indexSuffix
-        case _ => true
+  private[this] def filteredClients(indexSuffixes: Set[String]): List[SystemElasticClient] = {
+    if (indexSuffixes.nonEmpty) {
+      esClients.filter { item =>
+        indexSuffixes.contains(item.indexSuffix)
       }
-    }).map(item => {
+    } else {
+      esClients
+    }
+  }
+
+  def create(indexSuffix: Set[String] = Set.empty[String]): IndexManagementResponse = {
+    val operationsMessage: List[(String, Boolean)] = filteredClients(indexSuffix).map(item => {
       val jsonInStream: Option[InputStream] = Option {
         getClass.getResourceAsStream(item.mappingPath)
       }
@@ -87,13 +91,8 @@ object SystemIndexManagementService {
     IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
-  def remove(indexSuffix: Option[String] = None): IndexManagementResponse = {
-    val operationsMessage: List[(String, Boolean)] = indicesList.filter(item => {
-      indexSuffix match {
-        case Some(t) => t === item.indexSuffix
-        case _ => true
-      }
-    }).map(item => {
+  def remove(indexSuffix: Set[String] = Set.empty[String]): IndexManagementResponse = {
+    val operationsMessage: List[(String, Boolean)] = filteredClients(indexSuffix).map(item => {
       if (!item.enableDelete) {
         val message: String = "operation is not allowed: delete index is forbidden, contact system administrator"
         throw SystemIndexManagementServiceException(message)
@@ -113,13 +112,8 @@ object SystemIndexManagementService {
     IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
-  def check(indexSuffix: Option[String] = None): IndexManagementResponse = {
-    val operationsMessage: List[(String, Boolean)] = indicesList.filter(item => {
-      indexSuffix match {
-        case Some(t) => t === item.indexSuffix
-        case _ => true
-      }
-    }).map(item => {
+  def check(indexSuffix: Set[String] = Set.empty[String]): IndexManagementResponse = {
+    val operationsMessage: List[(String, Boolean)] = filteredClients(indexSuffix).map(item => {
       val fullIndexName = Index.indexName(item.indexName, item.indexSuffix)
       val getMappingsReq: GetMappingsRequest = new GetMappingsRequest()
         .indices(fullIndexName)
@@ -135,42 +129,35 @@ object SystemIndexManagementService {
     IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
-  def update(indexSuffix: Option[String] = None): IndexManagementResponse = {
-    val operationsMessage: List[(String, Boolean)] = indicesList
-      .filter(item => indexSuffix.forall(_ === item.indexSuffix))
-      .map { item =>
-        val jsonInStream: Option[InputStream] = Option {
-          getClass.getResourceAsStream(item.updateMappingPath)
-        }
-        val schemaJson: String = jsonInStream match {
-          case Some(stream) => Source.fromInputStream(stream, "utf-8").mkString
-          case _ =>
-            throw new FileNotFoundException(s"Check the file: (${item.updateMappingPath})")
-        }
-
-        val fullIndexName = Index.indexName(item.indexName, item.indexSuffix)
-
-        val putMappingReq = new PutMappingRequest(fullIndexName)
-          .source(schemaJson, XContentType.JSON)
-
-        val putMappingRes: AcknowledgedResponse = item.httpClient.indices
-          .putMapping(putMappingReq, RequestOptions.DEFAULT)
-
-        val check = putMappingRes.isAcknowledged
-        (item.indexSuffix + "(" + fullIndexName + ", " + check + ")", check)
+  def update(indexSuffix: Set[String] = Set.empty[String]): IndexManagementResponse = {
+    val operationsMessage: List[(String, Boolean)] = filteredClients(indexSuffix).map { item =>
+      val jsonInStream: Option[InputStream] = Option {
+        getClass.getResourceAsStream(item.updateMappingPath)
       }
+      val schemaJson: String = jsonInStream match {
+        case Some(stream) => Source.fromInputStream(stream, "utf-8").mkString
+        case _ =>
+          throw new FileNotFoundException(s"Check the file: (${item.updateMappingPath})")
+      }
+
+      val fullIndexName = Index.indexName(item.indexName, item.indexSuffix)
+
+      val putMappingReq = new PutMappingRequest(fullIndexName)
+        .source(schemaJson, XContentType.JSON)
+
+      val putMappingRes: AcknowledgedResponse = item.httpClient.indices
+        .putMapping(putMappingReq, RequestOptions.DEFAULT)
+
+      val check = putMappingRes.isAcknowledged
+      (item.indexSuffix + "(" + fullIndexName + ", " + check + ")", check)
+    }
 
     val message = "IndexUpdate: " + operationsMessage.map { case (msg, _) => msg }.mkString(" ")
     IndexManagementResponse(message = message, check = operationsMessage.forall { case (_, ck) => ck })
   }
 
-  def refresh(indexSuffix: Option[String] = None): Option[RefreshIndexResults] = {
-    val operationsResults: List[RefreshIndexResult] = indicesList.filter(item => {
-      indexSuffix match {
-        case Some(t) => t === item.indexSuffix
-        case _ => true
-      }
-    }).map(item => {
+  def refresh(indexSuffix: Set[String] = Set.empty[String]): Option[RefreshIndexResults] = {
+    val operationsResults: List[RefreshIndexResult] = filteredClients(indexSuffix).map(item => {
       val fullIndexName = Index.indexName(item.indexName, item.indexSuffix)
       val refreshIndexRes: RefreshIndexResult = item.refresh(fullIndexName)
       if (refreshIndexRes.failedShardsN > 0) {

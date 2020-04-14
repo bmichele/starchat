@@ -41,8 +41,8 @@ class TimeBetweenAtomic(val arguments: List[String],
           case Some(defValue) => defValue
           case _ => throw ExceptionAtomic(atomName + s": unparsable format for date (must be HH:MM): $hhMM")
         }
-        case _ => throw ExceptionAtomic(atomName + s": time was no specified")
       }
+      case _ => throw ExceptionAtomic(atomName + s": time was no specified")
     }
   }
 

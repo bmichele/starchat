@@ -39,7 +39,7 @@ object CronCleanInMemoryDTService extends CronService {
     val actorRef =
       SCActorSystem.system.actorOf(Props(new CleanDecisionTablesTickActor))
 
-    SCActorSystem.system.scheduler.schedule(
+    SCActorSystem.system.scheduler.scheduleWithFixedDelay(
       0 seconds,
       30 seconds,
       actorRef,

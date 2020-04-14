@@ -61,7 +61,7 @@ object CronDeleteInstanceService extends CronService {
     if (instanceRegistryService.elasticClient.instanceRegistryDeleteFrequency > 0) {
       val reloadDecisionTableActorRef =
         SCActorSystem.system.actorOf(Props(new DeleteInstanceActor))
-      SCActorSystem.system.scheduler.schedule(
+      SCActorSystem.system.scheduler.scheduleWithFixedDelay(
         0 seconds,
         instanceRegistryService.elasticClient.instanceRegistryDeleteFrequency seconds,
         reloadDecisionTableActorRef,

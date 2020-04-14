@@ -1,4 +1,4 @@
-openapi: 3.0.2
+openapi: 3.0.3
 servers:
   - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.3'
 info:
@@ -241,8 +241,11 @@ paths:
             the index suffix, if not specified the status for all the instance related tables will be retrieved. The suffixes can be specified in the configuration file, by default they can be -> logs_data, prior_data, question_answer, state, term
           example: state
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: information containing status of indicies
@@ -275,8 +278,11 @@ paths:
             the index suffix, if not specified the status all the instance related tables will be deleted. The suffixes can be specified in the configuration file, by default they can be -> logs_data, prior_data, question_answer, state, term
           example: state
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: request successfully processed
@@ -307,8 +313,11 @@ paths:
           description: the index suffix, if not specified all the instance related tables will be open
           example: action
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: index successfully open
@@ -339,8 +348,11 @@ paths:
           description: the index suffix, if not specified all the instance related tables will be closed
           example: action
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: index successfully closed
@@ -371,8 +383,11 @@ paths:
           description: the index suffix, if not specified all the instance related tables will be refreshed
           example: action
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: index successfully refreshed
@@ -403,8 +418,11 @@ paths:
           description: the index suffix, if not specified all the instance related tables will be updated
           example: action
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: request successfully processed
@@ -435,8 +453,11 @@ paths:
           description: the index suffix, if not specified all the instance related tables will be updated
           example: action
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: request successfully processed
@@ -483,8 +504,11 @@ paths:
             by default they can be: user, refresh_decisiontable, cluster_nodes, decision_table_node_status
           example: user
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: request successfully processed
@@ -512,8 +536,11 @@ paths:
             by default they can be: user, refresh_decisiontable, cluster_nodes, decision_table_node_status
           example: user
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: request successfully processed
@@ -541,8 +568,11 @@ paths:
             by default they can be: user, refresh_decisiontable, cluster_nodes, decision_table_node_status
           example: user
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: request successfully processed
@@ -570,8 +600,11 @@ paths:
             by default they can be: user, refresh_decisiontable, cluster_nodes, decision_table_node_status
           example: user
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '201':
           description: index successfully created
@@ -599,8 +632,11 @@ paths:
             by default they can be: user, refresh_decisiontable, cluster_nodes, decision_table_node_status
           example: user
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: index successfully refreshed
@@ -628,8 +664,11 @@ paths:
             by default they can be: user, refresh_decisiontable, cluster_nodes, decision_table_node_status
           example: user
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: index successfully open
@@ -657,8 +696,11 @@ paths:
             by default they can be: user, refresh_decisiontable, cluster_nodes, decision_table_node_status
           example: user
           required: false
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: index successfully open
@@ -1434,7 +1476,7 @@ paths:
       tags:
         - customer
       operationId: post_decisiontable_bulk_create
-      deprecated: true
+      summary: Bulk creation
       description: >-
         bulk create operation
       parameters:
@@ -4198,7 +4240,8 @@ components:
           type: array
           description: the vectorial representation of the term e.g. word2vec
           items:
-            type: double
+            type: number
+            format: double
           example: [0.0, -1.0,  2.0, 1.2, 3.0]
         score:
           type: number
@@ -5609,13 +5652,10 @@ components:
           description: query by index of the sentence in conversation
           example: 10
         coreData:
-          type: object
           $ref: '#/components/schemas/QADocumentCoreSearch'
         aggnotations:
-          type: object
           $ref: '#/components/schemas/AggAnnotationsSearch'
         annotations:
-          type: object
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'
         status:
           type: number
@@ -5870,7 +5910,7 @@ components:
         status:
           type: boolean
           description: if loading has been successful
-          example: conv_id_1234
+          example: true
         message:
           type: string
           description: description containing error or number of elements loaded

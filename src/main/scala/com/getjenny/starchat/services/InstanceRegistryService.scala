@@ -91,7 +91,7 @@ object InstanceRegistryService extends AbstractDataService {
   private[this] val nodeDtLoadingStatusElasticClient: NodeDtLoadingStatusElasticClient.type = NodeDtLoadingStatusElasticClient
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val instanceRegistryIndex: String = Index.indexName(elasticClient.indexName, elasticClient.indexSuffix)
-  private[this] val languageIndexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
+  private[this] val languageIndexManagementService: LanguageIndexManagementService.type = LanguageIndexManagementService
   private[this] val esCrudBase = new EsCrudBase(elasticClient, instanceRegistryIndex)
   private[this] val userEsService: AbstractUserService = UserService.service
 
@@ -281,7 +281,7 @@ object InstanceRegistryService extends AbstractDataService {
 
   private[this] def elasticSearchIndexExists(indexName: String): Boolean = {
     val languageSpecificIndex = Index.esLanguageFromIndexName(indexName, "")
-    languageIndexManagementService.getAll.exists(_.startsWith(languageSpecificIndex))
+    languageIndexManagementService.indices.exists(_.startsWith(languageSpecificIndex))
   }
 
 }

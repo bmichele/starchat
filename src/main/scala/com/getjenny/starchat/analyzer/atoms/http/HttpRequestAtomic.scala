@@ -5,7 +5,6 @@ import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials, OAuth2BearerToken, RawHeader}
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
@@ -23,7 +22,6 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
 
   val atomName: String = "HttpRequest"
   private[this] implicit val system: ActorSystem = SCActorSystem.system
-  private[this] implicit val materializer: ActorMaterializer = ActorMaterializer()
   private[this] implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   private[this] val http: HttpExt = Http()
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass)

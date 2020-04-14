@@ -52,11 +52,11 @@ trait SystemIndexManagementResource extends StarChatResource {
             authenticator = authenticator.authenticator) { user =>
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, "admin", Permissions.write)) {
-              parameters('indexSuffix.as[String].?) { indexSuffix =>
+              parameters('indexSuffix.as[String].*) { indexSuffix =>
                 operation match {
                   case "refresh" =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.refresh(indexSuffix)) {
+                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.refresh(indexSuffix.toSet)) {
                       case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
                         t
                       })
@@ -67,7 +67,7 @@ trait SystemIndexManagementResource extends StarChatResource {
                     }
                   case "create" =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.create(indexSuffix)) {
+                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.create(indexSuffix.toSet)) {
                       case Success(t) => completeResponse(StatusCodes.Created, StatusCodes.BadRequest, Option {
                         t
                       })
@@ -110,9 +110,9 @@ trait SystemIndexManagementResource extends StarChatResource {
                 authenticator = authenticator.authenticator) { user =>
                 authorizeAsync(_ =>
                   authenticator.hasPermissions(user, "admin", Permissions.write)) {
-                  parameters('indexSuffix.as[String].?) { indexSuffix =>
+                  parameters('indexSuffix.as[String].*) { indexSuffix =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.remove(indexSuffix)) {
+                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.remove(indexSuffix.toSet)) {
                       case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
                         t
                       })
@@ -130,9 +130,9 @@ trait SystemIndexManagementResource extends StarChatResource {
                 authenticator = authenticator.authenticator) { user =>
                 authorizeAsync(_ =>
                   authenticator.hasPermissions(user, "admin", Permissions.write)) {
-                  parameters('indexSuffix.as[String].?) { indexSuffix =>
+                  parameters('indexSuffix.as[String].*) { indexSuffix =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.update(indexSuffix)) {
+                    onCompleteWithBreakerFuture(breaker)(systemIndexManagementService.update(indexSuffix.toSet)) {
                       case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
                         t
                       })
@@ -148,7 +148,6 @@ trait SystemIndexManagementResource extends StarChatResource {
         }
     }
   }
-
 }
 
 

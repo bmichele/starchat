@@ -30,7 +30,7 @@ object CronCleanDtLoadingRecordsService extends CronService {
   def scheduleAction(): Unit = {
     val actorRef =
       SCActorSystem.system.actorOf(Props(new CleanDtLoadingStatusTickActor))
-    SCActorSystem.system.scheduler.schedule(
+    SCActorSystem.system.scheduler.scheduleWithFixedDelay(
       0 seconds,
       nodeDtLoadingStatusService.elasticClient.clusterCleanDtLoadingRecordsInterval seconds,
       actorRef,

@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
 /** Download and update the decision tables from elasticsearch
  */
 object CronReloadDTService extends CronService {
-  protected[this] val indexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
+  protected[this] val indexManagementService: LanguageIndexManagementService.type = LanguageIndexManagementService
 
   class ReloadAnalyzersTickActor extends Actor {
     protected[this] var updateTimestamp: Long = 0
@@ -72,7 +72,7 @@ object CronReloadDTService extends CronService {
     if (nodeDtLoadingStatusService.elasticClient.dtReloadCheckFrequency > 0) {
       val reloadDecisionTableActorRef =
         SCActorSystem.system.actorOf(Props(new ReloadAnalyzersTickActor))
-      SCActorSystem.system.scheduler.schedule(
+      SCActorSystem.system.scheduler.scheduleWithFixedDelay(
         0 seconds,
         nodeDtLoadingStatusService.elasticClient.dtReloadCheckFrequency seconds,
         reloadDecisionTableActorRef,
