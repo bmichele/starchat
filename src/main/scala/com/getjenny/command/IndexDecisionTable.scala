@@ -35,7 +35,6 @@ object IndexDecisionTable extends JsonSupport {
 
   private[this] def execute(params: Params) {
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
     val baseUrl = params.host + "/" + params.indexName + params.path

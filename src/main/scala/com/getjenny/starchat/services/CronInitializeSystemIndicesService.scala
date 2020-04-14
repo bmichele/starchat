@@ -3,10 +3,10 @@ package com.getjenny.starchat.services
 import akka.actor.{Actor, Props}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.services.esclient.{ClusterNodesElasticClient, InstanceRegistryElasticClient, NodeDtLoadingStatusElasticClient, UserElasticClient}
+import com.getjenny.starchat.utils.Index
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import com.getjenny.starchat.utils.Index
 
 /** Initialize the System Indices if they does not exists
  */

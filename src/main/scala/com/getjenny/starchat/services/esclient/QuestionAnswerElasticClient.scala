@@ -5,7 +5,7 @@ package com.getjenny.starchat.services.esclient
  */
 
 trait QuestionAnswerElasticClient extends ElasticClient {
-  val queryMinThreshold : Float = config.getDouble("es.qa_query_min_threshold").toFloat
+  val queryMinThreshold: Float = config.getDouble("es.qa_query_min_threshold").toFloat
   val queriesScoreMode: String = config.getString("es.qa_nested_score_mode").toLowerCase
   val questionNegativeMinimumMatch: String = config.getString("es.qa_question_negative_minimum_match")
   val questionNegativeBoost: Float = config.getDouble("es.qa_question_negative_boost").toFloat

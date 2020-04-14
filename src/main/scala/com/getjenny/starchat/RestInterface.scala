@@ -22,7 +22,7 @@ trait RestInterface extends RootAPIResource
   implicit def executionContext: ExecutionContext
 
   lazy val decisionTableService: DecisionTableService.type = DecisionTableService
-  lazy val indexManagementService: LangaugeIndexManagementService.type = LangaugeIndexManagementService
+  lazy val indexManagementService: LanguageIndexManagementService.type = LanguageIndexManagementService
   lazy val systemIndexManagementService: SystemIndexManagementService.type = SystemIndexManagementService
   lazy val languageGuesserService: LanguageGuesserService.type = LanguageGuesserService
   lazy val termService: TermService.type = TermService

@@ -11,15 +11,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpRequest, _}
-import akka.stream.ActorMaterializer
-import com.getjenny.starchat.entities.{persistents, _}
 import com.getjenny.starchat.entities.persistents.{Doctypes, QADocument, QADocumentAnnotations, QADocumentCore}
 import com.getjenny.starchat.serializers.JsonSupport
 import com.roundeights.hasher.Implicits._
 import scopt.OptionParser
 
 import scala.collection.immutable
-import scala.collection.immutable.List
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.io.Source
@@ -48,7 +45,6 @@ object IndexCorpusOnQuestionAnswer extends JsonSupport {
 
   private[this] def execute(params: Params) {
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
     val baseUrl = params.host + "/" + params.indexName + params.path

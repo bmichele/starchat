@@ -7,7 +7,7 @@ import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io.UpdateDocumentsResult
 import com.getjenny.starchat.entities.persistents.{Term, Terms}
 import com.getjenny.starchat.services.CronDeleteInstanceService.DeleteInstanceActor
-import com.getjenny.starchat.services.esclient.IndexManagementElasticClient
+import com.getjenny.starchat.services.esclient.TermElasticClient
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.index.query.QueryBuilders
@@ -20,7 +20,6 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
 
   private[this] val instanceRegistryService = InstanceRegistryService
   private[this] val indexName = "index_getjenny_english_0"
-  private[this] val client = IndexManagementElasticClient
   private[this] val systemIndexManagementService: SystemIndexManagementService.type = SystemIndexManagementService
   private[this] val instance = Index.instanceName(indexName)
   private[this] val testProbe = TestProbe()
@@ -32,7 +31,8 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
       val terms = Terms(
         terms = List(Term(term = "term1"), Term(term = "term2"))
       )
-      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post("/index_getjenny_english_0/term/index?refresh=1", terms) ~>
+        addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[UpdateDocumentsResult]
         response.data.length should be(terms.terms.length)
@@ -41,7 +41,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
 
 
     "delete instance when cron job is triggered" in {
-      val crud = new EsCrudBase(client, "index_english.term")
+      val crud = new EsCrudBase(TermElasticClient, "index_english.term")
       crud.refresh
 
       instanceRegistryService.markDeleteInstance(indexName)
@@ -57,7 +57,7 @@ class CronDeleteInstancesTest extends TestEnglishBase with TestKitBase with Impl
         .indices
         .filter(_.startsWith(esLanguageSpecificIndexName))
         .foreach(fullIndexName => {
-          val indexLanguageCrud = new EsCrudBase(client, fullIndexName)
+          val indexLanguageCrud = new EsCrudBase(TermElasticClient, fullIndexName)
           indexLanguageCrud.refresh
           val read = indexLanguageCrud.read(QueryBuilders.matchQuery("instance", instance))
           assert(read.getHits.getHits.flatMap(_.getSourceAsMap.asScala).isEmpty)

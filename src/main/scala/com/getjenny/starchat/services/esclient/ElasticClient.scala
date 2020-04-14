@@ -133,12 +133,10 @@ trait ElasticClient {
   val commonIndexArbitraryPattern: String = config.getString("es.common_index_arbitrary_pattern")
   val commonIndexDefaultOrgPattern: String = config.getString("es.common_index_default_org_pattern")
 
-  val convLogsIndexSuffix: String = config.getString("es.logs_data_index_suffix")
-  val dtIndexSuffix: String = config.getString("es.dt_index_suffix")
-  val kbIndexSuffix: String = config.getString("es.kb_index_suffix")
-  val priorDataIndexSuffix: String = config.getString("es.prior_data_index_suffix")
-  val termIndexSuffix: String = config.getString("es.term_index_suffix")
-
   val enableDeleteIndex: Boolean = config.getBoolean("es.enable_delete_application_index")
 
+  val mappingPath: String
+  val updateMappingPath: String
+  val numberOfShards: Int
+  val numberOfReplicas: Int
 }

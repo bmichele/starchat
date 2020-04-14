@@ -28,7 +28,7 @@ object CronNodeAliveSignalService extends CronService {
   def scheduleAction(): Unit = {
     val actorRef =
       SCActorSystem.system.actorOf(Props(new NodeAliveSignalTickActor))
-    SCActorSystem.system.scheduler.schedule(
+    SCActorSystem.system.scheduler.scheduleWithFixedDelay(
       0 seconds,
       clusterNodesService.elasticClient.clusterNodeAliveSignalInterval seconds,
       actorRef,

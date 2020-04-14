@@ -5,7 +5,6 @@ import java.io.{File, FileInputStream, FileReader}
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
 import breeze.io.CSVReader
 import com.getjenny.starchat.entities.persistents.{DTDocument, SearchDTDocument, SearchDTDocumentsResults, Term}
 import com.getjenny.starchat.serializers.JsonSupport
@@ -24,7 +23,6 @@ object FileToDocuments extends JsonSupport {
 
   def getDTDocumentsFromJSON(log: LoggingAdapter, file: File): IndexedSeq[DTDocument] = {
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
     val stream = if(file.isAbsolute) {
@@ -55,7 +53,6 @@ object FileToDocuments extends JsonSupport {
   def getDTDocumentsFromCSV(log: LoggingAdapter, file: File, skipLines: Int = 0, separator: Char = ','):
   IndexedSeq[DTDocument] = {
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
     val fileReader = if(file.isAbsolute) {
@@ -125,7 +122,6 @@ object FileToDocuments extends JsonSupport {
   def getTermsDocumentsFromCSV(log: LoggingAdapter, file: File, skipLines: Int = 0, separator: Char = ','):
   IndexedSeq[Term] = {
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
     val fileReader = if(file.isAbsolute) {

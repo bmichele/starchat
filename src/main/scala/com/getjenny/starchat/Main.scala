@@ -7,7 +7,6 @@ package com.getjenny.starchat
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.{ConnectionContext, Http, HttpsConnectionContext}
-import akka.stream.ActorMaterializer
 import com.getjenny.starchat.utils.SslContext
 
 import scala.concurrent.ExecutionContextExecutor
@@ -36,8 +35,6 @@ final class StarChatService(parameters: Option[Parameters] = None) extends RestI
 
   /* creation of the akka actor system which handle concurrent requests */
   implicit val system: ActorSystem = SCActorSystem.system
-  /* "The Materializer is a factory for stream execution engines, it is the thing that makes streams run" */
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   if (params.https_enable) {

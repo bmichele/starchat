@@ -11,15 +11,13 @@ import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.utils.{EMDVectorDistances, MeanVectorDistances, SumVectorDistances, TextToVectorsTools}
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents.{Term, TermCountFields, Terms, TextTerms}
-import com.getjenny.starchat.services.esclient.ManausTermsExtractionElasticClient
 import com.getjenny.starchat.utils.Index
 import scalaz.Scalaz._
 
 import scala.collection.immutable.Map
 
-object ManausTermsExtractionService extends AbstractDataService {
+object ManausTermsExtractionService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
-  override val elasticClient: ManausTermsExtractionElasticClient.type = ManausTermsExtractionElasticClient
   private[this] val termService: TermService.type = TermService
   private[this] val priorDataService: PriorDataService.type = PriorDataService
   private[this] val convLogDataService: ConversationLogsService.type = ConversationLogsService

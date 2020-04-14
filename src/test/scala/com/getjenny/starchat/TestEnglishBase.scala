@@ -9,19 +9,24 @@ trait TestEnglishBase extends TestBase {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    Post("/language_index_management", createEnglishRequest) ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Post("/language_index_management", createEnglishRequest) ~>
+      addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
-    Post(s"/index_getjenny_english_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Post(s"/index_getjenny_english_0/index_management/create") ~>
+      addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
-    Post(s"/index_getjenny_english_0/index_management/enable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Post(s"/index_getjenny_english_0/index_management/enable") ~>
+      addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
-    Post(s"/index_getjenny_english_common_0/index_management/create") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Post(s"/index_getjenny_english_common_0/index_management/create") ~>
+      addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
-    Post(s"/index_getjenny_english_common_0/index_management/enable") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Post(s"/index_getjenny_english_common_0/index_management/enable") ~>
+      addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
     val user = User(
@@ -39,7 +44,8 @@ trait TestEnglishBase extends TestBase {
   }
 
   override protected def afterAll(): Unit = {
-    Delete(s"/language_index_management?index_name=index_english") ~> addCredentials(testAdminCredentials) ~> routes ~> check {
+    Delete(s"/language_index_management?index_name=index_english") ~>
+      addCredentials(testAdminCredentials) ~> routes ~> check {
       true
     }
     InstanceRegistryService.markAsDeleted(List("index_getjenny_english_0", "index_getjenny_english_common_0"))
