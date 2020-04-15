@@ -23,7 +23,8 @@ trait LanguageIndexManagementResource extends StarChatResource {
               authorizeAsync(_ => authenticator.hasPermissions(user, "admin", Permissions.write)) {
                 entity(as[CreateLanguageIndexRequest]) { createLanguageIndexRequest =>
                   val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 60.seconds)
-                  onCompleteWithBreakerFuture(breaker)(languageIndexManagementService.create(createLanguageIndexRequest.languageList)) {
+                  onCompleteWithBreakerFuture(breaker)(
+                    languageIndexManagementService.create(createLanguageIndexRequest.languageList)) {
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {t})
                     case Failure(e) =>

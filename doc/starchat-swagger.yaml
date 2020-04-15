@@ -201,7 +201,7 @@ paths:
       tags:
         - admin
       summary: create new language specific starchat index set
-      operationId: post_languahe_index_management
+      operationId: post_language_index_management
       description: "create the language specific starchat indexes, these indexes must be crested after the system
                     indexes and are required to create the instance indexes."
       requestBody:
