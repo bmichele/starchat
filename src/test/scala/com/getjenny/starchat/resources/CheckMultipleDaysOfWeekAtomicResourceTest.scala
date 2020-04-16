@@ -3,7 +3,7 @@ import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.analyzer.expressions.AnalyzersData
 import com.getjenny.analyzer.util.Time
 import com.getjenny.starchat.TestEnglishBase
-import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, Permissions, User}
+import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse}
 import scalaz.Scalaz._
 
 class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
