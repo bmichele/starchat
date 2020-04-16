@@ -1,8 +1,8 @@
 package com.getjenny.starchat.resources
 
-import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import akka.http.scaladsl.server.AuthorizationFailedRejection
 import com.getjenny.starchat.TestBase
 import com.getjenny.starchat.entities.io.Permissions.Permission
 import com.getjenny.starchat.entities.io._
