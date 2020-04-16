@@ -8,7 +8,6 @@ sudo: required
 services:
   - docker
 script:
-  - mkdir -p ${HOME}/.sbt/1.2 && echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"oss.sonatype.org\", \"${SONATYPE_USERNAME}\", \"${SONATYPE_PASSWORD}\")" > ${HOME}/.sbt/1.2/sonatype.sbt
   - CURRENT_UID=$(id -u):$(id -g) sbt ++$TRAVIS_SCALA_VERSION dockerComposeUp
   - nc -z 0.0.0.0 9200 && echo "OK PORT(9200)" || echo "FAILED PORT(9200)"
   - curl -v -k https://0.0.0.0:9200 && echo "OK PORT(9200)" || echo "FAILED PORT(9200)"
