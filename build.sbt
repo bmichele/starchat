@@ -5,7 +5,7 @@ name := "StarChat"
 organization := "com.getjenny"
 maintainer := "angelo@getjenny.com"
 
-crossScalaVersions := Seq("2.13.1", "2.12.10")
+crossScalaVersions := Seq("2.12.10")
 
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
 
