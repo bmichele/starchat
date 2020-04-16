@@ -5,9 +5,11 @@ name := "StarChat"
 organization := "com.getjenny"
 maintainer := "angelo@getjenny.com"
 
-crossScalaVersions := Seq("2.12.10")
+crossScalaVersions := Seq("2.13.1")
 
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
+
+libraryDependencies += "com.codacy" % "codacy-coverage-reporter" % "7.1.0"
 
 libraryDependencies ++= {
   val AkkaHttpVersion	= "10.1.11"
