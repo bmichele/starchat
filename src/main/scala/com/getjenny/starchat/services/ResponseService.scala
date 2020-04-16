@@ -12,6 +12,7 @@ import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
+import java.security.SecureRandom
 import spray.json.{JsString, _}
 
 import scala.collection.immutable.Map
@@ -300,8 +301,8 @@ object ResponseService extends AbstractDataService {
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
     if (splittedBubble.length > 1) {
-      val r = new scala.util.Random
-      val randomIdx = r.nextInt(splittedBubble.length)
+      val secRandom = new SecureRandom
+      val randomIdx = secRandom.nextInt(splittedBubble.length)
       splittedBubble(randomIdx)
     } else {
       bubble
