@@ -1,13 +1,13 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.{ContentType, HttpMethod, HttpMethods, HttpResponse, StatusCode}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.Materializer
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http.AuthorizationType.AuthorizationType
+import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName.parameterConstantList
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.Regex.templateRegex
 import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants._
-import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName.parameterConstantList
 import com.getjenny.starchat.analyzer.atoms.http.StoreOption.StoreOption
 import scalaz.Scalaz._
 import scalaz.Validation.FlatMap._

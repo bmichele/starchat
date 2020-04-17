@@ -19,7 +19,6 @@ import org.elasticsearch.client.{RequestOptions, RestClient, RestClientBuilder, 
 import scalaz.Scalaz._
 
 import scala.collection.immutable.{List, Map}
-import com.getjenny.starchat.utils.Index
 
 trait ElasticClient {
   val config: Config = ConfigFactory.load()

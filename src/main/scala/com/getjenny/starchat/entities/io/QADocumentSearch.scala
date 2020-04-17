@@ -1,7 +1,6 @@
 package com.getjenny.starchat.entities.io
 
 import com.getjenny.starchat.entities.persistents._
-
 import scalaz.Scalaz._
 
 /**

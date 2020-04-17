@@ -1,8 +1,8 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import com.getjenny.starchat.analyzer.atoms.http._
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
+import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
 

@@ -4,7 +4,7 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
-import com.getjenny.starchat.entities.io.{BayesOperatorCacheServiceResponse, RefreshIndexResult, RefreshPolicy}
+import com.getjenny.starchat.entities.io.{BayesOperatorCacheServiceResponse, RefreshPolicy}
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.services.esclient.{BayesOperatorCacheElasticClient, ElasticClient}
 import com.getjenny.starchat.utils.Index

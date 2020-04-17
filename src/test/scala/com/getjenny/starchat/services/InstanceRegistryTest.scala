@@ -1,7 +1,7 @@
 package com.getjenny.starchat.services
 
 import com.getjenny.starchat.TestBase
-import com.getjenny.starchat.entities.io.{CreateLanguageIndexRequest, RefreshPolicy}
+import com.getjenny.starchat.entities.io.CreateLanguageIndexRequest
 import com.getjenny.starchat.services.InstanceRegistryStatus._
 import scalaz.Scalaz._
 

@@ -12,7 +12,6 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
 import com.getjenny.starchat.entities.persistents.{DTDocument, SearchDTDocument, SearchDTDocumentsResults}
 import com.getjenny.starchat.serializers.JsonSupport
 import scopt.OptionParser

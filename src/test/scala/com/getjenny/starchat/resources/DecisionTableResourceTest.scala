@@ -11,14 +11,14 @@ class DecisionTableResourceTest extends TestEnglishBase {
   "StarChat" should {
     "return an HTTP code 201 when indexing a decision table from csv file" in {
 
-      val input_file = getClass.getResourceAsStream("/doc/decision_table_starchat_doc.csv")
-      val input_data = scala.io.Source.fromInputStream(input_file).mkString
+      val inputFile = getClass.getResourceAsStream("/doc/decision_table_starchat_doc.csv")
+      val inputData = scala.io.Source.fromInputStream(inputFile).mkString
 
       val multipartForm =
         Multipart.FormData(
           Multipart.FormData.BodyPart.Strict(
             "csv",
-            HttpEntity(ContentTypes.`text/plain(UTF-8)`, input_data),
+            HttpEntity(ContentTypes.`text/plain(UTF-8)`, inputData),
             Map("filename" -> "data.csv")))
 
       Post(s"/index_getjenny_english_0/decisiontable/upload/csv", multipartForm) ~> addCredentials(testUserCredentials) ~> routes ~> check {

@@ -5,7 +5,6 @@ package com.getjenny.starchat.analyzer.utils
   */
 
 import com.getjenny.analyzer.util.VectorUtils._
-import com.getjenny.starchat.entities._
 import com.getjenny.starchat.entities.persistents.TextTerms
 import com.getjenny.starchat.services._
 

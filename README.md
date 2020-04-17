@@ -6,19 +6,17 @@
 [![Code Triagers Badge](https://www.codetriage.com/getjenny/starchat/badges/users.svg)](https://www.codetriage.com/getjenny/starchat)
 [![Project status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
 
-# Welcome!
+#   Welcome!
 
 This is the official repository for StarChat, a scalable conversational engine for B2B applications provided by [GetJenny](https://getjenny.com)
 
-# Documentation
+#   Documentation
 
 Go to the [documentation](https://getjenny.github.io/starchat-doc/)
 
-# How to contribute
+#   How to contribute
 
 To contribute to StarChat, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) 
 from your fork of this repository!
 
-Our concise [contribution guideline](https://github.com/GetJenny/starchat/blob/master/CONTRIBUTING.md) contains the bare
-minumum requirements of the code contributions.
-
+Our concise [contribution guideline](https://github.com/GetJenny/starchat/blob/master/CONTRIBUTING.md) contains the bare minumum requirements for the contributions.

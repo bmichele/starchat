@@ -8,9 +8,9 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.InstanceRegistryService.allEnabledInstanceTimestamp
+import com.getjenny.starchat.services.esclient.NodeDtLoadingStatusElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse, SearchType}
-import com.getjenny.starchat.services.esclient.NodeDtLoadingStatusElasticClient
 import org.elasticsearch.action.update.{UpdateRequest, UpdateResponse}
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.common.xcontent.XContentBuilder

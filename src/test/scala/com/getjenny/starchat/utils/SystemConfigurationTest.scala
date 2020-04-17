@@ -1,8 +1,8 @@
 package com.getjenny.starchat.utils
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class SystemConfigurationTest extends AnyWordSpec with Matchers with ScalatestRouteTest{
   "System configuration" should {

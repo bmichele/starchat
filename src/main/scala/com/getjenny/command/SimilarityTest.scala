@@ -12,11 +12,9 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
 import au.com.bytecode.opencsv.CSVWriter
 import breeze.io.CSVReader
 import com.getjenny.analyzer.expressions.AnalyzersData
-import com.getjenny.starchat.entities._
 import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, SearchAlgorithm}
 import com.getjenny.starchat.serializers.JsonSupport
 import scopt.OptionParser

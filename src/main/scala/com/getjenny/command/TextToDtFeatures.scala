@@ -7,7 +7,6 @@ package com.getjenny.command
 import java.io._
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import com.getjenny.starchat.serializers.JsonSupport
 import edu.stanford.nlp.process.DocumentPreprocessor
 import scalaz.Scalaz._

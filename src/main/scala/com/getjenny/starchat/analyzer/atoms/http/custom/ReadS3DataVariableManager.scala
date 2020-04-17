@@ -1,6 +1,6 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods, HttpResponse, StatusCode, StatusCodes}
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._

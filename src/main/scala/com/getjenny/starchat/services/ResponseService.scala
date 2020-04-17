@@ -4,6 +4,8 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
 
+import java.security.SecureRandom
+
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.analyzers._
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context, Result}
@@ -300,8 +302,8 @@ object ResponseService extends AbstractDataService {
   private[this] def randomizeBubble(bubble: String): String = {
     val splittedBubble = bubble.split('|')
     if (splittedBubble.length > 1) {
-      val r = new scala.util.Random
-      val randomIdx = r.nextInt(splittedBubble.length)
+      val secRandom = new SecureRandom
+      val randomIdx = secRandom.nextInt(splittedBubble.length)
       splittedBubble(randomIdx)
     } else {
       bubble
