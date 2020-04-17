@@ -8,7 +8,7 @@ import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.search.aggregations.bucket.filter.{Filter, ParsedFilter}
 import org.elasticsearch.search.aggregations.bucket.histogram.{Histogram, ParsedDateHistogram}
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms
-import org.elasticsearch.search.aggregations.metrics.{Avg, Cardinality, ValueCount}
+import org.elasticsearch.search.aggregations.metrics.{Avg, Cardinality}
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 import scala.collection.JavaConverters._

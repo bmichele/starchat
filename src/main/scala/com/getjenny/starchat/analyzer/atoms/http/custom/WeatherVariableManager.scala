@@ -1,13 +1,11 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods, StatusCode, StatusCodes}
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.{VariableConfiguration, as}
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
-import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName._
 
 /**
   * weather("location=London")

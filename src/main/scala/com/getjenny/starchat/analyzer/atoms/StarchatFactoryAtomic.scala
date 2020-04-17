@@ -6,7 +6,7 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms._
 import com.getjenny.analyzer.interfaces._
-import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom._
 import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic}
 
 class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAtomic, Map[String, String]] {
