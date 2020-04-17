@@ -8,6 +8,7 @@ import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse, IndexManagementStatusResponse, RefreshPolicy}
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
+import com.getjenny.starchat.services.esclient.{InstanceRegistryElasticClient, NodeDtLoadingStatusElasticClient}
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.update.UpdateResponse
 import org.elasticsearch.common.xcontent.XContentBuilder
@@ -19,8 +20,6 @@ import scalaz.Scalaz._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
-import com.getjenny.starchat.services.esclient.{InstanceRegistryElasticClient, NodeDtLoadingStatusElasticClient}
-
 import scala.util.{Failure, Success, Try}
 
 class InstanceRegistryException(message: String = "", cause: Throwable = None.orNull) extends Exception(message, cause)

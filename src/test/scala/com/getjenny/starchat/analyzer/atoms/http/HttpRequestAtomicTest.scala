@@ -1,13 +1,10 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.getjenny.analyzer.expressions.AnalyzersDataInternal
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.WeatherVariableManager
 import com.getjenny.starchat.utils.SystemConfiguration
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scalaz.Scalaz._
 import scalaz.{Failure, Success}
 

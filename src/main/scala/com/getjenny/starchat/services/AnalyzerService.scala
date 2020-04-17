@@ -17,12 +17,12 @@ import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.elasticsearch.index.query.QueryBuilders
 import scalaz.Scalaz._
+import spray.json.JsObject
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
 import scala.collection.{concurrent, mutable}
 import scala.util.{Failure, Success, Try}
-import spray.json.JsObject
 
 case class AnalyzerServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)

@@ -5,7 +5,6 @@ package com.getjenny.starchat.resources
  */
 
 import akka.NotUsed
-import akka.http.scaladsl.common.{EntityStreamingSupport, JsonEntityStreamingSupport}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import akka.pattern.CircuitBreaker

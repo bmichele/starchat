@@ -4,6 +4,8 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
 
+import java.security.SecureRandom
+
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.analyzers._
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context, Result}
@@ -12,7 +14,6 @@ import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.actions._
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
-import java.security.SecureRandom
 import spray.json.{JsString, _}
 
 import scala.collection.immutable.Map
