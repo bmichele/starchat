@@ -5,7 +5,7 @@ INDEX_NAME=${2:-index_getjenny_english_0}
 
 # state is also used as ID (see updateRowDT.sh)
 curl -v -H "Authorization: Basic $(echo -n 'test_user:p4ssw0rd' | base64)" \
-  -H "Content-Type: application/json" -X POST http://localhost:${PORT}/${INDEX_NAME}/decisiontable -d '{
+  -H "Content-Type: application/json" -X POST "http://localhost:${PORT}/${INDEX_NAME}/decisiontable" -d '{
 	"state": "further_details_access_question",
         "maxStateCount": 0,
         "executionOrder": 0,
