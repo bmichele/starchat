@@ -6,7 +6,7 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms._
 import com.getjenny.analyzer.interfaces._
-import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
 import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic}
 
 class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAtomic, Map[String, String]] {
@@ -56,7 +56,9 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "toDouble",
     "vOneKeyword",
     "weather",
-    "entityExtractor"
+    "entityExtractor",
+    "zendeskTicketComments",
+    "zendeskSearchTickets"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
@@ -89,6 +91,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "entityExtractor" => new HttpRequestAtomic(argument, restrictedArgs) with EntityExtractorVariableManager
     case "prevTravStateIs" => new PrevTravStateIsAtomic(argument, restrictedArgs)
     case "readRemoteData" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
+    case "zendeskTicketComments" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskTicketCommentsVariableManager
+    case "zendeskSearchTickets" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskSearchTicketsVariableManager
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
     case "search" => new SearchAtomic(argument, restrictedArgs)
     case "setServiceOpening" => new SetServiceOpeningAtomic(argument, restrictedArgs)

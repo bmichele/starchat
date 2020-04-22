@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpMethods}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
-import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, ParseDateVariableManager, ParseNameVariableManager, ReadS3DataVariableManager, SubmitHubspotVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -530,8 +530,32 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       println(result)
       result.data.extractedVariables.foreach(println)
     }
-    
+     */
+    /*
+    "test ZendeskSearchTickets atom" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List("user-email=customer@example.com"), systemConf) with ZendeskSearchTicketsVariableManager
+
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
+      result.data.extractedVariables.foreach(println)
+    }
+     */
+    /*
+  "test ZendeskTicketComments atom" in {
+
+    val systemConf = SystemConfiguration
+      .createMapFromPath("starchat.atom-values")
+
+    val atom = new HttpRequestAtomic(List("ticket-id=14"), systemConf) with ZendeskTicketCommentsVariableManager
+
+    val result = atom.evaluate("", AnalyzersDataInternal())
+    println(result)
+    result.data.extractedVariables.foreach(println)
+  }
      */
   }
-
 }
