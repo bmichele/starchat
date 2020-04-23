@@ -28,6 +28,8 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
   private[this] val esCrudBase = new EsCrudBase(client, index)
   val instanceFieldName = client.instanceFieldName
 
+  private[this] val instanceMissingMessage = "instance field must be present while indexing a new document"
+
   def readAll[T](ids: List[String], entityManager: ReadEntityManager[T]): List[T] = {
     val response = esCrudBase.readAll(ids.map(entityManager.createId(instance, _)))
     entityManager.from(response.getResponses.map(_.getResponse).filter(_.isExists).toList)
@@ -81,7 +83,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
   def create[T](entity: T, entityManager: WriteEntityManager[T],
                 refreshPolicy: RefreshPolicy.Value): IndexDocumentResult = {
     val (id, builder) = entityManager.documentBuilder(entity, instance)
-    require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")
+    require(isInstanceEvaluated(builder, instance), instanceMissingMessage)
 
     val response = esCrudBase.create(id, builder, refreshPolicy)
 
@@ -94,7 +96,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
     val builders = elems.map(elem => entityManager.documentBuilder(elem, instance))
 
     builders.foreach { case (_, builder) =>
-      require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")
+      require(isInstanceEvaluated(builder, instance), instanceMissingMessage)
     }
     esCrudBase.bulkCreate(elems = builders, refreshPolicy = refreshPolicy)
       .getItems
@@ -107,7 +109,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
   def update[T](document: T, upsert: Boolean = false, entityManager: WriteEntityManager[T],
                 refreshPolicy: RefreshPolicy.Value): UpdateDocumentResult = {
     val (id, builder) = entityManager.documentBuilder(document, instance)
-    require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")
+    require(isInstanceEvaluated(builder, instance), instanceMissingMessage)
 
     val readResponse = esCrudBase.read(id)
     if (readResponse.isExists && !readResponse.isSourceEmpty) {
@@ -131,7 +133,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
     val builders = elems.map { case (_, elem) => entityManager.documentBuilder(elem, instance) }
 
     builders.foreach { case (_, builder) =>
-      require(isInstanceEvaluated(builder, instance), "instance field must be present while indexing a new document")
+      require(isInstanceEvaluated(builder, instance), instanceMissingMessage)
     }
 
     val readResponse = esCrudBase.readAll(elems.map { case (id, _) => id })

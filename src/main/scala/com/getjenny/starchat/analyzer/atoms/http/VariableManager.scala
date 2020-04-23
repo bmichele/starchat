@@ -28,7 +28,7 @@ trait  VariableManager {
   type AtomValidation[T] = ValidationNel[String, T]
 
   private[this] val keyValueSeparator = "="
-  private [this] val queryKeyword = "query"
+  private[this] val queryKeyword = "query"
 
   /**
     * Used to create Url conf. Same for authenticationConf. Typically not to be reimplemented
