@@ -28,7 +28,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
   private[this] val esCrudBase = new EsCrudBase(client, index)
   val instanceFieldName = client.instanceFieldName
 
-  private [this] val instanceMissingMessage = "instance field must be present while indexing a new document"
+  private[this] val instanceMissingMessage = "instance field must be present while indexing a new document"
 
   def readAll[T](ids: List[String], entityManager: ReadEntityManager[T]): List[T] = {
     val response = esCrudBase.readAll(ids.map(entityManager.createId(instance, _)))
