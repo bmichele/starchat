@@ -527,8 +527,32 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       println(result)
       result.data.extractedVariables.foreach(println)
     }
-    
+     */
+    /*
+    "test ZendeskSearchTickets atom" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List("user-email=customer@example.com"), systemConf) with ZendeskSearchTicketsVariableManager
+
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
+      result.data.extractedVariables.foreach(println)
+    }
+     */
+    /*
+  "test ZendeskTicketComments atom" in {
+
+    val systemConf = SystemConfiguration
+      .createMapFromPath("starchat.atom-values")
+
+    val atom = new HttpRequestAtomic(List("ticket-id=14"), systemConf) with ZendeskTicketCommentsVariableManager
+
+    val result = atom.evaluate("", AnalyzersDataInternal())
+    println(result)
+    result.data.extractedVariables.foreach(println)
+  }
      */
   }
-
 }
