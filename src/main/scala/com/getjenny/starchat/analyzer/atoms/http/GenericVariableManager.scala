@@ -10,7 +10,7 @@ import scalaz.Validation.FlatMap._
 import scalaz.{Failure, NonEmptyList, Success}
 
 /**
-  * Generic class to get hettp-atom-conf configuration parameters.
+  * Generic class to get http-atom-conf configuration parameters.
   *
   * To create a new atomic, typically:
   *
@@ -78,7 +78,7 @@ trait GenericVariableManager extends VariableManager {
       case (true, false) => extractInput[QueryStringConf](inputQueryTemplate,
         configMap,
         findProperty) {
-        QueryStringConf
+        x => QueryStringConf(x.replace(" ", "+"))
       }.map(_.some)
       case (false, true) =>
         extractInput[JsonConf](inputJson,
