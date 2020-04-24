@@ -47,7 +47,7 @@ trait GenericVariableManager extends VariableManager {
   }
 
   def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
-    if (configMap.get(authorizationType).nonEmpty) {
+    if (configMap.contains(authorizationType)) {
       as[AuthorizationType](authorizationType).run(configMap) match {
         case Success(AuthorizationType.BASIC) =>
           (as[String](username) |@| as[String](password)) ((u, p) => (u |@| p) (BasicAuth))
@@ -71,8 +71,8 @@ trait GenericVariableManager extends VariableManager {
   }
 
   def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
-    val isQueryString = configMap.get(inputQueryTemplate).nonEmpty
-    val isJson = configMap.get(inputJson).nonEmpty
+    val isQueryString = configMap.contains(inputQueryTemplate)
+    val isJson = configMap.contains(inputJson)
     (isQueryString, isJson) match {
       case (true, true) => Failure(NonEmptyList("Both json and query string configuration enabled"))
       case (true, false) => extractInput[QueryStringConf](inputQueryTemplate,
