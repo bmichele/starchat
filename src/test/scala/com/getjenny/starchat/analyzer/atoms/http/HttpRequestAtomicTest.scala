@@ -1,6 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.getjenny.analyzer.expressions.AnalyzersDataInternal
 import com.getjenny.starchat.analyzer.atoms.http.custom.WeatherVariableManager
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
@@ -338,6 +339,27 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       validation shouldBe a[Success[_]]
     }
 
+    "create a valid http atom configuration with spaces in input-query-template" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val arguments = List("http-atom.test.url=www.google.it",
+        "http-atom.test.http-method=GET",
+        "http-atom.test.input-query-template",
+        "http-atom.test.output-content-type=test.content-type",
+        "http-atom.test.output-status=test.status",
+        "http-atom.test.output-data=test.data",
+        "http-atom.test.output-score=test.score"
+      )
+      val analyzerData = Map("http-atom.test.input-query-template" -> "aaa=b cd e")
+      val configuration = variableManager.validateAndBuild(arguments,systemConf, analyzerData, "")
+
+      configuration shouldBe a[Success[_]]
+      configuration.foreach { conf =>
+        val queryString = conf.inputConf.collect { case QueryStringConf(queryString) => queryString }.getOrElse("")
+        queryString shouldEqual "aaa=b+cd+e"
+      }
+    }
+
     /*"test weather api call and do not execute call if done before and actual call is 0" in {
       val description = "desc"
       val humidity = "1"
@@ -378,6 +400,30 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
 
     //TODO: these test can be enabled when the parameters are moved to a secret travis variable
     /*
+    "test weather api call" in {
+      val analyzerData = Map(
+        "location" -> "Torino,IT"
+      )
+      val systemConf = SystemConfiguration.createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List.empty, systemConf) with WeatherVariableManager
+      val result = atom.evaluate("", AnalyzersDataInternal(extractedVariables = analyzerData))
+      result.data.extractedVariables.foreach(println)
+      result.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("weather.status", "") shouldBe "200 OK"
+    }
+
+    "test weather api call with multi-token location" in {
+      val analyzerData = Map(
+        "location" -> "New York"
+      )
+      val systemConf = SystemConfiguration.createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List.empty, systemConf) with WeatherVariableManager
+      val result = atom.evaluate("", AnalyzersDataInternal(extractedVariables = analyzerData))
+      result.data.extractedVariables.foreach(println)
+      result.data.extractedVariables.getOrElse("weather.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("weather.status", "") shouldBe "200 OK"
+    }
+
     "create a valid date parser atom configuration " in {
       val variableManager = new ParseDateVariableManager {}
       val systemConf = SystemConfiguration
@@ -527,8 +573,32 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       println(result)
       result.data.extractedVariables.foreach(println)
     }
-    
+     */
+    /*
+    "test ZendeskSearchTickets atom" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List("user-email=customer@example.com"), systemConf) with ZendeskSearchTicketsVariableManager
+
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
+      result.data.extractedVariables.foreach(println)
+    }
+     */
+    /*
+  "test ZendeskTicketComments atom" in {
+
+    val systemConf = SystemConfiguration
+      .createMapFromPath("starchat.atom-values")
+
+    val atom = new HttpRequestAtomic(List("ticket-id=14"), systemConf) with ZendeskTicketCommentsVariableManager
+
+    val result = atom.evaluate("", AnalyzersDataInternal())
+    println(result)
+    result.data.extractedVariables.foreach(println)
+  }
      */
   }
-
 }

@@ -56,7 +56,9 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "toDouble",
     "vOneKeyword",
     "weather",
-    "entityExtractor"
+    "entityExtractor",
+    "zendeskTicketComments",
+    "zendeskSearchTickets"
   )
 
   override def get(name: String, argument: List[String], restrictedArgs: Map[String, String]):
@@ -89,6 +91,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "entityExtractor" => new HttpRequestAtomic(argument, restrictedArgs) with EntityExtractorVariableManager
     case "prevTravStateIs" => new PrevTravStateIsAtomic(argument, restrictedArgs)
     case "readRemoteData" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
+    case "zendeskTicketComments" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskTicketCommentsVariableManager
+    case "zendeskSearchTickets" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskSearchTicketsVariableManager
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
     case "search" => new SearchAtomic(argument, restrictedArgs)
     case "setServiceOpening" => new SetServiceOpeningAtomic(argument, restrictedArgs)
