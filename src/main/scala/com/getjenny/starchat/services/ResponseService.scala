@@ -114,7 +114,7 @@ object ResponseService extends AbstractDataService {
         getNextResponse(indexName,
           request.copy(
             traversedStates = Some(document.traversedStates),
-            userInput = None,
+            userInput = request.userInput,
             data = Option(completeData),
             evaluationClass = None,
             maxResults = None,
