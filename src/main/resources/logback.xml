@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+<!--
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>starchat/log/starchat.log</file>
 
@@ -14,6 +15,7 @@
       <pattern>%contextName %date{ISO8601} >%X{akkaTimestamp} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
     </encoder>
   </appender>
+-->
 
   <contextName>${hostName}</contextName>
 
