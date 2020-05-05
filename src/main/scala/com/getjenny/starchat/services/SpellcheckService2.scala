@@ -11,6 +11,7 @@ import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.suggest.SuggestBuilder
+import org.elasticsearch.search.suggest.term.TermSuggestionBuilder.{StringDistanceImpl, SuggestMode}
 import org.elasticsearch.search.suggest.term.{TermSuggestion, TermSuggestionBuilder}
 
 import scala.collection.JavaConverters._
@@ -176,7 +177,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   //TODO refactor with new dedicated index
-  def termsSuggester(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse = {
+  def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse = {
     val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "logs_data")
     val client: RestHighLevelClient = elasticClient.httpClient
 
@@ -185,9 +186,9 @@ object SpellcheckService2 extends AbstractDataService {
       .prefixLength(request.prefixLength)
       .minDocFreq(request.minDocFreq)
       .minWordLength(request.minWordLength)
-      .suggestMode(request.suggestMode)
-      .stringDistance(request.stringDistance)
-      .size(request.size)
+      .suggestMode(SuggestMode.MISSING)
+      .stringDistance(StringDistanceImpl.DAMERAU_LEVENSHTEIN)
+      .size(100)
 
     val suggestBuilder: SuggestBuilder = new SuggestBuilder()
     suggestBuilder.setGlobalText(request.text)
@@ -235,7 +236,7 @@ object Main2 extends App {
   // check suggestions for a single word from es
   println("\nTesting termSuggester")
   val suggestRequest = SpellcheckTermsRequest2(text = "tset")
-  val suggestions = service.termsSuggester(index, suggestRequest)
+  val suggestions = service.termsSuggester2(index, suggestRequest)
   println(suggestions)
 
   // given candidates and context, get scores
