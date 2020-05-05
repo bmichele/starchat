@@ -1,7 +1,7 @@
 package com.getjenny.starchat.services
 
 /**
- * Created by angelo on 21/04/17.
+ * Created by Michele Boggia <michele.boggia@getjenny.com> on 05/05/20.
  */
 
 import com.getjenny.starchat.entities.io._
