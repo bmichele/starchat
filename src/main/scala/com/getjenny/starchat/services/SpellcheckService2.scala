@@ -184,6 +184,10 @@ object SpellcheckService2 extends AbstractDataService {
     suggestionBuilder.maxEdits(request.maxEdit)
       .prefixLength(request.prefixLength)
       .minDocFreq(request.minDocFreq)
+      .minWordLength(request.minWordLength)
+      .suggestMode(request.suggestMode)
+      .stringDistance(request.stringDistance)
+      .size(request.size)
 
     val suggestBuilder: SuggestBuilder = new SuggestBuilder()
     suggestBuilder.setGlobalText(request.text)
