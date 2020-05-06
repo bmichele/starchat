@@ -177,7 +177,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   //TODO refactor with new dedicated index
-  def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse = {
+  def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse2 = {
     val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "logs_data")
     val client: RestHighLevelClient = elasticClient.httpClient
 
@@ -202,16 +202,16 @@ object SpellcheckService2 extends AbstractDataService {
 
     val searchResponse : SearchResponse = client.search(searchReq, RequestOptions.DEFAULT)
 
-    val termsSuggestions: List[SpellcheckToken] =
+    val termsSuggestions: List[SpellcheckToken2] =
       searchResponse.getSuggest.getSuggestion[TermSuggestion]("suggestions")
         .getEntries.asScala.toList.map { suggestions =>
         val item: TermSuggestion.Entry = suggestions
         val text = item.getText.toString
         val offset = item.getOffset
         val length = item.getLength
-        val options: List[SpellcheckTokenSuggestions] =
+        val options: List[SpellcheckTokenSuggestions2] =
           item.getOptions.asScala.toList.map { suggestion =>
-            val option = SpellcheckTokenSuggestions(
+            val option = SpellcheckTokenSuggestions2(
               score = suggestion.getScore.toDouble,
               freq = suggestion.getFreq.toDouble,
               text = suggestion.getText.toString
@@ -219,12 +219,12 @@ object SpellcheckService2 extends AbstractDataService {
             option
           }
         val spellcheckToken =
-          SpellcheckToken(text = text, offset = offset, length = length,
+          SpellcheckToken2(text = text, offset = offset, length = length,
             options = options)
         spellcheckToken
       }
 
-    SpellcheckTermsResponse(tokens = termsSuggestions)
+    SpellcheckTermsResponse2(tokens = termsSuggestions)
   }
 }
 
