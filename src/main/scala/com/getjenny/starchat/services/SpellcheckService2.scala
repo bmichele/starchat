@@ -18,21 +18,94 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.List
 import scala.collection.mutable.ListBuffer
 
+case class Token(text: String,
+                 offset: Int,
+                 length: Int,
+                 isMisspelled: Boolean,
+                 var isCorrected: Boolean = false,
+                 var leftContext: List[Token] = List(),
+                 var rightContext: List[Token] = List(),
+                 var contextSize: Int = 0,
+                 var properContextSize: Int = 0,
+                 var options: List[SpellcheckTokenSuggestions2]){
+  def setLeftContext(contextLeft: List[Token]): Unit =
+    leftContext = contextLeft
+  def setRightContext(contextRight: List[Token]): Unit =
+    rightContext = contextRight
+  def setOptions(suggestions: List[SpellcheckTokenSuggestions2]): Unit =
+    options = suggestions
+  def updateContextSize(): Unit =
+    contextSize = leftContext.size + rightContext.size
+  private def getProperContext(context: List[Token], acc: List[Token]): List[Token] = {
+    context match {
+      case Nil => acc
+      case head :: tail => if (head.isMisspelled) acc else head :: getProperContext(tail, acc)
+    }
+  }
+  def getProperContextRight: List[Token] = getProperContext(rightContext, List())
+  def getProperContextLeft: List[Token] = getProperContext(leftContext.reverse, List()).reverse
+  def updateProperContextSize(): Unit = getProperContextRight.size + getProperContextLeft.size
+  def getBestCandidate: String =
+    if (isMisspelled) options.maxBy(_.score).text
+    else text
+}
+
 object SpellcheckService2 extends AbstractDataService {
   override val elasticClient: KnowledgeBaseElasticClient.type = KnowledgeBaseElasticClient
 
-  // mockup function. True function should return list of booleans telling if terms are present in dictionary
-  def tokensExist(indexName: String, tokens: List[String]): List[Boolean] =
-    tokens.map(x => false)
+  /**
+   * Function to get suggestions from ES suggester, given a sentence.
+   * @param indexName name of the index
+   * @param request e.g. SpellcheckTermsRequest2(text = "Is this setnence misspelled?")
+   * @return list of SpellCheckToken2 objects
+   */
+  def getSuggestions(indexName: String, request: SpellcheckTermsRequest2) : List[SpellcheckToken2] = {
+    val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "logs_data")
+    val client: RestHighLevelClient = elasticClient.httpClient
 
-  // mockup function. True function should take a list of tokens and return, for each token, a list of candidates
-  def getCandidates(indexName: String, tokens: List[String]): List[List[String]] = {
-    // function to generate fake suggestions
-    def replacements(token: String): List[String] = {
-      val chars = "abcdefghi"
-      chars.toList.map(x => token + x)
-    }
-    tokens.map(token => replacements(token))
+    val suggestionBuilder: TermSuggestionBuilder = new TermSuggestionBuilder("question.base")
+    suggestionBuilder.maxEdits(request.maxEdit)
+      .prefixLength(request.prefixLength)
+      .minDocFreq(request.minDocFreq)
+      .minWordLength(request.minWordLength)
+      .suggestMode(SuggestMode.MISSING)
+      .stringDistance(StringDistanceImpl.DAMERAU_LEVENSHTEIN)
+      .size(100)
+
+    val suggestBuilder: SuggestBuilder = new SuggestBuilder()
+    suggestBuilder.setGlobalText(request.text)
+      .addSuggestion("suggestions", suggestionBuilder)
+
+    val sourceReq: SearchSourceBuilder = new SearchSourceBuilder()
+      .suggest(suggestBuilder)
+
+    val searchReq = new SearchRequest(esLanguageSpecificIndexName)
+      .source(sourceReq)
+
+    val searchResponse : SearchResponse = client.search(searchReq, RequestOptions.DEFAULT)
+
+    val termsSuggestions: List[SpellcheckToken2] =
+      searchResponse.getSuggest.getSuggestion[TermSuggestion]("suggestions")
+        .getEntries.asScala.toList.map { suggestions =>
+        val item: TermSuggestion.Entry = suggestions
+        val text = item.getText.toString
+        val offset = item.getOffset
+        val length = item.getLength
+        val options: List[SpellcheckTokenSuggestions2] =
+          item.getOptions.asScala.toList.map { suggestion =>
+            val option = SpellcheckTokenSuggestions2(
+              score = suggestion.getScore.toDouble,
+              freq = suggestion.getFreq.toDouble,
+              text = suggestion.getText.toString
+            )
+            option
+          }
+        val spellcheckToken =
+          SpellcheckToken2(text = text, offset = offset, length = length,
+            options = options)
+        spellcheckToken
+      }
+    termsSuggestions
   }
 
   /**
@@ -176,55 +249,54 @@ object SpellcheckService2 extends AbstractDataService {
     scoresNgrams.keys.zip(scoresTotal).toMap
   }
 
-  //TODO refactor with new dedicated index
+  def suggestionsToToken(suggestions: List[SpellcheckToken2], index: Int): Token = {
+    val token = Token(
+      text = suggestions(index).text,
+      offset = suggestions(index).offset,
+      length = suggestions(index).length,
+      isMisspelled = suggestions(index).options.nonEmpty,
+      options = suggestions(index).options
+    )
+    token
+  }
+
   def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse2 = {
-    val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "logs_data")
-    val client: RestHighLevelClient = elasticClient.httpClient
+    val suggestions = getSuggestions(indexName, request)
 
-    val suggestionBuilder: TermSuggestionBuilder = new TermSuggestionBuilder("question.base")
-    suggestionBuilder.maxEdits(request.maxEdit)
-      .prefixLength(request.prefixLength)
-      .minDocFreq(request.minDocFreq)
-      .minWordLength(request.minWordLength)
-      .suggestMode(SuggestMode.MISSING)
-      .stringDistance(StringDistanceImpl.DAMERAU_LEVENSHTEIN)
-      .size(100)
-
-    val suggestBuilder: SuggestBuilder = new SuggestBuilder()
-    suggestBuilder.setGlobalText(request.text)
-      .addSuggestion("suggestions", suggestionBuilder)
-
-    val sourceReq: SearchSourceBuilder = new SearchSourceBuilder()
-      .suggest(suggestBuilder)
-
-    val searchReq = new SearchRequest(esLanguageSpecificIndexName)
-      .source(sourceReq)
-
-    val searchResponse : SearchResponse = client.search(searchReq, RequestOptions.DEFAULT)
-
-    val termsSuggestions: List[SpellcheckToken2] =
-      searchResponse.getSuggest.getSuggestion[TermSuggestion]("suggestions")
-        .getEntries.asScala.toList.map { suggestions =>
-        val item: TermSuggestion.Entry = suggestions
-        val text = item.getText.toString
-        val offset = item.getOffset
-        val length = item.getLength
-        val options: List[SpellcheckTokenSuggestions2] =
-          item.getOptions.asScala.toList.map { suggestion =>
-            val option = SpellcheckTokenSuggestions2(
-              score = suggestion.getScore.toDouble,
-              freq = suggestion.getFreq.toDouble,
-              text = suggestion.getText.toString
-            )
-            option
-          }
-        val spellcheckToken =
-          SpellcheckToken2(text = text, offset = offset, length = length,
-            options = options)
-        spellcheckToken
-      }
-
-    SpellcheckTermsResponse2(tokens = termsSuggestions)
+    // transform suggestions into list of tokens
+    val tokenList = List.range(0, suggestions.size).map(suggestionsToToken(suggestions, _))
+    for((token, i) <- tokenList.zipWithIndex){
+      val leftContext = tokenList.slice(i - 2, i)
+      token.setLeftContext(leftContext)
+      val rightContext = tokenList.slice(i + 1, i + 3)
+      token.setRightContext(rightContext)
+      token.updateContextSize()
+      token.updateProperContextSize()
+    }
+    // compute candidates for every misspelling
+    for(token <- tokenList){
+      val scores = scoreCandidates(
+        candidates = token.options.map(_.text),
+        leftContext = token.getProperContextLeft.map(_.text),
+        rightContext = token.getProperContextRight.map(_.text),
+        1, 1, 1
+      )
+      val newOptions = scores.map(x => SpellcheckTokenSuggestions2(score = x._2, freq = -100.0, text = x._1)).toList
+      token.setOptions(newOptions)
+      // debug statements
+      println(token.text)
+      println(token.getProperContextLeft.map(_.text))
+      println(token.getProperContextRight.map(_.text))
+    }
+    // put together the results
+    val newSuggestions = tokenList.map(
+      token => SpellcheckToken2(
+        text = token.text,
+        offset = token.offset,
+        length = token.length,
+        options = token.options)
+    )
+    SpellcheckTermsResponse2(tokens = newSuggestions)
   }
 }
 
@@ -235,7 +307,7 @@ object Main2 extends App {
 
   // check suggestions for a single word from es
   println("\nTesting termSuggester")
-  val suggestRequest = SpellcheckTermsRequest2(text = "tset")
+  val suggestRequest = SpellcheckTermsRequest2(text = "This is a test setnence")
   val suggestions = service.termsSuggester2(index, suggestRequest)
   println(suggestions)
 
@@ -246,4 +318,20 @@ object Main2 extends App {
   val rightContext = List("doing", "today")
   val scores = service.scoreCandidates(candidates, leftContext, rightContext, 1, 1, 1)
   println(scores)
+
+/*  // test Token class functions
+  // tokens for left context
+  val tokenL1 = SpellcheckToken("Hello", isMisspelled = false, List(), List(), List(), 0, 0)
+  val tokenL2 = SpellcheckToken("ths", isMisspelled = true, List(), List(), List(), 0, 0)
+  val tokenL3 = SpellcheckToken("is", isMisspelled = false, List(), List(), List(), 0, 0)
+  // tokens for right context
+  val tokenR1 = SpellcheckToken("stupid", isMisspelled = false, List(), List(), List(), 0, 0)
+  val tokenR2 = SpellcheckToken("test", isMisspelled = false, List(), List(), List(), 0, 0)
+  val tokenR3 = SpellcheckToken("setnence", isMisspelled = true, List(), List(), List(), 0, 0)
+  val tokenTest = SpellcheckToken("This", isMisspelled = false, List(), List(tokenL1, tokenL2, tokenL3),
+    List(tokenR1, tokenR2, tokenR3), 0, 0)
+  val properRightContext = tokenTest.getProperContext(tokenTest.rightContext, List())
+  val properLeftContext = tokenTest.getProperContext(tokenTest.leftContext.reverse, List()).reverse
+  println(properLeftContext)*/
+
 }
