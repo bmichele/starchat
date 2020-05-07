@@ -64,6 +64,20 @@ object ResponseService extends AbstractDataService {
                                        request: ResponseRequestIn): Map[String, String] = {
     val conversationLogsService: ConversationLogsService.type = ConversationLogsService
     variables.map {
+      case StarChatVariables.GJ_CONV_FEEDBACK_SCORE =>
+        val ids = DocsIds(ids=List(request.conversationId))
+        val feedbackConvScore =
+          conversationLogsService.conversations(indexName, ids).conversations.headOption match {
+            case Some(value) =>
+              value.docs.map(c =>
+              c.annotations match {
+                case Some(annotations) =>
+                  annotations.feedbackConvScore.getOrElse(-1.0d)
+                case _ => -1.0d
+              }).headOption.getOrElse(-1.0d)
+            case _ => -1.0d
+          }
+        (StarChatVariables.GJ_CONV_FEEDBACK_SCORE.toString, feedbackConvScore.toString)
       case StarChatVariables.GJ_CONVERSATION_ID =>
         (StarChatVariables.GJ_CONVERSATION_ID.toString, request.conversationId)
       case StarChatVariables.GJ_LAST_USER_INPUT_TEXT =>
