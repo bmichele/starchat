@@ -10,7 +10,8 @@ case class StarChatVariablesException(message: String = "", cause: Throwable = N
   extends Exception(message, cause)
 
 object StarChatVariables extends Enumeration {
-  val GJ_CONVERSATION_ID, /** Conversation ID */
+  val GJ_CONV_FEEDBACK_SCORE, /** Conversation feedback score if present */
+  GJ_CONVERSATION_ID, /** Conversation ID */
   GJ_LAST_USER_INPUT_TEXT, /** the last user input */
   GJ_CONVERSATION_V1 = StarChatVariables.Value /** Conversation content: question-answer */
 
