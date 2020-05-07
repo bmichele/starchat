@@ -18,37 +18,6 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.List
 import scala.collection.mutable.ListBuffer
 
-case class Token(text: String,
-                 offset: Int,
-                 length: Int,
-                 isMisspelled: Boolean,
-                 var isCorrected: Boolean = false,
-                 var leftContext: List[Token] = List(),
-                 var rightContext: List[Token] = List(),
-                 var contextSize: Int = 0,
-                 var properContextSize: Int = 0,
-                 var options: List[SpellcheckTokenSuggestions2]){
-  def setLeftContext(contextLeft: List[Token]): Unit =
-    leftContext = contextLeft
-  def setRightContext(contextRight: List[Token]): Unit =
-    rightContext = contextRight
-  def setOptions(suggestions: List[SpellcheckTokenSuggestions2]): Unit =
-    options = suggestions
-  def updateContextSize(): Unit =
-    contextSize = leftContext.size + rightContext.size
-  private def getProperContext(context: List[Token], acc: List[Token]): List[Token] = {
-    context match {
-      case Nil => acc
-      case head :: tail => if (head.isMisspelled) acc else head :: getProperContext(tail, acc)
-    }
-  }
-  def getProperContextRight: List[Token] = getProperContext(rightContext, List())
-  def getProperContextLeft: List[Token] = getProperContext(leftContext.reverse, List()).reverse
-  def updateProperContextSize(): Unit = getProperContextRight.size + getProperContextLeft.size
-  def getBestCandidate: String =
-    if (isMisspelled) options.maxBy(_.score).text
-    else text
-}
 
 object SpellcheckService2 extends AbstractDataService {
   override val elasticClient: KnowledgeBaseElasticClient.type = KnowledgeBaseElasticClient
@@ -109,7 +78,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   /**
-   * Mockup function!!!
+   * TODO: this is a mockup function, should be replaced by function calling ES to get all necessary counts
    * True function takes a list of candidates, together with left and right context, and returns all necessary counts in
    * two maps, e.g.
    *
@@ -249,54 +218,90 @@ object SpellcheckService2 extends AbstractDataService {
     scoresNgrams.keys.zip(scoresTotal).toMap
   }
 
-  def suggestionsToToken(suggestions: List[SpellcheckToken2], index: Int): Token = {
-    val token = Token(
-      text = suggestions(index).text,
-      offset = suggestions(index).offset,
-      length = suggestions(index).length,
-      isMisspelled = suggestions(index).options.nonEmpty,
-      options = suggestions(index).options
-    )
-    token
+  def rightContextList[T](tokens: List[T]): List[List[T]] = {
+    @scala.annotation.tailrec
+    def rightContextListAcc(tokenList: List[T], acc: List[List[T]]): List[List[T]] = {
+      tokenList match {
+        case _ :: Nil => List(List())
+        case _ :: t2 :: Nil => acc ++ List(List(t2), List())
+        case _ :: t2 :: t3 :: tail => rightContextListAcc(t2 :: t3 :: tail, acc ++ List(List(t2, t3)))
+      }
+    }
+    rightContextListAcc(tokens, List())
+  }
+
+  def leftContextList[T](tokens: List[T]): List[List[T]] = {
+    rightContextList(tokens.reverse).map(_.reverse).reverse
+  }
+
+  private def filterRightContext(list: List[SpellcheckToken2]): List[SpellcheckToken2] = {
+    def filterRightAcc(list: List[SpellcheckToken2], acc: List[SpellcheckToken2]): List[SpellcheckToken2] = {
+      list match {
+        case Nil => acc
+        case head :: tail => if (head.options.isEmpty) head :: filterRightAcc(tail, acc) else acc
+      }
+    }
+    filterRightAcc(list, List())
+  }
+
+  def rightProperContextList(rightContextList: List[List[SpellcheckToken2]]): List[List[SpellcheckToken2]] =
+    rightContextList.map(filterRightContext)
+
+  def leftProperContextList(leftContextList: List[List[SpellcheckToken2]]): List[List[SpellcheckToken2]] = {
+    def filterLeftContext(list: List[SpellcheckToken2]): List[SpellcheckToken2] = {
+      filterRightContext(list.reverse).reverse
+    }
+    leftContextList.map(filterLeftContext)
   }
 
   def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse2 = {
     val suggestions = getSuggestions(indexName, request)
-
-    // transform suggestions into list of tokens
-    val tokenList = List.range(0, suggestions.size).map(suggestionsToToken(suggestions, _))
-    for((token, i) <- tokenList.zipWithIndex){
-      val leftContext = tokenList.slice(i - 2, i)
-      token.setLeftContext(leftContext)
-      val rightContext = tokenList.slice(i + 1, i + 3)
-      token.setRightContext(rightContext)
-      token.updateContextSize()
-      token.updateProperContextSize()
-    }
-    // compute candidates for every misspelling
-    for(token <- tokenList){
-      val scores = scoreCandidates(
-        candidates = token.options.map(_.text),
-        leftContext = token.getProperContextLeft.map(_.text),
-        rightContext = token.getProperContextRight.map(_.text),
-        1, 1, 1
-      )
-      val newOptions = scores.map(x => SpellcheckTokenSuggestions2(score = x._2, freq = -100.0, text = x._1)).toList
-      token.setOptions(newOptions)
-      // debug statements
-      println(token.text)
-      println(token.getProperContextLeft.map(_.text))
-      println(token.getProperContextRight.map(_.text))
-    }
-    // put together the results
-    val newSuggestions = tokenList.map(
-      token => SpellcheckToken2(
-        text = token.text,
-        offset = token.offset,
-        length = token.length,
-        options = token.options)
+    // define list containing, for each token, the corresponding context (including possibly misspelled words)
+    val rightContextsUnfiltered = rightContextList(suggestions)
+    val leftContextsUnfiltered = leftContextList(suggestions)
+    // remove from context misspelled words
+    val rightContexts = rightProperContextList(rightContextsUnfiltered)
+    val leftContexts = leftProperContextList(leftContextsUnfiltered)
+    // list containing, for each token, the possible candidates
+    val candidatesLists = suggestions.map(_.options.map(x => (x.text, x.freq)).toMap)
+    // zip with contexts to be used in scoring function
+    val zipped = (
+      candidatesLists,
+      rightContexts.map(_.map(_.text)),
+      leftContexts.map(_.map(_.text))
+      ).zipped.toList
+    val res = zipped.zip(suggestions).map(
+      tuple => {
+        val tupleArgs = tuple._1
+        val suggestionToken = tuple._2
+        val tokenCandidates = tupleArgs._1
+        if (tokenCandidates.nonEmpty) {
+          val tokenRightContext = tupleArgs._2
+          val tokenLeftContext = tupleArgs._3
+          val scoreCandidatesToken = scoreCandidates(
+            tokenCandidates.keys.toList,
+            tokenLeftContext,
+            tokenRightContext,
+            1.toFloat, 1.toFloat, 1.toFloat)
+          SpellcheckToken2(
+            text = suggestionToken.text,
+            offset = suggestionToken.offset,
+            length = suggestionToken.length,
+            options = scoreCandidatesToken.map(
+              x => SpellcheckTokenSuggestions2(
+                score = x._2,
+                freq = tokenCandidates.getOrElse(x._1, 0.0),
+                text = x._1
+              )
+            ).toList
+          )
+        }
+        else {
+          suggestionToken
+        }
+      }
     )
-    SpellcheckTermsResponse2(tokens = newSuggestions)
+    SpellcheckTermsResponse2(tokens = res)
   }
 }
 
@@ -307,7 +312,7 @@ object Main2 extends App {
 
   // check suggestions for a single word from es
   println("\nTesting termSuggester")
-  val suggestRequest = SpellcheckTermsRequest2(text = "This is a test setnence")
+  val suggestRequest = SpellcheckTermsRequest2(text = "How are yoy doing today?")
   val suggestions = service.termsSuggester2(index, suggestRequest)
   println(suggestions)
 
@@ -319,19 +324,24 @@ object Main2 extends App {
   val scores = service.scoreCandidates(candidates, leftContext, rightContext, 1, 1, 1)
   println(scores)
 
-/*  // test Token class functions
-  // tokens for left context
-  val tokenL1 = SpellcheckToken("Hello", isMisspelled = false, List(), List(), List(), 0, 0)
-  val tokenL2 = SpellcheckToken("ths", isMisspelled = true, List(), List(), List(), 0, 0)
-  val tokenL3 = SpellcheckToken("is", isMisspelled = false, List(), List(), List(), 0, 0)
-  // tokens for right context
-  val tokenR1 = SpellcheckToken("stupid", isMisspelled = false, List(), List(), List(), 0, 0)
-  val tokenR2 = SpellcheckToken("test", isMisspelled = false, List(), List(), List(), 0, 0)
-  val tokenR3 = SpellcheckToken("setnence", isMisspelled = true, List(), List(), List(), 0, 0)
-  val tokenTest = SpellcheckToken("This", isMisspelled = false, List(), List(tokenL1, tokenL2, tokenL3),
-    List(tokenR1, tokenR2, tokenR3), 0, 0)
-  val properRightContext = tokenTest.getProperContext(tokenTest.rightContext, List())
-  val properLeftContext = tokenTest.getProperContext(tokenTest.leftContext.reverse, List()).reverse
-  println(properLeftContext)*/
+  // given a sentence, get suggestions
+  println("\nTesting getSuggestions")
+  val testSuggestions = service.getSuggestions(index, suggestRequest)
+  println(testSuggestions)
 
+  // given suggestions, get list with contexts for each token
+  val rightContextsAll = service.rightContextList(testSuggestions)
+  val leftContextsAll = service.leftContextList(testSuggestions)
+  println("\nRight contexts")
+  println(rightContextsAll)
+  println("\nLeft contexts")
+  println(leftContextsAll)
+
+  // filter contexts in order to remove misspelled words
+  println("\nFiltered right contexts")
+  val rightContexts = service.rightProperContextList(rightContextsAll)
+  println(rightContexts.map(_.map(_.text)))
+  println("\nFiltered left contexts")
+  val leftContexts = service.leftProperContextList(leftContextsAll)
+  println(leftContexts.map(_.map(_.text)))
 }
