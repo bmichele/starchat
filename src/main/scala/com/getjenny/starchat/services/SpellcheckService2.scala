@@ -127,7 +127,18 @@ object SpellcheckService2 extends AbstractDataService {
     (candidateCounts, ngramTotalCounts)
   }
 
-  def combineScores(scores1: List[Float],
+  /**
+   * Function to combine n-gram scores. n-gram scores (for n = 1, 2, 3) corresponds to S_1, S_2, S_3 as defined in
+   * eq.(2) of https://arxiv.org/abs/1910.11242 (before applying weights)
+   * @param scores1 list containing unweighted unigram scores
+   * @param scores2 list containing unweighted bigram scores
+   * @param scores3 list containing unweighted trigram scores
+   * @param weightUnigrams unigram score weight for final score computation
+   * @param weightBigrams bigram score weight for final score computation
+   * @param weightTrigrams trigram score weight for final score computation
+   * @return
+   */
+  private def combineScores(scores1: List[Float],
                     scores2: List[Float],
                     scores3: List[Float],
                     weightUnigrams: Float,
@@ -139,7 +150,10 @@ object SpellcheckService2 extends AbstractDataService {
       scores3.map(_ * weightTrigrams)
       ).zipped.map( _ + _ + _ )
 
-  def combineScoresAlternative(scores1: List[Float],
+  /**
+   * Alternative function to combine n-gram scores. See combineScores documentation
+   */
+  private def combineScoresAlternative(scores1: List[Float],
                     scores2: List[Float],
                     scores3: List[Float],
                     weightUnigrams: Float,
@@ -206,8 +220,8 @@ object SpellcheckService2 extends AbstractDataService {
       (x._1 :: l._1, x._2 :: l._2, x._3 :: l._3)
     val scoresNgramsLists = scoresNgrams.values.foldRight[(List[Float], List[Float], List[Float])]((List(), List(), List()))(reshapeListTuples3)
 
-    val scoresTotal = combineScores(
-    // val scoresTotal = combineScoresAlternative(
+    // val scoresTotal = combineScores(
+    val scoresTotal = combineScoresAlternative(
       scoresNgramsLists._1,
       scoresNgramsLists._2,
       scoresNgramsLists._3,
@@ -218,6 +232,18 @@ object SpellcheckService2 extends AbstractDataService {
     scoresNgrams.keys.zip(scoresTotal).toMap
   }
 
+  /**
+   * Given a list of objects, returns a list containing, for each element, the two elements on the right of the element
+   * (if they are present)
+   *
+   * rightContextList(List(1, 2, 3, 4))
+   * -> List(
+   *      List(2, 3),
+   *      List(3, 4),
+   *      List(4),
+   *      List()
+   *    )
+   */
   def rightContextList[T](tokens: List[T]): List[List[T]] = {
     @scala.annotation.tailrec
     def rightContextListAcc(tokenList: List[T], acc: List[List[T]]): List[List[T]] = {
@@ -230,10 +256,24 @@ object SpellcheckService2 extends AbstractDataService {
     rightContextListAcc(tokens, List())
   }
 
+  /**
+   * As rightContextList, but returns elements on the left
+   *
+   * leftContextList(List(1, 2, 3, 4))
+   * -> List(
+   *      List(),
+   *      List(1),
+   *      List(1, 2),
+   *      List(2, 3)
+   *    )
+   */
   def leftContextList[T](tokens: List[T]): List[List[T]] = {
     rightContextList(tokens.reverse).map(_.reverse).reverse
   }
 
+  /**
+   * Helper function for rightProperContextList and leftProperContextList
+   */
   private def filterRightContext(list: List[SpellcheckToken2]): List[SpellcheckToken2] = {
     def filterRightAcc(list: List[SpellcheckToken2], acc: List[SpellcheckToken2]): List[SpellcheckToken2] = {
       list match {
@@ -244,9 +284,15 @@ object SpellcheckService2 extends AbstractDataService {
     filterRightAcc(list, List())
   }
 
+  /**
+   * Given a list of right contexts, cut out context tokens starting from those SpellcheckToken2 object which are misspelled
+   */
   def rightProperContextList(rightContextList: List[List[SpellcheckToken2]]): List[List[SpellcheckToken2]] =
     rightContextList.map(filterRightContext)
 
+  /**
+   * Given a list of left contexts, cut out context tokens until the first SpellcheckToken2 object which is not misspelled
+   */
   def leftProperContextList(leftContextList: List[List[SpellcheckToken2]]): List[List[SpellcheckToken2]] = {
     def filterLeftContext(list: List[SpellcheckToken2]): List[SpellcheckToken2] = {
       filterRightContext(list.reverse).reverse
