@@ -13,7 +13,7 @@ trait ZendeskTicketCommentsVariableManager extends GenericVariableManager {
   *
   * ticket-id:   14
   *
-  * zendeskSearchTicketInfo("ticket-id=14")
+  * zendeskSearchTicketComments("ticket-id=14")
   *
   * Variables set:
   *
