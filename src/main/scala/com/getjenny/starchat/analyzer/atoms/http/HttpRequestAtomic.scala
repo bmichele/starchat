@@ -17,6 +17,9 @@ import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.language.postfixOps
 import scala.util.Try
 
+import java.util.Base64
+import java.nio.charset.StandardCharsets
+
 class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   this: VariableManager =>
 
@@ -81,7 +84,8 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
   protected[this] def createRequest(configuration: HttpRequestAtomicConfiguration): HttpRequest = {
     val (authHeader, authQueryParam) = configuration.auth match {
       case Some(BasicAuth(username, password)) =>
-        (Authorization(BasicHttpCredentials(s"$username $password")) :: Nil) -> None
+        val credentials = Base64.getEncoder.encodeToString(s"$username:$password".getBytes(StandardCharsets.UTF_8))
+        (Authorization(BasicHttpCredentials(credentials)) :: Nil) -> None
       case Some(BearerAuth(token)) =>
         (Authorization(OAuth2BearerToken(token)) :: Nil) -> None
       case Some(ApiKeyAuth(key, token, storeTo)) if storeTo.toString === StoreOption.HEADER.toString =>

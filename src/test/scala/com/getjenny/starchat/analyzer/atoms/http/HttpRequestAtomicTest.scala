@@ -2,7 +2,7 @@ package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
-import com.getjenny.starchat.analyzer.atoms.http.custom.WeatherVariableManager
+import com.getjenny.starchat.analyzer.atoms.http.custom.{WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -574,6 +574,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       result.data.extractedVariables.foreach(println)
     }
      */
+
     /*
     "test ZendeskSearchTickets atom" in {
 
@@ -586,7 +587,17 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       println(result)
       result.data.extractedVariables.foreach(println)
     }
-     */
+  */
+    /*
+    "create a valid zendesk atom configuration" in {
+      val variableManager = new ZendeskSearchTicketsVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val configuration = variableManager.validateAndBuild(List("user-email=customer@example.com"), systemConf, Map.empty, "")
+        configuration shouldBe a[Success[_]]
+        configuration.map(println)
+    }
+  */
     /*
   "test ZendeskTicketComments atom" in {
 
@@ -599,6 +610,6 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     println(result)
     result.data.extractedVariables.foreach(println)
   }
-     */
+  */
   }
 }
