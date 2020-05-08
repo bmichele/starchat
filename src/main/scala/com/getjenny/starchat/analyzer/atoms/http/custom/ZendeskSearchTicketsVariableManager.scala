@@ -26,9 +26,9 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
   val factoryName = s"zendeskSearchTickets"
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
                AtomValidation[HttpAtomOutputConf] = {
-    val itemId = findProperty("item-id")
-      .toSuccessNel("item-id not found, unable to create output conf")
-    itemId.map(x => ZendeskOutput(prefix = factoryName, score = factoryName + ".score"))
+    val userEmail = findProperty("user-email")
+      .toSuccessNel("user-email not found, unable to create output conf")
+    userEmail.map(x => ZendeskOutput(prefix = factoryName, score = factoryName + ".score"))
   }
 }
 
