@@ -28,7 +28,7 @@ object SpellcheckService2 extends AbstractDataService {
    * @param request e.g. SpellcheckTermsRequest2(text = "Is this setnence misspelled?")
    * @return list of SpellCheckToken2 objects
    */
-  def getSuggestions(indexName: String, request: SpellcheckTermsRequest2) : List[SpellcheckToken2] = {
+  def getSuggestions(indexName: String, request: SpellcheckTermsRequest2) : List[SpellcheckToken] = {
     val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "logs_data")
     val client: RestHighLevelClient = elasticClient.httpClient
 
@@ -53,16 +53,16 @@ object SpellcheckService2 extends AbstractDataService {
 
     val searchResponse : SearchResponse = client.search(searchReq, RequestOptions.DEFAULT)
 
-    val termsSuggestions: List[SpellcheckToken2] =
+    val termsSuggestions: List[SpellcheckToken] =
       searchResponse.getSuggest.getSuggestion[TermSuggestion]("suggestions")
         .getEntries.asScala.toList.map { suggestions =>
         val item: TermSuggestion.Entry = suggestions
         val text = item.getText.toString
         val offset = item.getOffset
         val length = item.getLength
-        val options: List[SpellcheckTokenSuggestions2] =
+        val options: List[SpellcheckTokenSuggestions] =
           item.getOptions.asScala.toList.map { suggestion =>
-            val option = SpellcheckTokenSuggestions2(
+            val option = SpellcheckTokenSuggestions(
               score = suggestion.getScore.toDouble,
               freq = suggestion.getFreq.toDouble,
               text = suggestion.getText.toString
@@ -70,7 +70,7 @@ object SpellcheckService2 extends AbstractDataService {
             option
           }
         val spellcheckToken =
-          SpellcheckToken2(text = text, offset = offset, length = length,
+          SpellcheckToken(text = text, offset = offset, length = length,
             options = options)
         spellcheckToken
       }
@@ -181,8 +181,8 @@ object SpellcheckService2 extends AbstractDataService {
    *                 ["how", "are"],
    *                 ["doing", "today"])
    * -> Map(
-   *      "you" -> 0.98,
-   *      "lol" -> 0.02
+   *      "you" -> (0.98, (0.99, 0.32, 0.02))
+   *      "lol" -> (0.02, (0.53, 0.02, 0.00))
    *    )
    *
    * @param candidates list of candidates
@@ -191,14 +191,14 @@ object SpellcheckService2 extends AbstractDataService {
    * @param weightUnigrams weight for unigram in final score
    * @param weightBigrams weight for bigrams in final score
    * @param weightTrigrams weight for trigrams in final score
-   * @return Map containing, for each candidate, the final score
+   * @return Map containing, for each candidate the scores: (final score, (s1, s2, s3))
    */
   def scoreCandidates(candidates: List[String],
                       leftContext: List[String],
                       rightContext: List[String],
                       weightUnigrams: Float,
                       weightBigrams: Float,
-                      weightTrigrams: Float): Map[String, Float] = {
+                      weightTrigrams: Float): Map[String, (Float, (Float, Float, Float))] = {
     // get stats from ES
     val (candidateCounts, ngramCounts) = getStats(candidates, leftContext, rightContext)
     def sumValues(mapObject: Map[String, Int], keys: List[String]): Int = {
@@ -229,7 +229,10 @@ object SpellcheckService2 extends AbstractDataService {
       weightBigrams,
       weightTrigrams
     )
-    scoresNgrams.keys.zip(scoresTotal).toMap
+    val scoreNgramsMatrix = (scoresNgramsLists._1, scoresNgramsLists._2, scoresNgramsLists._3).zipped.map((_, _, _))
+    scoresNgrams.keys.zip(
+      scoresTotal.zip(scoreNgramsMatrix)
+    ).toMap
   }
 
   /**
@@ -274,8 +277,8 @@ object SpellcheckService2 extends AbstractDataService {
   /**
    * Helper function for rightProperContextList and leftProperContextList
    */
-  private def filterRightContext(list: List[SpellcheckToken2]): List[SpellcheckToken2] = {
-    def filterRightAcc(list: List[SpellcheckToken2], acc: List[SpellcheckToken2]): List[SpellcheckToken2] = {
+  private def filterRightContext(list: List[SpellcheckToken]): List[SpellcheckToken] = {
+    def filterRightAcc(list: List[SpellcheckToken], acc: List[SpellcheckToken]): List[SpellcheckToken] = {
       list match {
         case Nil => acc
         case head :: tail => if (head.options.isEmpty) head :: filterRightAcc(tail, acc) else acc
@@ -287,14 +290,14 @@ object SpellcheckService2 extends AbstractDataService {
   /**
    * Given a list of right contexts, cut out context tokens starting from those SpellcheckToken2 object which are misspelled
    */
-  def rightProperContextList(rightContextList: List[List[SpellcheckToken2]]): List[List[SpellcheckToken2]] =
+  def rightProperContextList(rightContextList: List[List[SpellcheckToken]]): List[List[SpellcheckToken]] =
     rightContextList.map(filterRightContext)
 
   /**
    * Given a list of left contexts, cut out context tokens until the first SpellcheckToken2 object which is not misspelled
    */
-  def leftProperContextList(leftContextList: List[List[SpellcheckToken2]]): List[List[SpellcheckToken2]] = {
-    def filterLeftContext(list: List[SpellcheckToken2]): List[SpellcheckToken2] = {
+  def leftProperContextList(leftContextList: List[List[SpellcheckToken]]): List[List[SpellcheckToken]] = {
+    def filterLeftContext(list: List[SpellcheckToken]): List[SpellcheckToken] = {
       filterRightContext(list.reverse).reverse
     }
     leftContextList.map(filterLeftContext)
@@ -335,7 +338,10 @@ object SpellcheckService2 extends AbstractDataService {
             length = suggestionToken.length,
             options = scoreCandidatesToken.map(
               x => SpellcheckTokenSuggestions2(
-                score = x._2,
+                score = x._2._1,
+                scoreUnigram = x._2._2._1,
+                scoreBigram = x._2._2._2,
+                scoreTrigram = x._2._2._3,
                 freq = tokenCandidates.getOrElse(x._1, 0.0),
                 text = x._1
               )
@@ -343,7 +349,21 @@ object SpellcheckService2 extends AbstractDataService {
           )
         }
         else {
-          suggestionToken
+          SpellcheckToken2(
+            text = suggestionToken.text,
+            offset = suggestionToken.offset,
+            length = suggestionToken.length,
+            options = suggestionToken.options.map(
+              x => SpellcheckTokenSuggestions2(
+                score = x.score,
+                scoreUnigram = 0.0,
+                scoreBigram = 0.0,
+                scoreTrigram = 0.0,
+                freq = x.freq,
+                text = x.text
+              )
+            )
+          )
         }
       }
     )

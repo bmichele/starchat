@@ -7,6 +7,9 @@ package com.getjenny.starchat.entities.io
 //  final score. In case we don't want to show all these details, use classes defined in SpellCheckTermsResponse.scala
 case class SpellcheckTokenSuggestions2(
                                        score: Double,
+                                       scoreUnigram: Double,
+                                       scoreBigram: Double,
+                                       scoreTrigram: Double,
                                        freq: Double,
                                        text: String
                                      )
