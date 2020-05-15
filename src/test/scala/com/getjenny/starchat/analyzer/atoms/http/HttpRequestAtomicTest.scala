@@ -575,6 +575,19 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     }
      */
     /*
+    "test s3 atom with parameter containing non-ascii and space" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List("s3-folder-id=cloudpermit-towns","item-id=Pedersören kunta"), systemConf) with ReadS3DataVariableManager
+
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
+      result.data.extractedVariables.foreach(println)
+    }
+    */
+    /*
     "test ZendeskSearchTickets atom" in {
 
       val systemConf = SystemConfiguration

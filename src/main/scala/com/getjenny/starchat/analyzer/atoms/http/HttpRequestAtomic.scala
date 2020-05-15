@@ -16,6 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.language.postfixOps
 import scala.util.Try
+import org.apache.commons.lang3.StringUtils.stripAccents
 
 class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   this: VariableManager =>
@@ -78,6 +79,8 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
       None
   }
 
+  protected[this] def cleanUrl(url: String): String = stripAccents(url).replace(" ", "+")
+
   protected[this] def createRequest(configuration: HttpRequestAtomicConfiguration): HttpRequest = {
     val (authHeader, authQueryParam) = configuration.auth match {
       case Some(BasicAuth(username, password)) =>
@@ -90,22 +93,22 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
         Nil -> s"$key=$token".some
       case _ => Nil -> None
     }
-
-    val url = authQueryParam.map(auth => s"${configuration.urlConf.url}?$auth").getOrElse(configuration.urlConf.url)
+    val urlClean = cleanUrl(configuration.urlConf.url)
+    val urlAuth = authQueryParam.map(auth => s"$urlClean?$auth").getOrElse(urlClean)
 
     val (finalUrl, httpBody) = configuration.inputConf match {
       case Some(QueryStringConf(queryString)) =>
         if (configuration.urlConf.contentType.equals(ContentTypes.`application/x-www-form-urlencoded`)) {
-          url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
+          urlAuth -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
         } else {
           val querySeparator = authQueryParam match {
             case Some(_) => "&"
             case _ => "?"
           }
-          s"$url$querySeparator$queryString" -> HttpEntity.Empty
+          s"$urlAuth$querySeparator$queryString" -> HttpEntity.Empty
         }
-      case Some(JsonConf(json)) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
-      case _ => url -> HttpEntity.Empty
+      case Some(JsonConf(json)) => urlAuth -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
+      case _ => urlAuth -> HttpEntity.Empty
     }
 
     HttpRequest(method = configuration.urlConf.method,
