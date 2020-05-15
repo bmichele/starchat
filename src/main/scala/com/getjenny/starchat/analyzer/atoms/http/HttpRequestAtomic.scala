@@ -93,26 +93,26 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
         Nil -> s"$key=$token".some
       case _ => Nil -> None
     }
-    val urlClean = cleanUrl(configuration.urlConf.url)
-    val urlAuth = authQueryParam.map(auth => s"$urlClean?$auth").getOrElse(urlClean)
+
+    val url = authQueryParam.map(auth => s"${configuration.urlConf.url}?$auth").getOrElse(configuration.urlConf.url)
 
     val (finalUrl, httpBody) = configuration.inputConf match {
       case Some(QueryStringConf(queryString)) =>
         if (configuration.urlConf.contentType.equals(ContentTypes.`application/x-www-form-urlencoded`)) {
-          urlAuth -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
+          url -> HttpEntity(configuration.urlConf.contentType, ByteString(queryString))
         } else {
           val querySeparator = authQueryParam match {
             case Some(_) => "&"
             case _ => "?"
           }
-          s"$urlAuth$querySeparator$queryString" -> HttpEntity.Empty
+          s"$url$querySeparator$queryString" -> HttpEntity.Empty
         }
-      case Some(JsonConf(json)) => urlAuth -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
-      case _ => urlAuth -> HttpEntity.Empty
+      case Some(JsonConf(json)) => url -> HttpEntity(ContentTypes.`application/json`, ByteString(json))
+      case _ => url -> HttpEntity.Empty
     }
 
     HttpRequest(method = configuration.urlConf.method,
-      uri = finalUrl,
+      uri = cleanUrl(finalUrl),
       headers = authHeader,
       entity = httpBody)
   }
