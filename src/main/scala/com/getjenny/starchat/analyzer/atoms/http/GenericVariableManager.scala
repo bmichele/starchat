@@ -78,7 +78,7 @@ trait GenericVariableManager extends VariableManager {
       case (true, false) => extractInput[QueryStringConf](inputQueryTemplate,
         configMap,
         findProperty) {
-        x => QueryStringConf(x.replace(" ", "+"))
+        QueryStringConf
       }.map(_.some)
       case (false, true) =>
         extractInput[JsonConf](inputJson,

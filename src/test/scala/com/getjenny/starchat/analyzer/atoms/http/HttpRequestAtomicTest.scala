@@ -339,27 +339,6 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       validation shouldBe a[Success[_]]
     }
 
-    "create a valid http atom configuration with spaces in input-query-template" in {
-      val systemConf = SystemConfiguration
-        .createMapFromPath("starchat.atom-values")
-      val arguments = List("http-atom.test.url=www.google.it",
-        "http-atom.test.http-method=GET",
-        "http-atom.test.input-query-template",
-        "http-atom.test.output-content-type=test.content-type",
-        "http-atom.test.output-status=test.status",
-        "http-atom.test.output-data=test.data",
-        "http-atom.test.output-score=test.score"
-      )
-      val analyzerData = Map("http-atom.test.input-query-template" -> "aaa=b cd e")
-      val configuration = variableManager.validateAndBuild(arguments,systemConf, analyzerData, "")
-
-      configuration shouldBe a[Success[_]]
-      configuration.foreach { conf =>
-        val queryString = conf.inputConf.collect { case QueryStringConf(queryString) => queryString }.getOrElse("")
-        queryString shouldEqual "aaa=b+cd+e"
-      }
-    }
-
     /*"test weather api call and do not execute call if done before and actual call is 0" in {
       val description = "desc"
       val humidity = "1"
@@ -575,6 +554,19 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     }
      */
 
+    /*
+    "test s3 atom with parameter containing non-ascii and space" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new HttpRequestAtomic(List("s3-folder-id=cloudpermit-towns","item-id=Pedersören kunta"), systemConf) with ReadS3DataVariableManager
+
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
+      result.data.extractedVariables.foreach(println)
+    }
+    */
     /*
     "test ZendeskSearchTickets atom" in {
 
