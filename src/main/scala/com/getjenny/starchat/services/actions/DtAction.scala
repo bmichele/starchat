@@ -52,9 +52,8 @@ object DtActionAtomAdapter {
     else
       Map.empty[String, String]
 
-    //FIXME use context to pass index_name
     val wrappedCommand = "band(" + command + ")"
-    val starchatAnalyzer = Try(new StarChatAnalyzer(wrappedCommand, restrictedArgs + ("index_name" -> indexName))) match {
+    val starchatAnalyzer = Try(new StarChatAnalyzer(wrappedCommand, restrictedArgs)) match {
       case Success(analyzerObject) =>
         log.debug(s"Analyzer successfully built index($indexName) state($stateName)")
         Some(analyzerObject)

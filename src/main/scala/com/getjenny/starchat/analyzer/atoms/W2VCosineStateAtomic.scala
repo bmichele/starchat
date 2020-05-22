@@ -12,8 +12,11 @@ import com.getjenny.starchat.entities.io.CommonOrSpecificSearch
 import com.getjenny.starchat.entities.persistents.TextTerms
 import com.getjenny.starchat.services._
 import com.getjenny.starchat.utils.Index
+import com.getjenny.analyzer.expressions.Context
 
-class W2VCosineStateAtomic(val arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic  {
+import scala.collection.immutable
+
+class W2VCosineStateAtomic(val arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   /**
     * cosine distance between sentences renormalized at [0, 1]: (cosine + 1)/2
     *
@@ -36,40 +39,30 @@ class W2VCosineStateAtomic(val arguments: List[String], restrictedArgs: Map[Stri
   override def toString: String = "similarState(\"" + state + "\")"
 
   val analyzerService: AnalyzerService.type = AnalyzerService
-  //FIXME use context to get index_name
-  val originalIndexName: String = restrictedArgs("index_name")
-  val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
-
-  val querySentences: Option[DecisionTableRuntimeItem] =
-    AnalyzerService.analyzersMap(indexName).analyzerMap.get(state)
-  if (querySentences.isEmpty) {
-    analyzerService.log.error(toString + " : state does not exists")
-  } else {
-    analyzerService.log.info(toString + " : initialized")
-  }
-
-  val queryTerms: List[TextTerms] = querySentences match {
-    case Some(t) => t.queriesTerms
-    case _ => List.empty[TextTerms]
-  }
-
-  val queryVectors: List[(Vector[Double], Double)] = queryTerms.map(item => {
-    val query_vector = TextToVectorsTools.sumOfTermsVectors(item)
-    query_vector
-  })
 
   val isEvaluateNormalized: Boolean = true
+
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
-    val distance = queryVectors.map{
-      case (sentenceVector, reliabilityFactor) =>
-        val (querySentenceVector, queryReliabilityFactor) =
-            TextToVectorsTools.sumOfVectorsFromText(indexName, query)
-        val dist = (1.0 - cosineDist(sentenceVector, querySentenceVector)) *
-          (reliabilityFactor * queryReliabilityFactor)
-        dist
+    val indexName = Index.resolveIndexName(restrictedArgs(data.context.indexName), commonOrSpecific)
+
+    val queriesTerms = AnalyzerService.analyzersMap(indexName).analyzerMap.get(state) match {
+      case Some(q) =>
+        analyzerService.log.info(s"$toString : initialized")
+        q.queriesTerms
+      case None =>
+        analyzerService.log.error(s"$toString : state does not exists")
+        List.empty
     }
+
+    val distance = queriesTerms
+      .map(item => TextToVectorsTools.sumOfTermsVectors(item))
+      .map { case (sentenceVector, reliabilityFactor) =>
+        val (querySentenceVector, queryReliabilityFactor) = TextToVectorsTools.sumOfVectorsFromText(indexName, query)
+        (1.0 - cosineDist(sentenceVector, querySentenceVector)) * (reliabilityFactor * queryReliabilityFactor)
+      }
+
     val dist = if (distance.nonEmpty) distance.max else 0.0
-    Result(score=dist)
+    Result(score = dist)
   }
 
   // Similarity is normally the cosine itself. The threshold should be at least
