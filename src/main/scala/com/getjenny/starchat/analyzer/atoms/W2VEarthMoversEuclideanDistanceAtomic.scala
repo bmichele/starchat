@@ -12,7 +12,7 @@ import com.getjenny.starchat.utils.Index
   */
 
 class W2VEarthMoversEuclideanDistanceAtomic(val arguments: List[String],
-                                            restrictedArgs: Map[String, String]) extends AbstractAtomic  {
+                                            restrictedArgs: Map[String, String]) extends AbstractAtomic {
   /**
     * cosine distance between sentences renormalized at [0, 1]: (cosine + 1)/2
     *
@@ -33,19 +33,19 @@ class W2VEarthMoversEuclideanDistanceAtomic(val arguments: List[String],
   }
 
   val termService: TermService.type = TermService
-  //FIXME use context to get index_name
-  val originalIndexName: String = restrictedArgs("index_name")
-  val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 
   override def toString: String = "similarEucEmd(\"" + sentence + "\")"
+
   val isEvaluateNormalized: Boolean = true
+
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
+    val indexName = Index.resolveIndexName(data.context.indexName, commonOrSpecific)
+
     val emdDist = EMDVectorDistances.distanceEuclidean(indexName, query, sentence)
-    Result(score=emdDist)
+    Result(score = emdDist)
   }
 
   // Similarity is normally the cosine itself. The threshold should be at least
-
   // angle < pi/2 (cosine > 0), but for synonyms let's put cosine > 0.6, i.e. self.evaluate > 0.8
   override val matchThreshold: Double = 0.8
 }
