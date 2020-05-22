@@ -16,6 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.language.postfixOps
 import scala.util.Try
+import org.apache.commons.lang3.StringUtils.stripAccents
 
 import java.util.Base64
 import java.nio.charset.StandardCharsets
@@ -81,6 +82,8 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
       None
   }
 
+  protected[this] def cleanUrl(url: String): String = stripAccents(url).replace(" ", "+")
+
   protected[this] def createRequest(configuration: HttpRequestAtomicConfiguration): HttpRequest = {
     val (authHeader, authQueryParam) = configuration.auth match {
       case Some(BasicAuth(username, password)) =>
@@ -113,7 +116,7 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
     }
 
     HttpRequest(method = configuration.urlConf.method,
-      uri = finalUrl,
+      uri = cleanUrl(finalUrl),
       headers = authHeader,
       entity = httpBody)
   }
