@@ -32,15 +32,12 @@ class W2VCosineWordAtomic(arguments: List[String], restrictedArgs: Map[String, S
   override def toString: String = "similar(\"" + word + "\")"
 
   val termService: TermService.type = TermService
-  //FIXME use context to get index_name
-  val originalIndexName: String = restrictedArgs("index_name")
-  val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
-
-  val (sentenceVector: Vector[Double], reliabilityFactor: Double) =
-    TextToVectorsTools.sumOfVectorsFromText(indexName, word)
 
   val isEvaluateNormalized: Boolean = true
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
+    val indexName: String = Index.resolveIndexName(data.context.indexName, commonOrSpecific)
+
+    val (sentenceVector, reliabilityFactor) = TextToVectorsTools.sumOfVectorsFromText(indexName, word)
     val textVectors = termService.textToVectors(indexName, query)
 
     val distanceList = textVectors.terms.terms.map(term => term.vector.getOrElse(Vector.empty[Double]))

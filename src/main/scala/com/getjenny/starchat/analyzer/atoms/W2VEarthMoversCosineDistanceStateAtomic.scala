@@ -14,7 +14,7 @@ import com.getjenny.starchat.utils.Index
   */
 
 class W2VEarthMoversCosineDistanceStateAtomic(val arguments: List[String], restrictedArgs: Map[String, String])
-  extends AbstractAtomic  {
+  extends AbstractAtomic {
   /**
     * cosine distance between sentences renormalized at [0, 1]: (cosine + 1)/2
     *
@@ -37,36 +37,32 @@ class W2VEarthMoversCosineDistanceStateAtomic(val arguments: List[String], restr
   val termService: TermService.type = TermService
 
   implicit class CrossTable[X](xs: Traversable[X]) {
-    def cross[Y](ys: Traversable[Y]): Traversable[(X, Y)] = for { x <- xs; y <- ys } yield (x, y)
+    def cross[Y](ys: Traversable[Y]): Traversable[(X, Y)] = for {x <- xs; y <- ys} yield (x, y)
   }
 
   override def toString: String = "similarCosEmdState(\"" + state + "\")"
 
   val analyzerService: AnalyzerService.type = AnalyzerService
-  //FIXME use context to get index_name
-  val originalIndexName: String = restrictedArgs("index_name")
-  val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
-
-  val queriesSentences: Option[DecisionTableRuntimeItem] =
-    AnalyzerService.analyzersMap(indexName).analyzerMap.get(state)
-  if (queriesSentences.isEmpty) {
-    val message = toString + " : state not found on states map"
-    analyzerService.log.error(message)
-    throw AnalyzerInitializationException(message)
-  } else {
-    analyzerService.log.info(toString + " : initialized")
-  }
-
-  val queriesVectors: List[TextTerms] = queriesSentences match {
-    case Some(sentences) => sentences.queriesTerms.map(item => item)
-    case _ => List.empty[TextTerms]
-  }
 
   val isEvaluateNormalized: Boolean = true
+
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
+    val indexName = Index.resolveIndexName(data.context.indexName, commonOrSpecific)
+
+    val queriesTerms = AnalyzerService.analyzersMap(indexName).analyzerMap.get(state) match {
+      case Some(q) =>
+        analyzerService.log.info(s"$toString : initialized")
+        q.queriesTerms
+      case None =>
+        val message = s"$toString : state not found on states map"
+        analyzerService.log.error(message)
+        throw AnalyzerInitializationException(message)
+    }
+
     val queryVectors = termService.textToVectors(indexName = indexName, text = query)
-    val emdDistQueries = queriesVectors.map(queryTerms =>
-        EMDVectorDistances.distanceCosine(queryTerms, queryVectors)).max
+    val emdDistQueries = queriesTerms
+      .map(queryTerm => EMDVectorDistances.distanceCosine(queryTerm, queryVectors))
+      .max
 
     Result(score = emdDistQueries)
   }

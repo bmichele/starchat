@@ -12,7 +12,7 @@ import com.getjenny.starchat.utils.Index
   */
 
 class W2VEarthMoversCosineDistanceAtomic(val arguments: List[String], restrictedArgs: Map[String, String])
-  extends AbstractAtomic  {
+  extends AbstractAtomic {
   /**
     * cosine distance between sentences renormalized at [0, 1]: (cosine + 1)/2
     *
@@ -35,18 +35,18 @@ class W2VEarthMoversCosineDistanceAtomic(val arguments: List[String], restricted
   val termService: TermService.type = TermService
 
   implicit class Crosstable[X](xs: Traversable[X]) {
-    def cross[Y](ys: Traversable[Y]): Traversable[(X, Y)] = for { x <- xs; y <- ys } yield (x, y)
+    def cross[Y](ys: Traversable[Y]): Traversable[(X, Y)] = for {x <- xs; y <- ys} yield (x, y)
   }
 
   override def toString: String = "similarCosEmd(\"" + sentence + "\")"
+
   val isEvaluateNormalized: Boolean = true
-  //FIXME use context to get index_name
-  val originalIndexName: String = restrictedArgs("index_name")
-  val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
 
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
+    val indexName = Index.resolveIndexName(data.context.indexName, commonOrSpecific)
+
     val emdDist = EMDVectorDistances.distanceCosine(indexName, query, sentence)
-    Result(score=emdDist)
+    Result(score = emdDist)
   }
 
   // Similarity is normally the cosine itself. The threshold should be at least

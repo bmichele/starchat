@@ -38,20 +38,17 @@ class W2VCosineSentenceAtomic(val arguments: List[String],
   override def toString: String = "similar(\"" + sentence + "\")"
   val isEvaluateNormalized: Boolean = true
 
-  //FIXME use context to get index_name
-  val originalIndexName: String = restrictedArgs("index_name")
-
-  val indexName: String = Index.resolveIndexName(originalIndexName, commonOrSpecific)
-  val sentenceVector: (Vector[Double], Double) = TextToVectorsTools.sumOfVectorsFromText(indexName, sentence)
-
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
-    val query_vector = TextToVectorsTools.sumOfVectorsFromText(indexName, query)
+    val indexName = Index.resolveIndexName(data.context.indexName, commonOrSpecific)
+
+    val sentenceVector = TextToVectorsTools.sumOfVectorsFromText(indexName, sentence)
+    val queryVector = TextToVectorsTools.sumOfVectorsFromText(indexName, query)
 
     /** cosineDist returns 0.0 for the closest vector, we want 1.0 when the similarity is the highest
       *   so we use 1.0 - ...
       */
-    val distance = (1.0 - cosineDist(sentenceVector._1, query_vector._1)) *
-      (sentenceVector._2 * query_vector._2) /** <-- these terms are 1.0 when all vector for all terms of the sentence were found */
+    val distance = (1.0 - cosineDist(sentenceVector._1, queryVector._1)) *
+      (sentenceVector._2 * queryVector._2) /** <-- these terms are 1.0 when all vector for all terms of the sentence were found */
     Result(score=distance)
   }
 
