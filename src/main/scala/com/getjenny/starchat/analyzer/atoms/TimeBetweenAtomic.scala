@@ -54,18 +54,24 @@ class TimeBetweenAtomic(val arguments: List[String],
     case Failure(e) => throw ExceptionAtomic("Error parsing timezone", e)
   }
 
-  private[this] val compareTime = arguments.lift(3) match {
-    case Some(v) => getHhMm(Some(v))
-    case _ => LocalTime.now(zone)
+  private[this] val compareTimeString: String = arguments.lift(3) match {
+    case Some(v) => v
+    case _ => throw ExceptionAtomic("TimeBetween: arg 3/3 must be a HH:mm string or an empty string")
   }
-
+  //LocalTime.now(zone)
   override def toString: String = "timeBetween(\"" + arguments.mkString(", ") + "\")"
 
   val isEvaluateNormalized: Boolean = true
 
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
     // Using compareTo and not isBefore / After bc want =
-    if (openTime.compareTo(compareTime) <= 0 &&  closeTime.compareTo(compareTime) >= 0)
+
+    val timeToBeCompared: LocalTime = compareTimeString.isEmpty match {
+      case true => LocalTime.now(zone)
+      case _ => getHhMm(Some(compareTimeString))
+    }
+
+    if (openTime.compareTo(timeToBeCompared) <= 0 &&  closeTime.compareTo(timeToBeCompared) >= 0)
       Result(score = 1.0)
     else
       Result(score = 0.0)
