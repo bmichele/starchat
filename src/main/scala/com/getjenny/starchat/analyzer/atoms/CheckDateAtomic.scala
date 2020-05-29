@@ -57,7 +57,7 @@ class CheckDateAtomic(val arguments: List[String],
 
   val timeToBeComparedString: String = arguments.lift(4) match {
     case Some(t) => t
-    case _ => throw ExceptionAtomic("CheckDateAtomic: arg 4/4 must be a ISO_LOCAL_DATE_TIME string or an empty string")
+    case _ => ""
   }
 
   override def toString: String = "CheckDate(\"" + arguments + "\")"

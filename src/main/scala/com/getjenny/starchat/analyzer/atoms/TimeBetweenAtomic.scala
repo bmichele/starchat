@@ -56,7 +56,7 @@ class TimeBetweenAtomic(val arguments: List[String],
 
   private[this] val compareTimeString: String = arguments.lift(3) match {
     case Some(v) => v
-    case _ => throw ExceptionAtomic("TimeBetween: arg 3/3 must be a HH:mm string or an empty string")
+    case _ => ""
   }
   //LocalTime.now(zone)
   override def toString: String = "timeBetween(\"" + arguments.mkString(", ") + "\")"
