@@ -73,4 +73,28 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
       }
     }
   }
+  "CheckDate Atomic" should {
+    "return 1.0 when evaluating condition now from missing argument is after yesterday" in {
+      val nowString = LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+      val evaluateRequest: AnalyzerEvaluateRequest =
+        AnalyzerEvaluateRequest(
+          query = "user query unused",
+          analyzer = """band(checkDate("""" + nowString + """","Greater","P-1D", "EET"))""",
+          data = Option {
+            AnalyzersData()
+          }
+        )
+
+      Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[AnalyzerEvaluateResponse]
+        response.build should be(true)
+        response.buildMessage should be("success")
+        response.value should be(1.0)
+      }
+    }
+  }
+
+
+
 }
