@@ -39,20 +39,26 @@ case class EntityExtractorOutput(
                           ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
-    if(StatusCodes.OK.equals(status)){
-      val json = body.parseJson.asJsObject
-      // map over json, match entity_tye with case (non-null), create a list of strings
-      val extractedEntitiesMap = json.fields.filter(x => x._2.toString() != "null")
 
-      val s = if(extractedEntitiesMap.isEmpty) "0" else "1"
+    val scoreExtracted = "1"
+    val scoreNotExtracted = "0"
+
+    if(StatusCodes.OK.equals(status)){
+      val jsonFields = body.parseJson.asJsObject.fields
+      val extractedEntitiesMap = jsonFields.filter(x => x._2.toString() =/= "null")
+
+
+      val s = if(extractedEntitiesMap.isEmpty) scoreNotExtracted else scoreExtracted
 
       val entityTypeAndList = extractedEntitiesMap.map {
         case (entityType, JsArray(extractedEntities)) => (entityType, extractedEntities.toList.map(_.toString.stripPrefix("\"").stripSuffix("\"")))
         case _ => List(List())
       }.headOption.getOrElse(List())
 
-      def outputMap(extractedEntities: List[Any], typeEntity: String) =
-        extractedEntities.zipWithIndex.map(x => (typeEntity + "." + x._2, x._1.toString)).toMap
+      def outputMap(extractedEntities: List[Any], typeEntity: String): Map[String, String] = {
+        val output = extractedEntities.zipWithIndex.map(x => (typeEntity + "." + x._2, x._1.toString))
+        output.toMap
+      }
 
       val entityType = entityTypeAndList match {
         case ("LOC", head :: tail) => outputMap(head :: tail, location)
@@ -68,7 +74,7 @@ case class EntityExtractorOutput(
       )
     } else {
       Map(
-        score -> "0",
+        score -> scoreNotExtracted,
         responseStatus -> status.toString
       )
     }
