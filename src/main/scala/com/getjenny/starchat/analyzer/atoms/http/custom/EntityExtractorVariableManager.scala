@@ -46,8 +46,8 @@ case class EntityExtractorOutput(
     if(StatusCodes.OK.equals(status)){
       val jsonFields = body.parseJson.asJsObject.fields
       val extractedEntitiesMap = jsonFields.filter(x => {
-        val jsonValueString = x._2.toString
-        jsonValueString =/= "null"
+        val jsonValue = x._2
+        jsonValue.toString =/= "null"
       })
 
 
@@ -61,8 +61,9 @@ case class EntityExtractorOutput(
 
       def outputMap(extractedEntities: List[Any], typeEntity: String): Map[String, String] = {
         val output = extractedEntities.zipWithIndex.map(x => {
-          val extractedEntityString = x._1.toString
-          (typeEntity + "." + x._2, extractedEntityString)
+          val extractedEntity = x._1
+          val entityNumber = x._2
+          (typeEntity + "." + entityNumber, extractedEntity.toString)
         })
         output.toMap
       }
