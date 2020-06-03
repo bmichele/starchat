@@ -45,18 +45,25 @@ case class EntityExtractorOutput(
 
     if(StatusCodes.OK.equals(status)){
       val jsonFields = body.parseJson.asJsObject.fields
-      val extractedEntitiesMap = jsonFields.filter(x => x._2.toString() =/= "null")
+      val extractedEntitiesMap = jsonFields.filter(x => {
+        val jsonValueString = x._2.toString
+        jsonValueString =/= "null"
+      })
 
 
       val s = if(extractedEntitiesMap.isEmpty) scoreNotExtracted else scoreExtracted
 
+      val quoteMark = "\""
       val entityTypeAndList = extractedEntitiesMap.map {
-        case (entityType, JsArray(extractedEntities)) => (entityType, extractedEntities.toList.map(_.toString.stripPrefix("\"").stripSuffix("\"")))
+        case (entityType, JsArray(extractedEntities)) => (entityType, extractedEntities.toList.map(_.toString.stripPrefix(quoteMark).stripSuffix(quoteMark)))
         case _ => List(List())
       }.headOption.getOrElse(List())
 
       def outputMap(extractedEntities: List[Any], typeEntity: String): Map[String, String] = {
-        val output = extractedEntities.zipWithIndex.map(x => (typeEntity + "." + x._2, x._1.toString))
+        val output = extractedEntities.zipWithIndex.map(x => {
+          val extractedEntityString = x._1.toString
+          (typeEntity + "." + x._2, extractedEntityString)
+        })
         output.toMap
       }
 
