@@ -9,6 +9,10 @@ import com.getjenny.starchat.services.esclient.KnowledgeBaseElasticClient
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.search.{SearchRequest, SearchResponse}
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
+import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder
+import spray.json._
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.suggest.SuggestBuilder
 import org.elasticsearch.search.suggest.term.TermSuggestionBuilder.{StringDistanceImpl, SuggestMode}
@@ -78,7 +82,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   /**
-   * TODO: this is a mockup function, should be replaced by function calling ES to get all necessary counts
+   * TODO: refactor and check implementation of this function
    * True function takes a list of candidates, together with left and right context, and returns all necessary counts in
    * two maps, e.g.
    *
@@ -105,25 +109,133 @@ object SpellcheckService2 extends AbstractDataService {
    *  - "bigrams": total number of bigrams (counting multiple occurrences)
    *  - "trigrams": total number of trigrams (counting multiple occurrences)
    */
-  def getStats(candidates: List[String],
+  def getStats(indexName: String,
+               candidates: List[String],
                leftContext: List[String],
                rightContext: List[String]): (Map[String, Map[String, Int]], Map[String, Int]) = {
-    def buildCandidateStats(): Map[String, Int] = {
-      val combinations = new ListBuffer[String]()
-      combinations += "t"
+
+    def aggregationUnigramOccurrences(name: String, token: String): FilterAggregationBuilder =
+      AggregationBuilders
+        .filter(name, QueryBuilders.termQuery("question.base", token))
+
+    def aggregationBigramOccurrences(name: String, tokens: (String, String)): FilterAggregationBuilder = {
+      val text = tokens._1 + " " + tokens._2
+      AggregationBuilders
+        .filter(name, QueryBuilders.termQuery("question.shingles_2", text))
+    }
+
+    def aggregationTrigramOccurrences(name: String, tokens: (String, String, String)): FilterAggregationBuilder = {
+      val text = tokens._1 + " " + tokens._2 + " " + tokens._3
+      AggregationBuilders
+        .filter(name, QueryBuilders.termQuery("question.shingles_3", text))
+    }
+
+    // count total number of 1-grams
+    val aggregationTotal1Grams = AggregationBuilders
+      .count("unigrams")
+      .field("question.base")
+    // count total number of bigrams
+    val aggregationTotal2Grams = AggregationBuilders
+      .count("bigrams")
+      .field("question.shingles_2")
+    // count total number of trigrams
+    val aggregationTotal3Grams = AggregationBuilders
+      .count("trigrams")
+      .field("question.shingles_3")
+
+
+    def aggregationsSingleCandidate(sourceRequestBuilder: SearchSourceBuilder,
+                                    candidate: String,
+                                    index: Int,
+                                    leftContext: List[String],
+                                    rightContext: List[String]): SearchSourceBuilder = {
+      //val aggregations = new ListBuffer[FilterAggregationBuilder]()
+      val indexString = index.toString
+      val agg_t = aggregationUnigramOccurrences("agg_" + indexString + "_t", candidate)
+      //aggregations += agg_t
+      sourceRequestBuilder.aggregation(agg_t)
+      val leftContextReverse = leftContext.reverse
       if (leftContext.nonEmpty) {
-        combinations += "lt"
-        if (leftContext.size > 1)  combinations += "llt"
-        if (rightContext.nonEmpty) combinations += "ltr"
+        val agg_lt = aggregationBigramOccurrences("agg_" + indexString + "_lt", (leftContextReverse.head, candidate))
+        //aggregations += agg_lt
+        sourceRequestBuilder.aggregation(agg_lt)
+        if (leftContext.size > 1)  {
+          val agg_llt = aggregationTrigramOccurrences("agg_" + indexString + "_llt", (leftContextReverse(1), leftContextReverse.head, candidate))
+          //aggregations += agg_llt
+          sourceRequestBuilder.aggregation(agg_llt)
+        }
+        if (rightContext.nonEmpty) {
+          val agg_ltr = aggregationTrigramOccurrences("agg_" + indexString + "_ltr", (leftContextReverse.head, candidate, rightContext.head))
+          //aggregations += agg_ltr
+          sourceRequestBuilder.aggregation(agg_ltr)
+        }
       }
       if (rightContext.nonEmpty) {
-        combinations += "tr"
-        if (rightContext.size > 1) combinations += "trr"
+        val agg_tr = aggregationBigramOccurrences("agg_" + indexString + "_tr", (candidate, rightContext.head))
+        //aggregations += agg_tr
+        sourceRequestBuilder.aggregation(agg_tr)
+        if (rightContext.size > 1) {
+          val agg_trr = aggregationTrigramOccurrences("agg_" + indexString + "_trr", (candidate, rightContext.head, rightContext(1)))
+          //aggregations += agg_trr
+          sourceRequestBuilder.aggregation(agg_trr)
+        }
       }
-      combinations.map(x => (x, 10)).toMap
+      sourceRequestBuilder
     }
-    val candidateCounts = candidates.zipWithIndex.map(pair => (pair._1, buildCandidateStats())).toMap
-    val ngramTotalCounts = Map("unigrams" -> 100, "bigrams" -> 50, "trigrams" -> 20)
+
+    // create request with all necessary aggregations
+    val sourceReqBuilder: SearchSourceBuilder = new SearchSourceBuilder().size(0)
+    def helperFunction(candidateIndex: (String, Int), accumulator: SearchSourceBuilder): SearchSourceBuilder =
+      aggregationsSingleCandidate(accumulator, candidateIndex._1, candidateIndex._2, leftContext, rightContext)
+    val sourceReqBuilderCandidates = candidates.zipWithIndex.foldRight(sourceReqBuilder)(helperFunction)
+    sourceReqBuilderCandidates
+      .aggregation(aggregationTotal1Grams)
+      .aggregation(aggregationTotal2Grams)
+      .aggregation(aggregationTotal3Grams)
+
+    // perform request
+    val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "logs_data")
+    val client: RestHighLevelClient = elasticClient.httpClient
+    val searchReq: SearchRequest = new SearchRequest(esLanguageSpecificIndexName)
+      .source(sourceReqBuilderCandidates)
+
+    // extract values from response and build output map
+    def getAggregationValue(responseElasticsearch: SearchResponse, aggregationName: String, field: String): Int = {
+      def getFieldAsJsonObject(json: JsObject, fieldName: String): JsObject =
+        json.getFields(fieldName).head.asJsObject
+      val responseJson = responseElasticsearch.toString.parseJson.asJsObject
+      val aggregationsJson = getFieldAsJsonObject(responseJson, "aggregations")
+      val aggregationJson = getFieldAsJsonObject(aggregationsJson, aggregationName)
+      aggregationJson.getFields(field).head.toString.toInt
+    }
+
+    val searchResponse : SearchResponse = client.search(searchReq, RequestOptions.DEFAULT)
+
+    // TODO: remove print statements!
+    println("###################")
+    println(searchResponse)
+
+    def buildCandidateStats(candidateIndex: Int): Map[String, Int] = {
+      val indexString = candidateIndex.toString
+      val outList = new ListBuffer[(String, Int)]()
+      outList += Tuple2("t", getAggregationValue(searchResponse, "filter#agg_" + indexString + "_t", "doc_count"))
+      if (leftContext.nonEmpty) {
+        outList += Tuple2("lt", getAggregationValue(searchResponse, "filter#agg_" + indexString + "_lt", "doc_count"))
+        if (leftContext.size > 1) outList += Tuple2("llt", getAggregationValue(searchResponse, "filter#agg_" + indexString + "_llt", "doc_count"))
+        if (rightContext.nonEmpty) outList += Tuple2("ltr", getAggregationValue(searchResponse, "filter#agg_" + indexString + "_ltr", "doc_count"))
+      }
+      if (rightContext.nonEmpty) {
+        outList += Tuple2("tr", getAggregationValue(searchResponse, "filter#agg_" + indexString + "_tr", "doc_count"))
+        if (rightContext.size > 1) outList += Tuple2("trr", getAggregationValue(searchResponse, "filter#agg_" + indexString + "_trr", "doc_count"))
+      }
+      outList.toMap
+    }
+    val candidateCounts = candidates.zipWithIndex.map(pair => (pair._1, buildCandidateStats(pair._2))).toMap
+    val ngramTotalCounts = Map(
+      "unigrams" -> getAggregationValue(searchResponse, "value_count#unigrams", "value"),
+      "bigrams" -> getAggregationValue(searchResponse, "value_count#bigrams", "value"),
+      "trigrams" -> getAggregationValue(searchResponse, "value_count#trigrams", "value"),
+    )
     (candidateCounts, ngramTotalCounts)
   }
 
@@ -193,14 +305,15 @@ object SpellcheckService2 extends AbstractDataService {
    * @param weightTrigrams weight for trigrams in final score
    * @return Map containing, for each candidate the scores: (final score, (s1, s2, s3))
    */
-  def scoreCandidates(candidates: List[String],
+  def scoreCandidates(indexName: String,
+                      candidates: List[String],
                       leftContext: List[String],
                       rightContext: List[String],
                       weightUnigrams: Float,
                       weightBigrams: Float,
                       weightTrigrams: Float): Map[String, (Float, (Float, Float, Float))] = {
     // get stats from ES
-    val (candidateCounts, ngramCounts) = getStats(candidates, leftContext, rightContext)
+    val (candidateCounts, ngramCounts) = getStats(indexName, candidates, leftContext, rightContext)
     def sumValues(mapObject: Map[String, Int], keys: List[String]): Int = {
       mapObject.filterKeys(keys.contains).values.sum
     }
@@ -328,6 +441,7 @@ object SpellcheckService2 extends AbstractDataService {
           val tokenRightContext = tupleArgs._2
           val tokenLeftContext = tupleArgs._3
           val scoreCandidatesToken = scoreCandidates(
+            indexName,
             tokenCandidates.keys.toList,
             tokenLeftContext,
             tokenRightContext,
@@ -387,7 +501,7 @@ object Main2 extends App {
   val candidates = List("you", "lol")
   val leftContext = List("how", "are")
   val rightContext = List("doing", "today")
-  val scores = service.scoreCandidates(candidates, leftContext, rightContext, 1, 1, 1)
+  val scores = service.scoreCandidates(index, candidates, leftContext, rightContext, 1, 1, 1)
   println(scores)
 
   // given a sentence, get suggestions
