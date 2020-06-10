@@ -200,6 +200,7 @@ object SpellcheckService2 extends AbstractDataService {
       .source(sourceReqBuilderCandidates)
 
     // extract values from response and build output map
+    // TODO: refactor - here I extract values converting ES response to json, it should be doable with ES APIs
     def getAggregationValue(responseElasticsearch: SearchResponse, aggregationName: String, field: String): Int = {
       def getFieldAsJsonObject(json: JsObject, fieldName: String): JsObject =
         json.getFields(fieldName).head.asJsObject
@@ -210,10 +211,6 @@ object SpellcheckService2 extends AbstractDataService {
     }
 
     val searchResponse : SearchResponse = client.search(searchReq, RequestOptions.DEFAULT)
-
-    // TODO: remove print statements!
-    println("###################")
-    println(searchResponse)
 
     def buildCandidateStats(candidateIndex: Int): Map[String, Int] = {
       val indexString = candidateIndex.toString
@@ -333,8 +330,8 @@ object SpellcheckService2 extends AbstractDataService {
       (x._1 :: l._1, x._2 :: l._2, x._3 :: l._3)
     val scoresNgramsLists = scoresNgrams.values.foldRight[(List[Float], List[Float], List[Float])]((List(), List(), List()))(reshapeListTuples3)
 
-    // val scoresTotal = combineScores(
-    val scoresTotal = combineScoresAlternative(
+    val scoresTotal = combineScores(
+    // val scoresTotal = combineScoresAlternative(
       scoresNgramsLists._1,
       scoresNgramsLists._2,
       scoresNgramsLists._3,
@@ -496,11 +493,16 @@ object Main2 extends App {
   val suggestions = service.termsSuggester2(index, suggestRequest)
   println(suggestions)
 
-  // given candidates and context, get scores
-  println("\nTesting scoring function")
+  // check getStats function
+  println("\nTesting getStats")
   val candidates = List("you", "lol")
   val leftContext = List("how", "are")
   val rightContext = List("doing", "today")
+  val stats = service.getStats(index, candidates, leftContext, rightContext)
+  println(stats)
+
+  // given candidates and context, get scores
+  println("\nTesting scoring function")
   val scores = service.scoreCandidates(index, candidates, leftContext, rightContext, 1, 1, 1)
   println(scores)
 
