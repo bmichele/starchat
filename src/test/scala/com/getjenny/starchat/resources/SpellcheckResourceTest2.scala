@@ -4,18 +4,21 @@ import akka.http.scaladsl.model.StatusCodes
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
+import com.getjenny.starchat.services.SpellcheckService2
+
+import scala.collection.immutable.List
 
 class SpellcheckResourceTest2 extends TestEnglishBase {
 
   "StarChat" should {
     "return an HTTP code 201 when populating conversation logs" in {
-      val conversationLogsRequest: QADocument = QADocument(
+      val conversationLog1: QADocument = QADocument(
         id = "0",
         conversation = "id:1000",
         indexInConversation = 1,
         coreData = Some(QADocumentCore(
-          question = Some("is this text misspelled?"),
-          answer = Some("it might be")
+          question = Some("how are you doing today?"),
+          answer = Some("pretty good.")
         )),
         annotations = Some(QADocumentAnnotations(
           doctype = Some(Doctypes.NORMAL),
@@ -26,19 +29,169 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
           followup = Some(Followup.UNSPECIFIED)
         ))
       )
-      Post(s"/index_getjenny_english_0/conversation_logs?refresh=wait_for", conversationLogsRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      val conversationLog2: QADocument = QADocument(
+        id = "1",
+        conversation = "id:1000",
+        indexInConversation = 2,
+        coreData = Some(QADocumentCore(
+          question = Some("are you serious?"),
+          answer = Some("sure")
+        )),
+        annotations = Some(QADocumentAnnotations(
+          doctype = Some(Doctypes.NORMAL),
+          agent = Some(Agent.STARCHAT),
+          escalated = Some(Escalated.UNSPECIFIED),
+          answered = Some(Answered.UNSPECIFIED),
+          triggered = Some(Triggered.UNSPECIFIED),
+          followup = Some(Followup.UNSPECIFIED)
+        ))
+      )
+      val conversationLog3: QADocument = QADocument(
+        id = "2",
+        conversation = "id:1000",
+        indexInConversation = 3,
+        coreData = Some(QADocumentCore(
+          question = Some("what are they doing?"),
+          answer = Some("i do not know.")
+        )),
+        annotations = Some(QADocumentAnnotations(
+          doctype = Some(Doctypes.NORMAL),
+          agent = Some(Agent.STARCHAT),
+          escalated = Some(Escalated.UNSPECIFIED),
+          answered = Some(Answered.UNSPECIFIED),
+          triggered = Some(Triggered.UNSPECIFIED),
+          followup = Some(Followup.UNSPECIFIED)
+        ))
+      )
+      Post(s"/index_getjenny_english_0/conversation_logs?refresh=wait_for", conversationLog1) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val response = responseAs[IndexDocumentResult]
         response.created should be (true)
         response.id should be ("0")
         response.index should be ("index_english.logs_data")
       }
+      Post(s"/index_getjenny_english_0/conversation_logs?refresh=wait_for", conversationLog2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        val response = responseAs[IndexDocumentResult]
+        response.created should be (true)
+        response.id should be ("1")
+        response.index should be ("index_english.logs_data")
+      }
+      Post(s"/index_getjenny_english_0/conversation_logs?refresh=wait_for", conversationLog3) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        val response = responseAs[IndexDocumentResult]
+        response.created should be (true)
+        response.id should be ("2")
+        response.index should be ("index_english.logs_data")
+      }
     }
   }
 
-  it should {
+  "SpellcheckService2.getStats" should {
+    "get ngram counts right" in {
+      val index = "index_getjenny_english_0"
+      val service = SpellcheckService2
+      val candidates = List("you", "they")
+      val leftContext = List("how", "are")
+      val rightContext = List("doing", "today")
+      val (stats1, stats2) = service.getStats(index, candidates, leftContext, rightContext)
+      stats1("you")("t") should be (2)
+      stats1("you")("lt") should be (2)
+      stats1("you")("llt") should be (1)
+      stats1("you")("tr") should be (1)
+      stats1("you")("trr") should be (1)
+      stats1("you")("ltr") should be (1)
+      stats1("they")("t") should be (1)
+      stats1("they")("lt") should be (1)
+      stats1("they")("llt") should be (0)
+      stats1("they")("tr") should be (1)
+      stats1("they")("trr") should be (0)
+      stats1("they")("ltr") should be (1)
+      stats2("unigrams") should be (12)
+      stats2("bigrams") should be (9)
+      stats2("trigrams") should be (6)
+    }
+  }
+
+  "SpellcheckService2.rightContextList" should {
+    "generate right contexts" in {
+      val token1 = SpellcheckToken("how",0,3,List())
+      val token2 = SpellcheckToken("are",4,3,List())
+      val token3 = SpellcheckToken("you",8,3,List())
+      val token4 = SpellcheckToken("doing",12,5,List())
+      val token5 = SpellcheckToken("today",18,5,List())
+      val tokens = List(
+        token1, token2, token3, token4, token5
+      )
+      val service = SpellcheckService2
+      val rightContexts = service.rightContextList(tokens)
+      rightContexts.size should be (tokens.size)
+      rightContexts.head should be (List(token2, token3))
+      rightContexts(1) should be (List(token3, token4))
+      rightContexts(2) should be (List(token4, token5))
+      rightContexts(3) should be (List(token5))
+      rightContexts(4) should be (List())
+    }
+  }
+
+  "SpellcheckService2.leftContextList" should {
+    "generate left contexts" in {
+      val token1 = SpellcheckToken("how",0,3,List())
+      val token2 = SpellcheckToken("are",4,3,List())
+      val token3 = SpellcheckToken("you",8,3,List())
+      val token4 = SpellcheckToken("doing",12,5,List())
+      val token5 = SpellcheckToken("today",18,5,List())
+      val tokens = List(
+        token1, token2, token3, token4, token5
+      )
+      val service = SpellcheckService2
+      val leftContexts = service.leftContextList(tokens)
+      leftContexts.size should be (tokens.size)
+      leftContexts.head should be (List())
+      leftContexts(1) should be (List(token1))
+      leftContexts(2) should be (List(token1, token2))
+      leftContexts(3) should be (List(token2, token3))
+      leftContexts(4) should be (List(token3, token4))
+    }
+  }
+
+  "SpellcheckService2.rightProperContextList" should {
+    "generate proper right contexts" in {
+      val token1 = SpellcheckToken("how",0,3,List())
+      val token2 = SpellcheckToken("are",4,3,List())
+      val token3 = SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.6666666269302368,23.0,"you")))
+      val token4 = SpellcheckToken("doing",12,5,List())
+      val token5 = SpellcheckToken("today",18,5,List())
+      val tokens = List(List(
+        token1, token2, token3, token4, token5
+      ))
+      val service = SpellcheckService2
+      val rightProperContexts = service.rightProperContextList(tokens)
+      println(rightProperContexts)
+      // TODO: implement test
+    }
+  }
+
+  "SpellcheckService2.leftProperContextList" should {
+    "generate proper left contexts" in {
+      val tokens = List(
+        List(
+          SpellcheckToken("how",0,3,List()),
+          SpellcheckToken("are",4,3,List()),
+          SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.9,23.0,"you"))),
+          SpellcheckToken("doing",12,5,List()),
+          SpellcheckToken("today",18,5,List())
+        )
+      )
+      val service = SpellcheckService2
+      val leftProperContexts = service.leftProperContextList(tokens)
+      // TODO: implement test
+    }
+  }
+
+  "StarChat" should {
     val spellcheckRequest: SpellcheckTermsRequest2 = SpellcheckTermsRequest2(
-      text = "is this text missplelled",
+      text = "how are you doig today?",
       minDocFreq = 0
     )
 
@@ -46,10 +199,10 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
       Post(s"/index_getjenny_english_0/spellcheck2/terms", spellcheckRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[SpellcheckTermsResponse]
-        response.tokens.map(_.text) should contain only ("is", "this", "text", "missplelled")
-        response.tokens.find(_.text === "missplelled").getOrElse(fail).options match {
-          case SpellcheckTokenSuggestions(_, _, text) :: Nil => text should be ("misspelled")
-          case _ => fail("Spellcheck didn't correct missplelled")
+        response.tokens.map(_.text) should contain only ("how", "are", "you", "doig", "today")
+        response.tokens.find(_.text === "doig").getOrElse(fail).options match {
+          case SpellcheckTokenSuggestions(_, _, text) :: Nil => text should be ("doing")
+          case _ => fail("Spellcheck didn't correct misspelling")
         }
       }
     }
@@ -134,14 +287,34 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
   }
 
   it should {
-    val deleteRequest: ListOfDocumentId = ListOfDocumentId(ids = List("0"))
+    val deleteRequest1: ListOfDocumentId = ListOfDocumentId(ids = List("0"))
+    val deleteRequest2: ListOfDocumentId = ListOfDocumentId(ids = List("1"))
+    val deleteRequest3: ListOfDocumentId = ListOfDocumentId(ids = List("2"))
     "return an HTTP code 200 when deleting a document from conversation logs" in {
-      Delete(s"/index_getjenny_english_0/conversation_logs", deleteRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Delete(s"/index_getjenny_english_0/conversation_logs", deleteRequest1) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsResult]
         response.data.size should be (1)
         response.data.headOption match {
           case Some(result) => result.id should be ("0")
+          case None => fail
+        }
+      }
+      Delete(s"/index_getjenny_english_0/conversation_logs", deleteRequest2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[DeleteDocumentsResult]
+        response.data.size should be (1)
+        response.data.headOption match {
+          case Some(result) => result.id should be ("1")
+          case None => fail
+        }
+      }
+      Delete(s"/index_getjenny_english_0/conversation_logs", deleteRequest3) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[DeleteDocumentsResult]
+        response.data.size should be (1)
+        response.data.headOption match {
+          case Some(result) => result.id should be ("2")
           case None => fail
         }
       }

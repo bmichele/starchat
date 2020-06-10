@@ -533,6 +533,7 @@ object SpellcheckService2 extends AbstractDataService {
 }
 
 object Main2 extends App {
+  // TODO: remove this tests
   val tokens = List("test", "prova", "foo", "bar")
   val index = "index_getjenny_english_0"
   val service = SpellcheckService2
