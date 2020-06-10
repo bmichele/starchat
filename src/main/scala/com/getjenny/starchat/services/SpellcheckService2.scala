@@ -329,7 +329,7 @@ object SpellcheckService2 extends AbstractDataService {
       rescale(scores1).map(_ * weightUnigrams),
       rescale(scores2).map(_ * weightBigrams),
       rescale(scores3).map(_ * weightTrigrams)
-    ).zipped.map(_ + _ + _)
+    ).zipped.map(_ + _ + _).map(_ / 3.toFloat)
   }
 
   /**
@@ -380,8 +380,8 @@ object SpellcheckService2 extends AbstractDataService {
       (x._1 :: l._1, x._2 :: l._2, x._3 :: l._3)
     val scoresNgramsLists = scoresNgrams.values.foldRight[(List[Float], List[Float], List[Float])]((List(), List(), List()))(reshapeListTuples3)
 
-    val scoresTotal = combineScores(
-    // val scoresTotal = combineScoresAlternative(
+    // val scoresTotal = combineScores(
+    val scoresTotal = combineScoresAlternative(
       scoresNgramsLists._1,
       scoresNgramsLists._2,
       scoresNgramsLists._3,
