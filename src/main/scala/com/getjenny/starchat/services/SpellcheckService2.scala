@@ -82,7 +82,132 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   /**
-   * TODO: refactor and check implementation of this function
+   * Helper function for SpellcheckService2.getStats.
+   * Create a `FilterAggregationBuilder` object used to retrieve the number of occurrences of a given token, equivalent to
+   *
+   * <name>: {
+   *   "filter": {
+   *     "match": {
+   *       "question.base": <token>
+   *     }
+   *   }
+   * }
+   *
+   * @param name name assigned to the aggregation
+   * @param token searched string
+   * @return FilterAggregationBuilder object to be used in search request
+   */
+  private def aggregationUnigramOccurrences(name: String, token: String): FilterAggregationBuilder =
+    AggregationBuilders
+      .filter(name, QueryBuilders.termQuery("question.base", token))
+
+  /**
+   * Helper function for SpellcheckService2.getStats.
+   * Similar to SpellcheckService2.aggregationUnigramOccurrences, for bigrams.
+   * @param name name assigned to the aggregation
+   * @param tokens tuple containing the bigram tokens
+   * @return FilterAggregationBuilder object to be used in search request
+   */
+  private def aggregationBigramOccurrences(name: String, tokens: (String, String)): FilterAggregationBuilder = {
+    val text = tokens._1 + " " + tokens._2
+    AggregationBuilders
+      .filter(name, QueryBuilders.termQuery("question.shingles_2", text))
+  }
+
+  /**
+   * Helper function for SpellcheckService2.getStats.
+   * Similar to SpellcheckService2.aggregationUnigramOccurrences, for trigrams.
+   * @param name name assigned to the aggregation
+   * @param tokens tuple containing the trigram tokens
+   * @return FilterAggregationBuilder object to be used in search request
+   */
+  private def aggregationTrigramOccurrences(name: String, tokens: (String, String, String)): FilterAggregationBuilder = {
+    val text = tokens._1 + " " + tokens._2 + " " + tokens._3
+    AggregationBuilders
+      .filter(name, QueryBuilders.termQuery("question.shingles_3", text))
+  }
+
+  /**
+   * Helper function for SpellcheckService2.getStats.
+   * Given a token, its left context (word_m2, word_m1) and its right context (word_p1, word_p2), add to the input
+   * `SearchSourceBuilder` object the following named aggregations:
+   *  - "agg_<index>_t": number of occurrences of <candidate>
+   *  - "agg_<index>_lt": number of occurrences of the sequence word_m1, <candidate> (if word_m1 is present)
+   *  - "agg_<index>_llt": number of occurrences of the sequence word_m2, word_m1, <candidate> (if word_m1, word_m2 are present)
+   *  - "agg_<index>_tr": number of occurrences of the sequence <candidate>, word_p1 (if word_p1 is present)
+   *  - "agg_<index>_trr": number of occurrences of the sequence <candidate>, word_p1, word_p2 (if word_p1, word_p2 are present)
+   *  - "agg_<index>_ltr": number of occurrences of the sequence word_m1, <candidate>, word_p1 (if word_m1, word_p1 are present)
+   * @param searchSourceBuilder `SearchSourceBuilder` input object
+   * @param candidate candidate token
+   * @param index integer index, used to identify the aggregations added to `searchSourceBuilder`
+   * @param leftContext words preceding the candidate, e.g. List(word_m2, word_m1) in the example above
+   * @param rightContext words following the candidate, e.g. List(word_p1, word_p2) in the example above
+   * @return `SearchSourceBuilder` object obtained from `searchSourceBuilder` by adding aggregations listed above
+   */
+  private def aggregationsSingleCandidate(
+                                           searchSourceBuilder: SearchSourceBuilder,
+                                           candidate: String,
+                                           index: Int,
+                                           leftContext: List[String],
+                                           rightContext: List[String]
+                                         ): SearchSourceBuilder = {
+    val indexString = index.toString
+    val leftContextReverse = leftContext.reverse
+    val agg_t = aggregationUnigramOccurrences(
+      "agg_" + indexString + "_t",
+      candidate
+    )
+    searchSourceBuilder.aggregation(agg_t)
+    if (leftContext.nonEmpty) {
+      val agg_lt = aggregationBigramOccurrences("agg_" + indexString + "_lt", (leftContextReverse.head, candidate))
+      searchSourceBuilder.aggregation(agg_lt)
+      if (leftContext.size > 1)  {
+        val agg_llt = aggregationTrigramOccurrences("agg_" + indexString + "_llt", (leftContextReverse(1), leftContextReverse.head, candidate))
+        searchSourceBuilder.aggregation(agg_llt)
+      }
+      if (rightContext.nonEmpty) {
+        val agg_ltr = aggregationTrigramOccurrences("agg_" + indexString + "_ltr", (leftContextReverse.head, candidate, rightContext.head))
+        searchSourceBuilder.aggregation(agg_ltr)
+      }
+    }
+    if (rightContext.nonEmpty) {
+      val agg_tr = aggregationBigramOccurrences("agg_" + indexString + "_tr", (candidate, rightContext.head))
+      searchSourceBuilder.aggregation(agg_tr)
+      if (rightContext.size > 1) {
+        val agg_trr = aggregationTrigramOccurrences("agg_" + indexString + "_trr", (candidate, rightContext.head, rightContext(1)))
+        searchSourceBuilder.aggregation(agg_trr)
+      }
+    }
+    searchSourceBuilder
+  }
+
+  /**
+   * Helper function for SpellcheckService2.getStats.
+   * Allows to retrieve aggregation results from ES response. For example, when the following aggregation is present in the response object
+   * {
+   *   "aggregations":{
+   *     <aggregationName>:{
+   *       <field>:42
+   *     }
+   *   }
+   * }
+   * getAggregationValue returns 42
+   * @param responseElasticsearch `SearchResponse` object containing aggregation
+   * @param aggregationName name assigned to aggregation
+   * @param field field in aggregation from which values is extracted
+   * @return value corresponding to aggregations.aggregationName.field
+   */
+  private def getAggregationValue(responseElasticsearch: SearchResponse, aggregationName: String, field: String): Int = {
+    // TODO: refactor - here I extract values converting ES response to json, it should be doable with ES APIs
+    def getFieldAsJsonObject(json: JsObject, fieldName: String): JsObject =
+      json.getFields(fieldName).head.asJsObject
+    val responseJson = responseElasticsearch.toString.parseJson.asJsObject
+    val aggregationsJson = getFieldAsJsonObject(responseJson, "aggregations")
+    val aggregationJson = getFieldAsJsonObject(aggregationsJson, aggregationName)
+    aggregationJson.getFields(field).head.toString.toInt
+  }
+
+  /**
    * True function takes a list of candidates, together with left and right context, and returns all necessary counts in
    * two maps, e.g.
    *
@@ -114,104 +239,29 @@ object SpellcheckService2 extends AbstractDataService {
                leftContext: List[String],
                rightContext: List[String]): (Map[String, Map[String, Int]], Map[String, Int]) = {
 
-    def aggregationUnigramOccurrences(name: String, token: String): FilterAggregationBuilder =
-      AggregationBuilders
-        .filter(name, QueryBuilders.termQuery("question.base", token))
-
-    def aggregationBigramOccurrences(name: String, tokens: (String, String)): FilterAggregationBuilder = {
-      val text = tokens._1 + " " + tokens._2
-      AggregationBuilders
-        .filter(name, QueryBuilders.termQuery("question.shingles_2", text))
-    }
-
-    def aggregationTrigramOccurrences(name: String, tokens: (String, String, String)): FilterAggregationBuilder = {
-      val text = tokens._1 + " " + tokens._2 + " " + tokens._3
-      AggregationBuilders
-        .filter(name, QueryBuilders.termQuery("question.shingles_3", text))
-    }
-
-    // count total number of 1-grams
-    val aggregationTotal1Grams = AggregationBuilders
-      .count("unigrams")
-      .field("question.base")
-    // count total number of bigrams
-    val aggregationTotal2Grams = AggregationBuilders
-      .count("bigrams")
-      .field("question.shingles_2")
-    // count total number of trigrams
-    val aggregationTotal3Grams = AggregationBuilders
-      .count("trigrams")
-      .field("question.shingles_3")
-
-
-    def aggregationsSingleCandidate(sourceRequestBuilder: SearchSourceBuilder,
-                                    candidate: String,
-                                    index: Int,
-                                    leftContext: List[String],
-                                    rightContext: List[String]): SearchSourceBuilder = {
-      //val aggregations = new ListBuffer[FilterAggregationBuilder]()
-      val indexString = index.toString
-      val agg_t = aggregationUnigramOccurrences("agg_" + indexString + "_t", candidate)
-      //aggregations += agg_t
-      sourceRequestBuilder.aggregation(agg_t)
-      val leftContextReverse = leftContext.reverse
-      if (leftContext.nonEmpty) {
-        val agg_lt = aggregationBigramOccurrences("agg_" + indexString + "_lt", (leftContextReverse.head, candidate))
-        //aggregations += agg_lt
-        sourceRequestBuilder.aggregation(agg_lt)
-        if (leftContext.size > 1)  {
-          val agg_llt = aggregationTrigramOccurrences("agg_" + indexString + "_llt", (leftContextReverse(1), leftContextReverse.head, candidate))
-          //aggregations += agg_llt
-          sourceRequestBuilder.aggregation(agg_llt)
-        }
-        if (rightContext.nonEmpty) {
-          val agg_ltr = aggregationTrigramOccurrences("agg_" + indexString + "_ltr", (leftContextReverse.head, candidate, rightContext.head))
-          //aggregations += agg_ltr
-          sourceRequestBuilder.aggregation(agg_ltr)
-        }
-      }
-      if (rightContext.nonEmpty) {
-        val agg_tr = aggregationBigramOccurrences("agg_" + indexString + "_tr", (candidate, rightContext.head))
-        //aggregations += agg_tr
-        sourceRequestBuilder.aggregation(agg_tr)
-        if (rightContext.size > 1) {
-          val agg_trr = aggregationTrigramOccurrences("agg_" + indexString + "_trr", (candidate, rightContext.head, rightContext(1)))
-          //aggregations += agg_trr
-          sourceRequestBuilder.aggregation(agg_trr)
-        }
-      }
-      sourceRequestBuilder
-    }
-
-    // create request with all necessary aggregations
+    // initialize SearchSourceBuilder object to prepare ES request
     val sourceReqBuilder: SearchSourceBuilder = new SearchSourceBuilder().size(0)
+    // add to request, for every candidate, all necessary aggregations by using aggregationsSingleCandidate function
     def helperFunction(candidateIndex: (String, Int), accumulator: SearchSourceBuilder): SearchSourceBuilder =
       aggregationsSingleCandidate(accumulator, candidateIndex._1, candidateIndex._2, leftContext, rightContext)
     val sourceReqBuilderCandidates = candidates.zipWithIndex.foldRight(sourceReqBuilder)(helperFunction)
+    // add to request aggregations to get total number of unigrams, bigrams and trigrams
+    val aggregationTotal1Grams = AggregationBuilders.count("unigrams").field("question.base")
+    val aggregationTotal2Grams = AggregationBuilders.count("bigrams").field("question.shingles_2")
+    val aggregationTotal3Grams = AggregationBuilders.count("trigrams").field("question.shingles_3")
     sourceReqBuilderCandidates
       .aggregation(aggregationTotal1Grams)
       .aggregation(aggregationTotal2Grams)
       .aggregation(aggregationTotal3Grams)
 
-    // perform request
+    // perform search
     val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, "logs_data")
     val client: RestHighLevelClient = elasticClient.httpClient
     val searchReq: SearchRequest = new SearchRequest(esLanguageSpecificIndexName)
       .source(sourceReqBuilderCandidates)
-
-    // extract values from response and build output map
-    // TODO: refactor - here I extract values converting ES response to json, it should be doable with ES APIs
-    def getAggregationValue(responseElasticsearch: SearchResponse, aggregationName: String, field: String): Int = {
-      def getFieldAsJsonObject(json: JsObject, fieldName: String): JsObject =
-        json.getFields(fieldName).head.asJsObject
-      val responseJson = responseElasticsearch.toString.parseJson.asJsObject
-      val aggregationsJson = getFieldAsJsonObject(responseJson, "aggregations")
-      val aggregationJson = getFieldAsJsonObject(aggregationsJson, aggregationName)
-      aggregationJson.getFields(field).head.toString.toInt
-    }
-
     val searchResponse : SearchResponse = client.search(searchReq, RequestOptions.DEFAULT)
 
+    // extract values from response and build output map
     def buildCandidateStats(candidateIndex: Int): Map[String, Int] = {
       val indexString = candidateIndex.toString
       val outList = new ListBuffer[(String, Int)]()
