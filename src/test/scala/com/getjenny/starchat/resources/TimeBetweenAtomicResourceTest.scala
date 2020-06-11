@@ -78,7 +78,7 @@ class TimeBetweenAtomicResourceTest extends TestEnglishBase {
       val evaluateRequest: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "user query unused",
-          analyzer = """bor(band(timeBetween("00:00", "11:59", "UTC-6"), bnot(timeBetween("00:00", "11:59", "UTC+6"))), band(timeBetween("00:00", "11:59", "UTC+6"), bnot(timeBetween("00:00", "11:59", "UTC-6"))))""",
+          analyzer = """bor(band(timeBetween("00:00", "11:59", "UTC-6"), bnot(timeBetween("00:00", "11:59", "UTC+6", ""))), band(timeBetween("00:00", "11:59", "UTC+6", ""), bnot(timeBetween("00:00", "11:59", "UTC-6", ""))))""",
           data = Option {
             AnalyzersData()
           }

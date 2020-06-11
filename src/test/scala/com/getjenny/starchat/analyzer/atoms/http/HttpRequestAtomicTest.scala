@@ -2,7 +2,7 @@ package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
-import com.getjenny.starchat.analyzer.atoms.http.custom.{WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -528,18 +528,161 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
      */
 
     /*
-    "test entityExtractor" in {
-
+    "test entityExtractor entity_type LOC, italian, single entity" in {
       val systemConf = SystemConfiguration
-        .createMapFromPath("starchat.entity-extractor")
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=it", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("Milano è una grande città", AnalyzersDataInternal())
 
-      val atom = new HttpRequestAtomic(List("language=it"), systemConf) with EntityExtractorVariableManager
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.LOC.0", "") shouldBe "Milano"
+    }
 
+    "test entityExtractor entity_type LOC, italian, multiple entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=it", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
       val result = atom.evaluate("Milano e Roma son grandi città", AnalyzersDataInternal())
-      println(result)
 
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.LOC.0", "") shouldBe "Milano"
+      result.data.extractedVariables.getOrElse("extracted_entities.LOC.1", "") shouldBe "Roma"
+    }
+
+    "test entityExtractor entity_type LOC, italian, no entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=it", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("I like ice cream.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "0"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+    }
+
+    "test entityExtractor entity_type LOC, finnish, single entity" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=fi", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("Helsinki on kaunis kaupunki", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.LOC.0", "") shouldBe "Helsinki"
+    }
+
+    "test entityExtractor entity_type LOC, finnish, multiple entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=fi", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("Rooma ja Helsinki ovat pääkaupunkeja", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.LOC.0", "") shouldBe "Rooma"
+      result.data.extractedVariables.getOrElse("extracted_entities.LOC.1", "") shouldBe "Helsinki"
+    }
+
+    "test entityExtractor entity_type LOC, finnish, no entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=fi", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("I like ice cream.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "0"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+    }
+
+    "test entityExtractor entity_type NAMES, single entity" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=NAMES"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("Alberto likes ice cream.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.NAMES.0", "") shouldBe "Alberto"
+    }
+
+    "test entityExtractor entity_type NAMES, non-ascii" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=NAMES"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("Álvaro likes ice cream.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.NAMES.0", "") shouldBe "Álvaro"
+    }
+
+    "test entityExtractor entity_type NAMES, multiple entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=NAMES"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("Vladimiro and Riccarda like ice cream.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.NAMES.0", "") shouldBe "Vladimiro"
+      result.data.extractedVariables.getOrElse("extracted_entities.NAMES.1", "") shouldBe "Riccarda"
+    }
+
+    "test entityExtractor entity_type NAMES, no entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("I like ice cream.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "0"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+    }
+
+    "test entityExtractor entity_type CITY_FI, single entity" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=CITY_FI"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("I will travel to Tampere.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.CITY_FI.0", "") shouldBe "Tampere"
+    }
+
+    "test entityExtractor entity_type CITY_FI, multiple entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=CITY_FI"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("I will travel from Kuopio to Mikkeli.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.CITY_FI.0", "") shouldBe "Kuopio"
+      result.data.extractedVariables.getOrElse("extracted_entities.CITY_FI.1", "") shouldBe "Mikkeli"
+    }
+
+    "test entityExtractor entity_type CITY_FI, non-ascii" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=CITY_FI"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("I will travel to Jyväskylä.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "1"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
+      result.data.extractedVariables.getOrElse("extracted_entities.CITY_FI.0", "") shouldBe "Jyväskylä"
+    }
+
+    "test entityExtractor entity_type CITY_FI, no entities" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new HttpRequestAtomic(List("language=en", "entity_type=LOC"), systemConf) with EntityExtractorVariableManager
+      val result = atom.evaluate("I like ice cream.", AnalyzersDataInternal())
+
+      result.data.extractedVariables.getOrElse("extracted_entities.score", "") shouldBe "0"
+      result.data.extractedVariables.getOrElse("extracted_entities.status", "") shouldBe "200 OK"
     }
     */
+
     /*
     "test s3 atom" in {
 

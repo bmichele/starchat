@@ -6,12 +6,14 @@ import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
 
+
 /**
   * entityExtractor("language=it", "entity_type=LOC")
   *
   * Connects to the service entity-extractor (https://github.com/GetJenny/entity-extractor)
   * and extract defined entity
   *
+  * Supported entities are ATM: LOC, NAMES, CITY_FI
   * Query: "Milano e Roma non sono piccole"
   *
   * %extracted_entities.LOC.0% = "Milano"
@@ -32,26 +34,55 @@ case class EntityExtractorOutput(
                             override val score: String = "extracted_entities.score",
                             responseStatus: String = "extracted_entities.status",
                             location: String = "extracted_entities.LOC",
+                            firstName: String = "extracted_entities.NAMES",
+                            cityFi: String = "extracted_entities.CITY_FI",
                           ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
+
+    val scoreExtracted = "1"
+    val scoreNotExtracted = "0"
+
     if(StatusCodes.OK.equals(status)){
-      val json = body.parseJson.asJsObject
-      val locationList = json.fields.get("LOC").map {
-        case JsArray(locations) => locations.toArray.map(_.toString.stripPrefix("\"").stripSuffix("\""))
-        case _ => Array.empty[String]
-      }.getOrElse(Array.empty[String])
+      val jsonFields = body.parseJson.asJsObject.fields
+      val extractedEntitiesMap = jsonFields.filter(x => {
+        val jsonValue = x._2
+        jsonValue.toString =/= "null"
+      })
 
-      val s = if(locationList.isEmpty) "0" else "1"
 
-      (locationList.indices.map(x => location + "." + x) zip locationList).toMap ++
+      val s = if(extractedEntitiesMap.isEmpty) scoreNotExtracted else scoreExtracted
+
+      val quoteMark = "\""
+      val entityTypeAndList = extractedEntitiesMap.map {
+        case (entityType, JsArray(extractedEntities)) => (entityType, extractedEntities.toList.map(_.toString.stripPrefix(quoteMark).stripSuffix(quoteMark)))
+        case _ => List(List())
+      }.headOption.getOrElse(List())
+
+      def outputMap(extractedEntities: List[Any], typeEntity: String): Map[String, String] = {
+        val output = extractedEntities.zipWithIndex.map(x => {
+          val extractedEntity = x._1
+          val entityNumber = x._2
+          (typeEntity + "." + entityNumber, extractedEntity.toString)
+        })
+        output.toMap
+      }
+
+      val entityType = entityTypeAndList match {
+        case ("LOC", head :: tail) => outputMap(head :: tail, location)
+        case ("NAMES", head :: tail) => outputMap(head :: tail, firstName)
+        case ("CITY_FI", head :: tail) => outputMap(head :: tail, cityFi)
+        case _ => outputMap(List(), location)
+      }
+
+      entityType ++
       Map(
         score -> s,
-        responseStatus -> status.toString
+        responseStatus -> status.toString,
       )
     } else {
       Map(
-        score -> "0",
+        score -> scoreNotExtracted,
         responseStatus -> status.toString
       )
     }
