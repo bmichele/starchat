@@ -73,7 +73,6 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
       }
     }
   }
-
   "CheckDate Atomic" should {
     "return 1.0 when evaluating condition now from missing argument is after yesterday" in {
       val nowString = LocalDateTime.now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
@@ -95,5 +94,7 @@ class CheckDateAtomicResourceTest extends TestEnglishBase {
       }
     }
   }
+
+
 
 }
