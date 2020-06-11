@@ -10,6 +10,90 @@ import scala.collection.immutable.List
 
 class SpellcheckResourceTest2 extends TestEnglishBase {
 
+  "SpellcheckService2.rightContextList" should {
+    "generate right contexts" in {
+      val token1 = SpellcheckToken("how",0,3,List())
+      val token2 = SpellcheckToken("are",4,3,List())
+      val token3 = SpellcheckToken("you",8,3,List())
+      val token4 = SpellcheckToken("doing",12,5,List())
+      val token5 = SpellcheckToken("today",18,5,List())
+      val tokens = List(
+        token1, token2, token3, token4, token5
+      )
+      val service = SpellcheckService2
+      val rightContexts = service.rightContextList(tokens)
+      rightContexts.size should be (tokens.size)
+      rightContexts.head should be (List(token2, token3))
+      rightContexts(1) should be (List(token3, token4))
+      rightContexts(2) should be (List(token4, token5))
+      rightContexts(3) should be (List(token5))
+      rightContexts(4) should be (List())
+    }
+  }
+
+  "SpellcheckService2.leftContextList" should {
+    "generate left contexts" in {
+      val token1 = SpellcheckToken("how",0,3,List())
+      val token2 = SpellcheckToken("are",4,3,List())
+      val token3 = SpellcheckToken("you",8,3,List())
+      val token4 = SpellcheckToken("doing",12,5,List())
+      val token5 = SpellcheckToken("today",18,5,List())
+      val tokens = List(
+        token1, token2, token3, token4, token5
+      )
+      val service = SpellcheckService2
+      val leftContexts = service.leftContextList(tokens)
+      leftContexts.size should be (tokens.size)
+      leftContexts.head should be (List())
+      leftContexts(1) should be (List(token1))
+      leftContexts(2) should be (List(token1, token2))
+      leftContexts(3) should be (List(token2, token3))
+      leftContexts(4) should be (List(token3, token4))
+    }
+  }
+
+  "SpellcheckService2.rightProperContextList" should {
+    "generate proper right contexts" in {
+      val token1 = SpellcheckToken("how",0,3,List())
+      val token2 = SpellcheckToken("are",4,3,List())
+      val token3 = SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.6666666269302368,23.0,"you")))
+      val token4 = SpellcheckToken("doing",12,5,List())
+      val token5 = SpellcheckToken("today",18,5,List())
+      val tokens = List(
+        token1, token2, token3, token4, token5
+      )
+      val service = SpellcheckService2
+      val rightContexts = service.rightContextList(tokens)
+      val rightProperContexts = service.rightProperContextList(rightContexts)
+      rightProperContexts.head should be (List(token2))
+      rightProperContexts(1) should be (List())
+      rightProperContexts(2) should be (List(token4, token5))
+      rightProperContexts(3) should be (List(token5))
+      rightProperContexts(4) should be (List())
+    }
+  }
+
+  "SpellcheckService2.leftProperContextList" should {
+    "generate proper left contexts" in {
+      val token1 = SpellcheckToken("how",0,3,List())
+      val token2 = SpellcheckToken("are",4,3,List())
+      val token3 = SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.6666666269302368,23.0,"you")))
+      val token4 = SpellcheckToken("doing",12,5,List())
+      val token5 = SpellcheckToken("today",18,5,List())
+      val tokens = List(
+        token1, token2, token3, token4, token5
+      )
+      val service = SpellcheckService2
+      val leftContexts = service.leftContextList(tokens)
+      val leftProperContexts = service.leftProperContextList(leftContexts)
+      leftProperContexts.head should be (List())
+      leftProperContexts(1) should be (List(token1))
+      leftProperContexts(2) should be (List(token1, token2))
+      leftProperContexts(3) should be (List())
+      leftProperContexts(4) should be (List(token4))
+    }
+  }
+
   "StarChat" should {
     "return an HTTP code 201 when populating conversation logs" in {
       val conversationLog1: QADocument = QADocument(
@@ -110,82 +194,6 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
       stats2("unigrams") should be (12)
       stats2("bigrams") should be (9)
       stats2("trigrams") should be (6)
-    }
-  }
-
-  "SpellcheckService2.rightContextList" should {
-    "generate right contexts" in {
-      val token1 = SpellcheckToken("how",0,3,List())
-      val token2 = SpellcheckToken("are",4,3,List())
-      val token3 = SpellcheckToken("you",8,3,List())
-      val token4 = SpellcheckToken("doing",12,5,List())
-      val token5 = SpellcheckToken("today",18,5,List())
-      val tokens = List(
-        token1, token2, token3, token4, token5
-      )
-      val service = SpellcheckService2
-      val rightContexts = service.rightContextList(tokens)
-      rightContexts.size should be (tokens.size)
-      rightContexts.head should be (List(token2, token3))
-      rightContexts(1) should be (List(token3, token4))
-      rightContexts(2) should be (List(token4, token5))
-      rightContexts(3) should be (List(token5))
-      rightContexts(4) should be (List())
-    }
-  }
-
-  "SpellcheckService2.leftContextList" should {
-    "generate left contexts" in {
-      val token1 = SpellcheckToken("how",0,3,List())
-      val token2 = SpellcheckToken("are",4,3,List())
-      val token3 = SpellcheckToken("you",8,3,List())
-      val token4 = SpellcheckToken("doing",12,5,List())
-      val token5 = SpellcheckToken("today",18,5,List())
-      val tokens = List(
-        token1, token2, token3, token4, token5
-      )
-      val service = SpellcheckService2
-      val leftContexts = service.leftContextList(tokens)
-      leftContexts.size should be (tokens.size)
-      leftContexts.head should be (List())
-      leftContexts(1) should be (List(token1))
-      leftContexts(2) should be (List(token1, token2))
-      leftContexts(3) should be (List(token2, token3))
-      leftContexts(4) should be (List(token3, token4))
-    }
-  }
-
-  "SpellcheckService2.rightProperContextList" should {
-    "generate proper right contexts" in {
-      val token1 = SpellcheckToken("how",0,3,List())
-      val token2 = SpellcheckToken("are",4,3,List())
-      val token3 = SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.6666666269302368,23.0,"you")))
-      val token4 = SpellcheckToken("doing",12,5,List())
-      val token5 = SpellcheckToken("today",18,5,List())
-      val tokens = List(List(
-        token1, token2, token3, token4, token5
-      ))
-      val service = SpellcheckService2
-      val rightProperContexts = service.rightProperContextList(tokens)
-      println(rightProperContexts)
-      // TODO: implement test
-    }
-  }
-
-  "SpellcheckService2.leftProperContextList" should {
-    "generate proper left contexts" in {
-      val tokens = List(
-        List(
-          SpellcheckToken("how",0,3,List()),
-          SpellcheckToken("are",4,3,List()),
-          SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.9,23.0,"you"))),
-          SpellcheckToken("doing",12,5,List()),
-          SpellcheckToken("today",18,5,List())
-        )
-      )
-      val service = SpellcheckService2
-      val leftProperContexts = service.leftProperContextList(tokens)
-      // TODO: implement test
     }
   }
 
