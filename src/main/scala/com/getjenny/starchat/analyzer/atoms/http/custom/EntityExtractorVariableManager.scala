@@ -43,13 +43,15 @@ case class EntityExtractorOutput(
     val scoreExtracted = "1"
     val scoreNotExtracted = "0"
 
+    val entities = List("LOC", "NAMES", "CITY_FI")
+
     if(StatusCodes.OK.equals(status)){
       val jsonFields = body.parseJson.asJsObject.fields
       val extractedEntitiesMap = jsonFields.filter(x => {
+        val entity = x._1
         val jsonValue = x._2
-        jsonValue.toString =/= "null"
+        (jsonValue.toString =/= "null") & entities.contains(entity)
       })
-
 
       val s = if(extractedEntitiesMap.isEmpty) scoreNotExtracted else scoreExtracted
 
