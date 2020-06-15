@@ -19,6 +19,10 @@ import spray.json._
   * %extracted_entities.LOC.0% = "Milano"
   * %extracted_entities.LOC.1% = "Roma"
   *
+  * To add entities, add the proper label (matching with entity-extractor) in:
+  *  - `EntityExtractorOutput` arguments,
+  *  - `EntityExtractorOutput.bodyParser.entities` list,
+  *  - additional case in `EntityExtractorOutput.bodyParser.entityType` match statement.
   */
 
 trait EntityExtractorVariableManager extends GenericVariableManager {
