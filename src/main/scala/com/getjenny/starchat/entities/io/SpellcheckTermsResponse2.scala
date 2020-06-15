@@ -2,9 +2,9 @@ package com.getjenny.starchat.entities.io
 
 /**
  * Created by Michele Boggia <michele.boggia@getjenny.com> on 05/05/20.
+ * NOTE: this class definitions are useful only for debugging purpose, so that I can show ngram scores together with
+ * final score. In case we don't want to show all these details, use classes defined in SpellCheckTermsResponse.scala
  */
-// TODO: this class definitions are useful only for debugging purpose, so that I can show ngram scores together with
-//  final score. In case we don't want to show all these details, use classes defined in SpellCheckTermsResponse.scala
 case class SpellcheckTokenSuggestions2(
                                        score: Double,
                                        scoreUnigram: Double,

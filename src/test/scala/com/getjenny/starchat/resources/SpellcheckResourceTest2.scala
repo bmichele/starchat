@@ -286,19 +286,19 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
       minWordLength = -1
     )
     val spellcheckRequest2 = spellcheckRequest.copy(minWordLength = 0)
-
+    val outputErrorMinWordLength = "minWordLength must be greater or equal to 1"
     s"return an HTTP code 400 when minWordLength is less than one" in {
       Post(s"/index_getjenny_english_0/spellcheck2/terms", spellcheckRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[ReturnMessageData]
         response.code should be (100)
-        response.message should be ("minWordLength must be greater or equal to 1")
+        response.message should be (outputErrorMinWordLength)
       }
       Post(s"/index_getjenny_english_0/spellcheck2/terms", spellcheckRequest2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[ReturnMessageData]
         response.code should be (100)
-        response.message should be ("minWordLength must be greater or equal to 1")
+        response.message should be (outputErrorMinWordLength)
       }
     }
   }
