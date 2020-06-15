@@ -47,7 +47,11 @@ case class EntityExtractorOutput(
     val scoreExtracted = "1"
     val scoreNotExtracted = "0"
 
-    val entities = List("LOC", "NAMES", "CITY_FI")
+    val labelLoc = "LOC"
+    val labelNames = "NAMES"
+    val labelCityFi = "CITY_FI"
+
+    val entities = List(labelLoc, labelNames, labelCityFi)
 
     if(StatusCodes.OK.equals(status)){
       val jsonFields = body.parseJson.asJsObject.fields
@@ -66,18 +70,18 @@ case class EntityExtractorOutput(
       }.headOption.getOrElse(List())
 
       def outputMap(extractedEntities: List[Any], typeEntity: String): Map[String, String] = {
-        val output = extractedEntities.zipWithIndex.map(x => {
-          val extractedEntity = x._1
-          val entityNumber = x._2
+        val output = extractedEntities.zipWithIndex.map(extractedEntityWithIndex => {
+          val extractedEntity = extractedEntityWithIndex._1
+          val entityNumber = extractedEntityWithIndex._2
           (typeEntity + "." + entityNumber, extractedEntity.toString)
         })
         output.toMap
       }
 
       val entityType = entityTypeAndList match {
-        case ("LOC", head :: tail) => outputMap(head :: tail, location)
-        case ("NAMES", head :: tail) => outputMap(head :: tail, firstName)
-        case ("CITY_FI", head :: tail) => outputMap(head :: tail, cityFi)
+        case (`labelLoc`, head :: tail) => outputMap(head :: tail, location)
+        case (`labelNames`, head :: tail) => outputMap(head :: tail, firstName)
+        case (`labelCityFi`, head :: tail) => outputMap(head :: tail, cityFi)
         case _ => outputMap(List(), location)
       }
 
