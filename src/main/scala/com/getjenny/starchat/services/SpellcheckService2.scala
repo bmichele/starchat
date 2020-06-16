@@ -33,11 +33,11 @@ object SpellcheckService2 extends AbstractDataService {
    * @param request e.g. SpellcheckTermsRequest2(text = "Is this setnence misspelled?")
    * @return list of SpellCheckToken2 objects
    */
-  def getSuggestions(indexName: String, request: SpellcheckTermsRequest2) : List[SpellcheckToken] = {
+  def suggestionsES(indexName: String, request: SpellcheckTermsRequest2) : List[SpellcheckToken] = {
     val esLanguageSpecificIndexName = Index.esLanguageFromIndexName(indexName, indexSuffixLogs)
     val client: RestHighLevelClient = elasticClient.httpClient
 
-    val suggestionBuilder: TermSuggestionBuilder = new TermSuggestionBuilder("question.base")
+    val suggestionBuilder: TermSuggestionBuilder = new TermSuggestionBuilder(labelQuestionUnigrams)
     suggestionBuilder.maxEdits(request.maxEdit)
       .prefixLength(request.prefixLength)
       .minDocFreq(request.minDocFreq)
@@ -61,7 +61,7 @@ object SpellcheckService2 extends AbstractDataService {
 
     val termsSuggestions: List[SpellcheckToken] =
       searchResponse.getSuggest.getSuggestion[TermSuggestion](labelSuggestions)
-        .getEntries.asScala.toList.map { suggestions =>
+        .getEntries.asScala.toList.map {suggestions =>
         val item: TermSuggestion.Entry = suggestions
         val text = item.getText.toString
         val offset = item.getOffset
@@ -84,7 +84,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   /**
-   * Helper function for SpellcheckService2.getStats.
+   * Helper function for SpellcheckService2.ngramCounts.
    * Create a `FilterAggregationBuilder` object used to retrieve the number of occurrences of a given token, equivalent to
    *
    * <name>: {
@@ -101,7 +101,7 @@ object SpellcheckService2 extends AbstractDataService {
    */
   private[this] def aggregationUnigramOccurrences(name: String, token: String): FilterAggregationBuilder =
     AggregationBuilders
-      .filter(name, QueryBuilders.termQuery("question.base", token))
+      .filter(name, QueryBuilders.termQuery(labelQuestionUnigrams, token))
 
   /**
    * Helper functions to combine strings
@@ -112,7 +112,7 @@ object SpellcheckService2 extends AbstractDataService {
   private[this] def combineTokensUnderscore(tokens: List[String]) = tokens.foldRight("")((x, y) => x + "_" + y).dropRight(1)
 
   /**
-   * Helper function for SpellcheckService2.getStats.
+   * Helper function for SpellcheckService2.ngramCounts.
    * Similar to SpellcheckService2.aggregationUnigramOccurrences, for bigrams.
    * @param name name assigned to the aggregation
    * @param tokens tuple containing the bigram tokens
@@ -121,11 +121,11 @@ object SpellcheckService2 extends AbstractDataService {
   private[this] def aggregationBigramOccurrences(name: String, tokens: (String, String)): FilterAggregationBuilder = {
     val text = tokens match { case (token1, token2) => combineTokensWhitespace(List(token1, token2))}
     AggregationBuilders
-      .filter(name, QueryBuilders.termQuery("question.shingles_2", text))
+      .filter(name, QueryBuilders.termQuery(labelQuestionBigrams, text))
   }
 
   /**
-   * Helper function for SpellcheckService2.getStats.
+   * Helper function for SpellcheckService2.ngramCounts.
    * Similar to SpellcheckService2.aggregationUnigramOccurrences, for trigrams.
    * @param name name assigned to the aggregation
    * @param tokens tuple containing the trigram tokens
@@ -136,11 +136,11 @@ object SpellcheckService2 extends AbstractDataService {
       case (token1, token2, token3) => combineTokensWhitespace(List(token1, token2, token3))
     }
     AggregationBuilders
-      .filter(name, QueryBuilders.termQuery("question.shingles_3", text))
+      .filter(name, QueryBuilders.termQuery(labelQuestionTrigrams, text))
   }
 
   /**
-   * Helper function for SpellcheckService2.getStats.
+   * Helper function for SpellcheckService2.ngramCounts.
    * Given a token, its left context (word_m2, word_m1) and its right context (word_p1, word_p2), add to the input
    * `SearchSourceBuilder` object the following named aggregations:
    *  - "agg_<index>_t": number of occurrences of <candidate>
@@ -166,27 +166,27 @@ object SpellcheckService2 extends AbstractDataService {
     val indexString = index.toString
     val leftContextReverse = leftContext.reverse
     val aggT = aggregationUnigramOccurrences(
-      combineTokensUnderscore(List("agg", indexString, labelT)),
+      combineTokensUnderscore(List(indexString, labelT)),
       candidate
     )
     searchSourceBuilder.aggregation(aggT)
     if (leftContext.nonEmpty) {
-      val aggLT = aggregationBigramOccurrences(combineTokensUnderscore(List("agg", indexString, labelLT)), (leftContextReverse(0), candidate))
+      val aggLT = aggregationBigramOccurrences(combineTokensUnderscore(List(indexString, labelLT)), (leftContextReverse(0), candidate))
       searchSourceBuilder.aggregation(aggLT)
       if (leftContext.size > 1)  {
-        val aggLLT = aggregationTrigramOccurrences(combineTokensUnderscore(List("agg", indexString, labelLLT)), (leftContextReverse(1), leftContextReverse(0), candidate))
+        val aggLLT = aggregationTrigramOccurrences(combineTokensUnderscore(List(indexString, labelLLT)), (leftContextReverse(1), leftContextReverse(0), candidate))
         searchSourceBuilder.aggregation(aggLLT)
       }
       if (rightContext.nonEmpty) {
-        val aggLTR = aggregationTrigramOccurrences(combineTokensUnderscore(List("agg", indexString, labelLTR)), (leftContextReverse(0), candidate, rightContext(0)))
+        val aggLTR = aggregationTrigramOccurrences(combineTokensUnderscore(List(indexString, labelLTR)), (leftContextReverse(0), candidate, rightContext(0)))
         searchSourceBuilder.aggregation(aggLTR)
       }
     }
     if (rightContext.nonEmpty) {
-      val aggTR = aggregationBigramOccurrences(combineTokensUnderscore(List("agg", indexString, labelTR)), (candidate, rightContext(0)))
+      val aggTR = aggregationBigramOccurrences(combineTokensUnderscore(List(indexString, labelTR)), (candidate, rightContext(0)))
       searchSourceBuilder.aggregation(aggTR)
       if (rightContext.size > 1) {
-        val aggTRR = aggregationTrigramOccurrences(combineTokensUnderscore(List("agg", indexString, labelTRR)), (candidate, rightContext(0), rightContext(1)))
+        val aggTRR = aggregationTrigramOccurrences(combineTokensUnderscore(List(indexString, labelTRR)), (candidate, rightContext(0), rightContext(1)))
         searchSourceBuilder.aggregation(aggTRR)
       }
     }
@@ -194,7 +194,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   /**
-   * Helper function for SpellcheckService2.getStats.
+   * Helper function for SpellcheckService2.ngramCounts.
    * Allows to retrieve aggregation results from ES response. For example, when the following aggregation is present in the response object
    * {
    *   "aggregations":{
@@ -221,14 +221,16 @@ object SpellcheckService2 extends AbstractDataService {
 
   val (labelT, labelLT, labelLLT, labelTR, labelTRR, labelLTR) = ("t", "lt", "llt", "tr", "trr", "ltr")
   val (labelUnigrams, labelBigrams, labelTrigrams) = ("unigrams", "bigrams", "trigrams")
+  val (labelQuestionUnigrams, labelQuestionBigrams, labelQuestionTrigrams) = ("question.base", "question.shingles_2", "question.shingles_3")
+  val (aggregationPrefixFilter, aggregationPrefixValue) = ("filter#", "value_count#")
 
   /**
    * True function takes a list of candidates, together with left and right context, and returns all necessary counts in
    * two maps, e.g.
    *
-   * getStats(["cand_1", "cand_2"],
-   *          ["word_m2", "word_m1"],
-   *          ["word_p1", "word_p2"])
+   * ngramCounts(["cand_1", "cand_2"],
+   *             ["word_m2", "word_m1"],
+   *             ["word_p1", "word_p2"])
    *  -> (
    *       Map("cand1" -> Map("t" -> 123, "lt" -> 54, "llt" -> 23, "tr" -> 67, "trr" -> 42, "ltr" -> 15),
    *           "cand2" -> Map("t" -> 1243, "lt" -> 354, "llt" -> 123, "tr" -> 670, "trr" -> 423, "ltr" -> 123)),
@@ -249,21 +251,25 @@ object SpellcheckService2 extends AbstractDataService {
    *  - "bigrams": total number of bigrams (counting multiple occurrences)
    *  - "trigrams": total number of trigrams (counting multiple occurrences)
    */
-  def getStats(indexName: String,
-               candidates: List[String],
-               leftContext: List[String],
-               rightContext: List[String]): (Map[String, Map[String, Int]], Map[String, Int]) = {
+  def ngramCounts(indexName: String,
+                  candidates: List[String],
+                  leftContext: List[String],
+                  rightContext: List[String]): (Map[String, Map[String, Int]], Map[String, Int]) = {
 
     // initialize SearchSourceBuilder object to prepare ES request
     val sourceReqBuilder: SearchSourceBuilder = new SearchSourceBuilder().size(0)
     // add to request, for every candidate, all necessary aggregations by using aggregationsSingleCandidate function
-    def helperFunction(candidateIndex: (String, Int), accumulator: SearchSourceBuilder): SearchSourceBuilder =
-      aggregationsSingleCandidate(accumulator, candidateIndex._1, candidateIndex._2, leftContext, rightContext)
+    def helperFunction(candidateIndex: (String, Int), accumulator: SearchSourceBuilder): SearchSourceBuilder = {
+      candidateIndex match {
+        case (candidate, index) =>
+          aggregationsSingleCandidate (accumulator, candidate, index, leftContext, rightContext)
+      }
+    }
     val sourceReqBuilderCandidates = candidates.zipWithIndex.foldRight(sourceReqBuilder)(helperFunction)
     // add to request aggregations to get total number of unigrams, bigrams and trigrams
-    val aggregationTotal1Grams = AggregationBuilders.count(labelUnigrams).field("question.base")
-    val aggregationTotal2Grams = AggregationBuilders.count(labelBigrams).field("question.shingles_2")
-    val aggregationTotal3Grams = AggregationBuilders.count(labelTrigrams).field("question.shingles_3")
+    val aggregationTotal1Grams = AggregationBuilders.count(labelUnigrams).field(labelQuestionUnigrams)
+    val aggregationTotal2Grams = AggregationBuilders.count(labelBigrams).field(labelQuestionBigrams)
+    val aggregationTotal3Grams = AggregationBuilders.count(labelTrigrams).field(labelQuestionTrigrams)
     sourceReqBuilderCandidates
       .aggregation(aggregationTotal1Grams)
       .aggregation(aggregationTotal2Grams)
@@ -280,15 +286,15 @@ object SpellcheckService2 extends AbstractDataService {
     def buildCandidateStats(candidateIndex: Int): Map[String, Int] = {
       val indexString = candidateIndex.toString
       val outList = new ListBuffer[(String, Int)]()
-      outList += Tuple2(labelT, aggregationValue(searchResponse, combineTokensUnderscore(List("filter#agg", indexString, labelT)), "doc_count"))
+      outList += Tuple2(labelT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelT)), "doc_count"))
       if (leftContext.nonEmpty) {
-        outList += Tuple2(labelLT, aggregationValue(searchResponse, combineTokensUnderscore(List("filter#agg", indexString, labelLT)), "doc_count"))
-        if (leftContext.size > 1) outList += Tuple2(labelLLT, aggregationValue(searchResponse, combineTokensUnderscore(List("filter#agg", indexString, labelLLT)), "doc_count"))
-        if (rightContext.nonEmpty) outList += Tuple2(labelLTR, aggregationValue(searchResponse, combineTokensUnderscore(List("filter#agg", indexString, labelLTR)), "doc_count"))
+        outList += Tuple2(labelLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLT)), "doc_count"))
+        if (leftContext.size > 1) outList += Tuple2(labelLLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLLT)), "doc_count"))
+        if (rightContext.nonEmpty) outList += Tuple2(labelLTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLTR)), "doc_count"))
       }
       if (rightContext.nonEmpty) {
-        outList += Tuple2(labelTR, aggregationValue(searchResponse, combineTokensUnderscore(List("filter#agg", indexString, labelTR)), "doc_count"))
-        if (rightContext.size > 1) outList += Tuple2(labelTRR, aggregationValue(searchResponse, combineTokensUnderscore(List("filter#agg", indexString, labelTRR)), "doc_count"))
+        outList += Tuple2(labelTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTR)), "doc_count"))
+        if (rightContext.size > 1) outList += Tuple2(labelTRR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTRR)), "doc_count"))
       }
       outList.toMap
     }
@@ -296,9 +302,9 @@ object SpellcheckService2 extends AbstractDataService {
       case (candidate, index) => (candidate, buildCandidateStats(index))
     }.toMap
     val ngramTotalCounts = Map(
-      labelUnigrams -> aggregationValue(searchResponse, "value_count#" + labelUnigrams, "value"),
-      labelBigrams -> aggregationValue(searchResponse, "value_count#" + labelBigrams, "value"),
-      labelTrigrams -> aggregationValue(searchResponse, "value_count#" + labelTrigrams, "value"),
+      labelUnigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelUnigrams, "value"),
+      labelBigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelBigrams, "value"),
+      labelTrigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelTrigrams, "value"),
     )
     (candidateCounts, ngramTotalCounts)
   }
@@ -340,7 +346,7 @@ object SpellcheckService2 extends AbstractDataService {
     def rescale(list: List[Float]): List[Float] = {
       val norm = list.sum
       list.map {
-        case 0 => val x: Float = 0; x
+        case 0 => val zero: Float = 0; zero
         case x => x/norm
       }
     }
@@ -379,7 +385,7 @@ object SpellcheckService2 extends AbstractDataService {
                       weightBigrams: Float,
                       weightTrigrams: Float): Map[String, (Float, (Float, Float, Float))] = {
     // get stats from ES
-    val (candidateCounts, ngramCounts) = getStats(indexName, candidates, leftContext, rightContext)
+    val (candidateCounts, ngramCountsRes) = ngramCounts(indexName, candidates, leftContext, rightContext)
     def sumValues(mapObject: Map[String, Int], keys: List[String]): Int = {
       mapObject.filterKeys(keys.contains).values.sum
     }
@@ -387,14 +393,16 @@ object SpellcheckService2 extends AbstractDataService {
     // create map with ngram scores for each candidate Map("cand1" -> (s11, s12, s13), "cand2" -> (s21, s22, s23), ...)
     val scoresNgrams = candidateCounts.map {
       case (candidate, counts) =>
-        val s1 = counts.getOrElse(labelT, 0).toFloat / ngramCounts.getOrElse(labelUnigrams, 1).toFloat
-        val s2 = sumValues(counts, List(labelLT, labelTR)).toFloat / ngramCounts.getOrElse(labelBigrams, 1).toFloat
-        val s3 = sumValues(counts, List(labelLLT, labelLTR, labelTRR)).toFloat / ngramCounts.getOrElse(labelTrigrams, 1).toFloat
+        val s1 = counts.getOrElse(labelT, 0).toFloat / ngramCountsRes.getOrElse(labelUnigrams, 1).toFloat
+        val s2 = sumValues(counts, List(labelLT, labelTR)).toFloat / ngramCountsRes.getOrElse(labelBigrams, 1).toFloat
+        val s3 = sumValues(counts, List(labelLLT, labelLTR, labelTRR)).toFloat / ngramCountsRes.getOrElse(labelTrigrams, 1).toFloat
         (candidate, (s1, s2, s3))
     }
     // combine scores
     def reshapeListTuples3(x: (Float, Float, Float), l: (List[Float], List[Float], List[Float])) =
-      (x._1 :: l._1, x._2 :: l._2, x._3 :: l._3)
+      (x, l) match {
+        case ((x1, x2, x3), (l1, l2, l3)) => (x1 :: l1, x2 :: l2, x3 :: l3)
+      }
     val scoresNgramsLists = scoresNgrams.values.foldRight[(List[Float], List[Float], List[Float])]((List(), List(), List()))(reshapeListTuples3)
 
     // val scoresTotal = combineScores(
@@ -479,7 +487,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse2 = {
-    val suggestions = getSuggestions(indexName, request)
+    val suggestions = suggestionsES(indexName, request)
     // define list containing, for each token, the corresponding context (including possibly misspelled words)
     val rightContextsUnfiltered = rightContextList(suggestions)
     val leftContextsUnfiltered = leftContextList(suggestions)

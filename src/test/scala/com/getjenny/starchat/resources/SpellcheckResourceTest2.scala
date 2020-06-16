@@ -176,14 +176,14 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
     }
   }
 
-  "SpellcheckService2.getStats" should {
+  "SpellcheckService2.ngramCounts" should {
     "get ngram counts right" in {
       val index = "index_getjenny_english_0"
       val service = SpellcheckService2
       val candidates = List("you", "they")
       val leftContext = List("how", "are")
       val rightContext = List("doing", "today")
-      val (stats1, stats2) = service.getStats(index, candidates, leftContext, rightContext)
+      val (stats1, stats2) = service.ngramCounts(index, candidates, leftContext, rightContext)
       stats1("you")("t") should be (2)
       stats1("you")("lt") should be (2)
       stats1("you")("llt") should be (1)
@@ -223,7 +223,7 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
     }
   }
 
-  var misspelledSentence = "is this text missplelled"
+  val misspelledSentence = "is this text missplelled"
 
   it should {
     val spellcheckRequest: SpellcheckTermsRequest2 = SpellcheckTermsRequest2(
