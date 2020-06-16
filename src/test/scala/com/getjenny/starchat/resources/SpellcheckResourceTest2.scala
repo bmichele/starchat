@@ -19,9 +19,11 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
     token1, token2, token3, token4, token5
   )
 
-  "SpellcheckService2.rightContextList" should {
+  "SpellcheckService2" should {
+
+    val service = SpellcheckService2
+
     "generate right contexts" in {
-      val service = SpellcheckService2
       val rightContexts = service.rightContextList(tokens)
       rightContexts.size should be (tokens.size)
       rightContexts(0) should be (List(token2, token3))
@@ -30,11 +32,8 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
       rightContexts(3) should be (List(token5))
       rightContexts(4) should be (List())
     }
-  }
 
-  "SpellcheckService2.leftContextList" should {
     "generate left contexts" in {
-      val service = SpellcheckService2
       val leftContexts = service.leftContextList(tokens)
       leftContexts.size should be (tokens.size)
       leftContexts(0) should be (List())
@@ -43,34 +42,28 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
       leftContexts(3) should be (List(token2, token3))
       leftContexts(4) should be (List(token3, token4))
     }
-  }
 
-  val token3Misspell: SpellcheckToken = SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.6666666269302368,23.0,token3.text)))
-  val tokensMisspell: List[SpellcheckToken] = List(token1, token2, token3Misspell, token4, token5)
+    val token3Misspell: SpellcheckToken = SpellcheckToken("yoy",8,3,List(SpellcheckTokenSuggestions(0.6666666269302368,23.0,token3.text)))
+    val tokensMisspell: List[SpellcheckToken] = List(token1, token2, token3Misspell, token4, token5)
 
-  "SpellcheckService2.rightProperContextList" should {
     "generate proper right contexts" in {
-      val service = SpellcheckService2
       val rightContexts = service.rightContextList(tokensMisspell)
       val rightProperContexts = service.rightProperContextList(rightContexts)
-      rightProperContexts(0) should be (List(token2))
-      rightProperContexts(1) should be (List())
-      rightProperContexts(2) should be (List(token4, token5))
-      rightProperContexts(3) should be (List(token5))
-      rightProperContexts(4) should be (List())
+      rightProperContexts(0) should be(List(token2))
+      rightProperContexts(1) should be(List())
+      rightProperContexts(2) should be(List(token4, token5))
+      rightProperContexts(3) should be(List(token5))
+      rightProperContexts(4) should be(List())
     }
-  }
 
-  "SpellcheckService2.leftProperContextList" should {
     "generate proper left contexts" in {
-      val service = SpellcheckService2
       val leftContexts = service.leftContextList(tokensMisspell)
       val leftProperContexts = service.leftProperContextList(leftContexts)
-      leftProperContexts(0) should be (List())
-      leftProperContexts(1) should be (List(token1))
-      leftProperContexts(2) should be (List(token1, token2))
-      leftProperContexts(3) should be (List())
-      leftProperContexts(4) should be (List(token4))
+      leftProperContexts(0) should be(List())
+      leftProperContexts(1) should be(List(token1))
+      leftProperContexts(2) should be(List(token1, token2))
+      leftProperContexts(3) should be(List())
+      leftProperContexts(4) should be(List(token4))
     }
   }
 
@@ -208,6 +201,21 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
         }
       }
     }
+  }
+
+  it should {
+    val spellcheckRequest: SpellcheckTermsRequest2 = SpellcheckTermsRequest2(
+      text = "",
+      minDocFreq = 0
+    )
+    s"return empty list when text is empty" in {
+      Post(spellcheckService2Url, spellcheckRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[SpellcheckTermsResponse]
+        response.tokens should be (List())
+      }
+    }
+
   }
 
   val misspelledSentence = "is this text missplelled"
