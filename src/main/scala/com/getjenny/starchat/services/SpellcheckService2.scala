@@ -21,6 +21,7 @@ import org.elasticsearch.search.suggest.term.{TermSuggestion, TermSuggestionBuil
 import scala.collection.JavaConverters._
 import scala.collection.immutable.List
 import scala.collection.mutable.ListBuffer
+import scala.math.Ordering.Float.equiv
 
 
 object SpellcheckService2 extends AbstractDataService {
@@ -346,7 +347,7 @@ object SpellcheckService2 extends AbstractDataService {
     def rescale(list: List[Float]): List[Float] = {
       val norm = list.map(_.abs).sum  // abs should be redundant, but it's more safe to have it
       list.map {
-        x => if ((norm: Float).== (0)) 0 else x/norm
+        x => if (equiv(norm, 0)) 0 else x/norm
       }
     }
     (
