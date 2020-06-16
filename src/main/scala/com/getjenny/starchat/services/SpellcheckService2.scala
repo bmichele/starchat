@@ -2,6 +2,8 @@ package com.getjenny.starchat.services
 
 /**
  * Created by michele.boggia@getjenny.com on 05/05/20.
+ * The algorithm (apart from some minor modifications) is the one presented in tha paper
+ * "A context sensitive real-time Spell Checker with language adaptability" (https://arxiv.org/abs/1910.11242)
  */
 
 import com.getjenny.starchat.entities.io._
