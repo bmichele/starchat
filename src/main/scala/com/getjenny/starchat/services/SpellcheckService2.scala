@@ -20,7 +20,6 @@ import org.elasticsearch.search.suggest.term.{TermSuggestion, TermSuggestionBuil
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.List
-import scala.collection.mutable.ListBuffer
 import scala.math.Ordering.Float.equiv
 
 
@@ -286,18 +285,35 @@ object SpellcheckService2 extends AbstractDataService {
     // extract values from response and build output map
     def buildCandidateStats(candidateIndex: Int): Map[String, Int] = {
       val indexString = candidateIndex.toString
-      val outList = new ListBuffer[(String, Int)]()
-      outList += Tuple2(labelT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelT)), aggregationFieldDocCount))
-      if (leftContext.nonEmpty) {
-        outList += Tuple2(labelLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLT)), aggregationFieldDocCount))
-        if (leftContext.size > 1) outList += Tuple2(labelLLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLLT)), aggregationFieldDocCount))
-        if (rightContext.nonEmpty) outList += Tuple2(labelLTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLTR)), aggregationFieldDocCount))
+
+      def namedAggregation(label: String): (String, Int) =
+        (label, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, label)), aggregationFieldDocCount))
+
+      val outList = (leftContext, rightContext) match {
+        case ( _ :: tailLeft, _ :: tailRight) =>
+          tailLeft match {
+            case Nil => tailRight match { // only one element in leftC
+              case Nil => List(labelLT, labelT, labelTR, labelLTR) // one element in leftC and rightC
+              case _ => List(labelLT, labelT, labelTR, labelLTR, labelTRR) // one element in leftC and two elements in rightC
+            }
+            case _ => tailRight match { // two elements in leftC
+              case Nil => List(labelLT, labelT, labelTR, labelLLT, labelLTR) // two elements in leftC and one in rightC
+              case _ => List(labelLT, labelT, labelTR, labelLLT, labelLTR, labelTRR) // two elements in leftC and rightC
+            }
+          }
+        case (Nil,  _ :: tailRight) =>
+          tailRight match { // no elements in leftC
+            case Nil => List(labelT, labelTR) // no elements in leftC and one in rightC
+            case _ => List(labelT, labelTR, labelTRR) // no elements in leftC and two in rightC
+          }
+        case (_ :: tailLeft, Nil) =>
+          tailLeft match { // no elements in rightC
+            case Nil => List(labelLT, labelT) // no elements in rightC and one in leftC
+            case _ => List(labelLT, labelT, labelLLT) // no elements in rightC and two in leftC
+          }
+        case (Nil, Nil) => List(labelT)
       }
-      if (rightContext.nonEmpty) {
-        outList += Tuple2(labelTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTR)), aggregationFieldDocCount))
-        if (rightContext.size > 1) outList += Tuple2(labelTRR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTRR)), aggregationFieldDocCount))
-      }
-      outList.toMap
+      outList.map(namedAggregation).toMap
     }
     val candidateCounts = candidates.zipWithIndex.map {
       case (candidate, index) => (candidate, buildCandidateStats(index))
@@ -338,12 +354,14 @@ object SpellcheckService2 extends AbstractDataService {
   /**
    * Alternative function to combine n-gram scores. See combineScores documentation
    */
-  private[this] def combineScoresAlternative(scores1: List[Float],
-                    scores2: List[Float],
-                    scores3: List[Float],
-                    weightUnigrams: Float,
-                    weightBigrams: Float,
-                    weightTrigrams: Float): List[Float] = {
+  private[this] def combineScoresAlternative(
+                                              scores1: List[Float],
+                                              scores2: List[Float],
+                                              scores3: List[Float],
+                                              weightUnigrams: Float,
+                                              weightBigrams: Float,
+                                              weightTrigrams: Float
+                                            ): List[Float] = {
     def rescale(list: List[Float]): List[Float] = {
       val norm = list.map(_.abs).sum  // abs should be redundant, but it's more safe to have it
       list.map {
@@ -487,66 +505,118 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse2 = {
-    val suggestions = suggestionsES(indexName, request)
-    // define list containing, for each token, the corresponding context (including possibly misspelled words)
-    val rightContextsUnfiltered = rightContextList(suggestions)
-    val leftContextsUnfiltered = leftContextList(suggestions)
-    // remove from context misspelled words
-    val rightContexts = rightProperContextList(rightContextsUnfiltered)
-    val leftContexts = leftProperContextList(leftContextsUnfiltered)
-    // list containing, for each token, the possible candidates
-    val candidatesLists = suggestions.map(_.options.map(x => (x.text, x.freq)).toMap)
-    // zip with contexts to be used in scoring function
-    val zipped = (
-      candidatesLists,
-      rightContexts.map(_.map(_.text)),
-      leftContexts.map(_.map(_.text))
-      ).zipped.toList
-    val res = zipped.zip(suggestions).map {
-      case ((tokenCandidates, tokenRightContext, tokenLeftContext), suggestionToken) =>
-        if (tokenCandidates.nonEmpty) {
-          val scoreCandidatesToken = scoreCandidates(
-            indexName,
-            tokenCandidates.keys.toList,
-            tokenLeftContext,
-            tokenRightContext,
-            1.toFloat, 1.toFloat, 1.toFloat
-          )
-          SpellcheckToken2(
-            text = suggestionToken.text,
-            offset = suggestionToken.offset,
-            length = suggestionToken.length,
-            options = scoreCandidatesToken.map {
-              case (text, (scoreFinal, (scoreUnigrams, scoreBigrams, scoreTrigrams))) =>
-                SpellcheckTokenSuggestions2(
-                  score = scoreFinal,
-                  scoreUnigram = scoreUnigrams,
-                  scoreBigram = scoreBigrams,
-                  scoreTrigram = scoreTrigrams,
-                  freq = tokenCandidates.getOrElse(text, 0.0),
-                  text = text
+    val res = if (request.text == "") {
+      List()
+    }
+    else {
+      val suggestions = suggestionsES(indexName, request)
+      // define list containing, for each token, the corresponding context (including possibly misspelled words)
+      val rightContextsUnfiltered = rightContextList(suggestions)
+      val leftContextsUnfiltered = leftContextList(suggestions)
+      // remove from context misspelled words
+      val rightContexts = rightProperContextList(rightContextsUnfiltered)
+      val leftContexts = leftProperContextList(leftContextsUnfiltered)
+      // list containing, for each token, the possible candidates
+      val candidatesLists = suggestions.map(_.options.map(x => (x.text, x.freq)).toMap)
+      // zip with contexts to be used in scoring function
+      val zipped = (
+        candidatesLists,
+        rightContexts.map(_.map(_.text)),
+        leftContexts.map(_.map(_.text))
+        ).zipped.toList
+      zipped.zip(suggestions).map {
+        case ((tokenCandidates, tokenRightContext, tokenLeftContext), suggestionToken) =>
+          if (tokenCandidates.nonEmpty) {
+            val scoreCandidatesToken = scoreCandidates(
+              indexName,
+              tokenCandidates.keys.toList,
+              tokenLeftContext,
+              tokenRightContext,
+              1.toFloat, 1.toFloat, 1.toFloat
+            )
+            SpellcheckToken2(
+              text = suggestionToken.text,
+              offset = suggestionToken.offset,
+              length = suggestionToken.length,
+              options = scoreCandidatesToken.map {
+                case (text, (scoreFinal, (scoreUnigrams, scoreBigrams, scoreTrigrams))) =>
+                  SpellcheckTokenSuggestions2(
+                    score = scoreFinal,
+                    scoreUnigram = scoreUnigrams,
+                    scoreBigram = scoreBigrams,
+                    scoreTrigram = scoreTrigrams,
+                    freq = tokenCandidates.getOrElse(text, 0.0),
+                    text = text
+                  )
+              }.toList
+            )
+          }
+          else {
+            SpellcheckToken2(
+              text = suggestionToken.text,
+              offset = suggestionToken.offset,
+              length = suggestionToken.length,
+              options = suggestionToken.options.map(
+                x => SpellcheckTokenSuggestions2(
+                  score = x.score,
+                  scoreUnigram = 0.0,
+                  scoreBigram = 0.0,
+                  scoreTrigram = 0.0,
+                  freq = x.freq,
+                  text = x.text
                 )
-            }.toList
-          )
-        }
-        else {
-          SpellcheckToken2(
-            text = suggestionToken.text,
-            offset = suggestionToken.offset,
-            length = suggestionToken.length,
-            options = suggestionToken.options.map(
-              x => SpellcheckTokenSuggestions2(
-                score = x.score,
-                scoreUnigram = 0.0,
-                scoreBigram = 0.0,
-                scoreTrigram = 0.0,
-                freq = x.freq,
-                text = x.text
               )
             )
-          )
-        }
+          }
+      }
     }
     SpellcheckTermsResponse2(tokens = res)
   }
 }
+
+/*
+object Main2 extends App {
+
+  val leftC = List()
+  val rightC = List("right1", "right2")
+
+  val outBufferList = new ListBuffer[String]()
+
+  outBufferList += "T"
+  if (leftC.nonEmpty) {
+    outBufferList += "LT"
+    if (leftC.size > 1) outBufferList += "LLT"
+    if (rightC.nonEmpty) outBufferList += "LTR"
+  }
+  if (rightC.nonEmpty) {
+    outBufferList += "TR"
+    if (rightC.size > 1) outBufferList += "TRR"
+  }
+  println(outBufferList)
+
+  val outList = (leftC, rightC) match {
+    case ( _ :: tailLeft, _ :: tailRight) =>
+      tailLeft match {
+        case Nil => tailRight match { // only one element in leftC
+          case Nil => List("LT", "T", "TR", "LTR") // one element in leftC and rightC
+          case _ => List("LT", "T", "TR", "LTR", "TRR") // one element in leftC and two elements in rightC
+        }
+        case _ => tailRight match { // two elements in leftC
+          case Nil => List("LT", "T", "TR", "LLT", "LTR") // two elements in leftC and one in rightC
+          case _ => List("LT", "T", "TR", "LLT", "LTR", "TRR") // two elements in leftC and rightC
+        }
+      }
+    case (Nil,  _ :: tailRight) =>
+      tailRight match { // no elements in leftC
+        case Nil => List("T", "TR") // no elements in leftC and one in rightC
+        case _ => List("T", "TR", "TRR") // no elements in leftC and two in rightC
+      }
+    case (_ :: tailLeft, Nil) =>
+      tailLeft match { // no elements in rightC
+        case Nil => List("LT", "T") // no elements in rightC and one in leftC
+        case _ => List("LT", "T", "LLT") // no elements in rightC and two in leftC
+      }
+    case (Nil, Nil) => List("T")
+  }
+  println(outList)
+}*/
