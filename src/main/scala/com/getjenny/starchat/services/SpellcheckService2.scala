@@ -505,7 +505,7 @@ object SpellcheckService2 extends AbstractDataService {
   }
 
   def termsSuggester2(indexName: String, request: SpellcheckTermsRequest2) : SpellcheckTermsResponse2 = {
-    val res = if (request.text == "") {
+    val res = if (request.text.isEmpty) {
       List()
     }
     else {
