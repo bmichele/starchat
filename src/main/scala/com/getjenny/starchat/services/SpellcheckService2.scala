@@ -26,6 +26,11 @@ import scala.collection.mutable.ListBuffer
 object SpellcheckService2 extends AbstractDataService {
   override val elasticClient: KnowledgeBaseElasticClient.type = KnowledgeBaseElasticClient
   val indexSuffixLogs = "logs_data"
+  val (labelT, labelLT, labelLLT, labelTR, labelTRR, labelLTR) = ("t", "lt", "llt", "tr", "trr", "ltr")
+  val (labelUnigrams, labelBigrams, labelTrigrams) = ("unigrams", "bigrams", "trigrams")
+  val (labelQuestionUnigrams, labelQuestionBigrams, labelQuestionTrigrams) = ("question.base", "question.shingles_2", "question.shingles_3")
+  val (aggregationPrefixFilter, aggregationPrefixValue) = ("filter#", "value_count#")
+  val (aggregationFieldDocCount, aggregationFieldValue) = ("doc_count", "value")
 
   /**
    * Function to get suggestions from ES suggester, given a sentence.
@@ -219,11 +224,6 @@ object SpellcheckService2 extends AbstractDataService {
     aggregationJson.getFields(field)(0).toString.toInt
   }
 
-  val (labelT, labelLT, labelLLT, labelTR, labelTRR, labelLTR) = ("t", "lt", "llt", "tr", "trr", "ltr")
-  val (labelUnigrams, labelBigrams, labelTrigrams) = ("unigrams", "bigrams", "trigrams")
-  val (labelQuestionUnigrams, labelQuestionBigrams, labelQuestionTrigrams) = ("question.base", "question.shingles_2", "question.shingles_3")
-  val (aggregationPrefixFilter, aggregationPrefixValue) = ("filter#", "value_count#")
-
   /**
    * True function takes a list of candidates, together with left and right context, and returns all necessary counts in
    * two maps, e.g.
@@ -286,15 +286,15 @@ object SpellcheckService2 extends AbstractDataService {
     def buildCandidateStats(candidateIndex: Int): Map[String, Int] = {
       val indexString = candidateIndex.toString
       val outList = new ListBuffer[(String, Int)]()
-      outList += Tuple2(labelT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelT)), "doc_count"))
+      outList += Tuple2(labelT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelT)), aggregationFieldDocCount))
       if (leftContext.nonEmpty) {
-        outList += Tuple2(labelLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLT)), "doc_count"))
-        if (leftContext.size > 1) outList += Tuple2(labelLLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLLT)), "doc_count"))
-        if (rightContext.nonEmpty) outList += Tuple2(labelLTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLTR)), "doc_count"))
+        outList += Tuple2(labelLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLT)), aggregationFieldDocCount))
+        if (leftContext.size > 1) outList += Tuple2(labelLLT, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLLT)), aggregationFieldDocCount))
+        if (rightContext.nonEmpty) outList += Tuple2(labelLTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelLTR)), aggregationFieldDocCount))
       }
       if (rightContext.nonEmpty) {
-        outList += Tuple2(labelTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTR)), "doc_count"))
-        if (rightContext.size > 1) outList += Tuple2(labelTRR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTRR)), "doc_count"))
+        outList += Tuple2(labelTR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTR)), aggregationFieldDocCount))
+        if (rightContext.size > 1) outList += Tuple2(labelTRR, aggregationValue(searchResponse, aggregationPrefixFilter + combineTokensUnderscore(List(indexString, labelTRR)), aggregationFieldDocCount))
       }
       outList.toMap
     }
@@ -302,9 +302,9 @@ object SpellcheckService2 extends AbstractDataService {
       case (candidate, index) => (candidate, buildCandidateStats(index))
     }.toMap
     val ngramTotalCounts = Map(
-      labelUnigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelUnigrams, "value"),
-      labelBigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelBigrams, "value"),
-      labelTrigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelTrigrams, "value"),
+      labelUnigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelUnigrams, aggregationFieldValue),
+      labelBigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelBigrams, aggregationFieldValue),
+      labelTrigrams -> aggregationValue(searchResponse, aggregationPrefixValue + labelTrigrams, aggregationFieldValue),
     )
     (candidateCounts, ngramTotalCounts)
   }
@@ -346,8 +346,10 @@ object SpellcheckService2 extends AbstractDataService {
     def rescale(list: List[Float]): List[Float] = {
       val norm = list.sum
       list.map {
-        case 0 => val zero: Float = 0; zero
-        case x => x/norm
+        x => if (x == 0) {
+          val zero: Float = 0
+          zero
+        } else x/norm
       }
     }
     (
