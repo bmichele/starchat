@@ -79,8 +79,9 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
   val documentId2: String = "2"
   val conversationId: String = "id:1000"
   val starchatIndex: String = "index_getjenny_english_0"
-  val conversationLogsUrl: String = s"/" + starchatIndex + "/conversation_logs"
-  val spellcheckService2Url: String = s"/" + starchatIndex + "/spellcheck2/terms"
+  val slashChar: String = "/"
+  val conversationLogsUrl: String = slashChar + starchatIndex + "/conversation_logs"
+  val spellcheckService2Url: String = slashChar + starchatIndex + "/spellcheck2/terms"
 
   "StarChat - populating conversation logs" should {
     "return an HTTP code 201" in {
@@ -249,19 +250,20 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
       maxEdit = 0
     )
     val spellcheckRequest2 = spellcheckRequest.copy(maxEdit = 3)
+    val responseMessageMinMaxEdits = "maxEdits must be between 1 and 2"
 
     s"return an HTTP code 400 when maxEdit is not between 1 and 2" in {
       Post(spellcheckService2Url, spellcheckRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[ReturnMessageData]
         response.code should be (100)
-        response.message should be ("maxEdits must be between 1 and 2")
+        response.message should be (responseMessageMinMaxEdits)
       }
       Post(spellcheckService2Url, spellcheckRequest2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[ReturnMessageData]
         response.code should be (100)
-        response.message should be ("maxEdits must be between 1 and 2")
+        response.message should be (responseMessageMinMaxEdits)
       }
     }
   }
@@ -272,19 +274,19 @@ class SpellcheckResourceTest2 extends TestEnglishBase {
       minWordLength = -1
     )
     val spellcheckRequest2 = spellcheckRequest.copy(minWordLength = 0)
-    val outputErrorMinWordLength = "minWordLength must be greater or equal to 1"
+    val responseMessageMinWordLength = "minWordLength must be greater or equal to 1"
     s"return an HTTP code 400 when minWordLength is less than one" in {
       Post(spellcheckService2Url, spellcheckRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[ReturnMessageData]
         response.code should be (100)
-        response.message should be (outputErrorMinWordLength)
+        response.message should be (responseMessageMinWordLength)
       }
       Post(spellcheckService2Url, spellcheckRequest2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         val response = responseAs[ReturnMessageData]
         response.code should be (100)
-        response.message should be (outputErrorMinWordLength)
+        response.message should be (responseMessageMinWordLength)
       }
     }
   }

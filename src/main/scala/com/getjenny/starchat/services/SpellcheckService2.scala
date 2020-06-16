@@ -344,12 +344,9 @@ object SpellcheckService2 extends AbstractDataService {
                     weightBigrams: Float,
                     weightTrigrams: Float): List[Float] = {
     def rescale(list: List[Float]): List[Float] = {
-      val norm = list.sum
+      val norm = list.map(_.abs).sum  // abs should be redundant, but it's more safe to have it
       list.map {
-        x => if (x == 0) {
-          val zero: Float = 0
-          zero
-        } else x/norm
+        x => if ((norm: Float).== (0)) 0 else x/norm
       }
     }
     (
