@@ -28,7 +28,7 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
                AtomValidation[HttpAtomOutputConf] = {
     val userEmail = findProperty("user-email")
       .toSuccessNel("user-email not found, unable to create output conf")
-    userEmail.map(x => ZendeskOutput(prefix = factoryName, score = factoryName + ".score"))
+    userEmail.map(_ => ZendeskOutput(prefix = factoryName, score = factoryName + ".score"))
   }
 }
 
@@ -37,30 +37,43 @@ case class ZendeskOutput(prefix: String,
                    ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
+
+    val scoreExtracted = "1"
+    val scoreNotExtracted = "0"
+
     if(StatusCodes.OK.value === status.value){
       val json = body.parseJson.asJsObject
+      val quoteMark = "\""
 
       val subject_id = body.parseJson.asJsObject.getFields("results").flatMap{ obj1: JsValue =>
         obj1.asInstanceOf[JsArray].elements.map { obj2 =>
           val fields = obj2.asJsObject.fields
-          (fields.getOrElse("raw_subject", "unknown").toString.replaceAll("\"", ""),
-            fields.getOrElse("id", "unknown").toString.replaceAll("\"", ""))
+          (fields.getOrElse("raw_subject", "unknown").toString.replaceAll(quoteMark, ""),
+            fields.getOrElse("id", "unknown").toString.replaceAll(quoteMark, ""))
         }
       }.filter(x => x._1 =/= "unknown" || x._2 =/= "unknown").map { values =>
         s"""Ticket id ${values._2} with subject "${values._1}""""
       }.mkString("; ")
 
-      val count = json.fields.get("count").toString  // there should be always at least 1 comment (the creation)
+      val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
 
-      Map(
-        score -> "1",
-        s"$prefix.status" -> status.toString,
-        s"$prefix.count" -> count,
-        s"$prefix.tickets" -> subject_id
-      )
+      if (count.toInt == 0) {
+        Map(
+          score -> scoreNotExtracted,
+          s"$prefix.status" -> status.toString
+        )
+      } else {
+        Map(
+          score -> scoreExtracted,
+          s"$prefix.status" -> status.toString,
+          s"$prefix.count" -> count,
+          s"$prefix.tickets" -> subject_id
+        )
+      }
+
     } else {
       Map(
-        score -> "0",
+        score -> scoreNotExtracted,
         s"$prefix.status" -> status.toString
       )
     }
