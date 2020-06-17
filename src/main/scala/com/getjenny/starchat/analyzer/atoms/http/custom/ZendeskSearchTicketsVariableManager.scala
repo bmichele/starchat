@@ -5,6 +5,7 @@ import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConf
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
+import scala.math.Ordering.Int.equiv
 
 trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
   /** Implement an atom which provides all tickets relative to an user.
@@ -40,32 +41,36 @@ case class ZendeskOutput(prefix: String,
 
     val scoreExtracted = "1"
     val scoreNotExtracted = "0"
+    val labelOutputStatus = s"$prefix.status"
 
     if(StatusCodes.OK.value === status.value){
       val json = body.parseJson.asJsObject
       val quoteMark = "\""
+      val labelUnknown = "unknown"
 
       val subject_id = body.parseJson.asJsObject.getFields("results").flatMap{ obj1: JsValue =>
         obj1.asInstanceOf[JsArray].elements.map { obj2 =>
           val fields = obj2.asJsObject.fields
-          (fields.getOrElse("raw_subject", "unknown").toString.replaceAll(quoteMark, ""),
-            fields.getOrElse("id", "unknown").toString.replaceAll(quoteMark, ""))
+          (fields.getOrElse("raw_subject", labelUnknown).toString.replaceAll(quoteMark, ""),
+            fields.getOrElse("id", labelUnknown).toString.replaceAll(quoteMark, ""))
         }
-      }.filter(x => x._1 =/= "unknown" || x._2 =/= "unknown").map { values =>
-        s"""Ticket id ${values._2} with subject "${values._1}""""
+      }.filter {
+        case (x1, x2) => x1 =/= labelUnknown || x2 =/= labelUnknown
+      }.map {
+        case (value1, value2) => s"""Ticket id $value2 with subject "$value1""""
       }.mkString("; ")
 
       val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
 
-      if (count.toInt == 0) {
+      if (equiv(count.toInt, 0)) {
         Map(
           score -> scoreNotExtracted,
-          s"$prefix.status" -> status.toString
+          labelOutputStatus -> status.toString
         )
       } else {
         Map(
           score -> scoreExtracted,
-          s"$prefix.status" -> status.toString,
+          labelOutputStatus -> status.toString,
           s"$prefix.count" -> count,
           s"$prefix.tickets" -> subject_id
         )
@@ -74,7 +79,7 @@ case class ZendeskOutput(prefix: String,
     } else {
       Map(
         score -> scoreNotExtracted,
-        s"$prefix.status" -> status.toString
+        labelOutputStatus -> status.toString
       )
     }
   }
