@@ -30,21 +30,21 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
   val factoryName = s"zendeskSearchTickets"
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
                AtomValidation[HttpAtomOutputConf] = {
-    val userEmail = findProperty("user-email")
-      .toSuccessNel("user-email not found, unable to create output conf")
-    userEmail.map(_ => ZendeskOutput(prefix = factoryName, score = factoryName + ".score"))
+    ZendeskOutput().successNel
   }
 }
 
-case class ZendeskOutput(prefix: String,
-                    override val score: String,
-                   ) extends HttpAtomOutputConf {
+case class ZendeskOutput(
+                          override val score: String = "zendeskSearchTickets.score",
+                          zendeskSearchTicketsStatus: String = "zendeskSearchTickets.status",
+                          numberOfTickets: String = "zendeskSearchTickets.count",
+                          ticketsIdAndSubject: String = "zendeskSearchTickets.tickets",
+                        ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
 
     val scoreExtracted = "1"
     val scoreNotExtracted = "0"
-    val labelOutputStatus = s"$prefix.status"
 
     if(StatusCodes.OK.value === status.value){
       val json = body.parseJson.asJsObject
@@ -63,21 +63,21 @@ case class ZendeskOutput(prefix: String,
       if (equiv(count.toInt, 0)) {
         Map(
           score -> scoreNotExtracted,
-          labelOutputStatus -> status.toString
+          zendeskSearchTicketsStatus -> status.toString
         )
       } else {
         Map(
           score -> scoreExtracted,
-          labelOutputStatus -> status.toString,
-          s"$prefix.count" -> count,
-          s"$prefix.tickets" -> ticketDetails
+          zendeskSearchTicketsStatus -> status.toString,
+          numberOfTickets -> count,
+          ticketsIdAndSubject -> ticketDetails
         )
       }
 
     } else {
       Map(
         score -> scoreNotExtracted,
-        labelOutputStatus -> status.toString
+        zendeskSearchTicketsStatus -> status.toString
       )
     }
   }
