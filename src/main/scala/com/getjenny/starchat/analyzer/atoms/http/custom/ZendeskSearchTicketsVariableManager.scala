@@ -1,10 +1,13 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
+import java.awt.Container
+
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
+
 import scala.math.Ordering.Int.equiv
 
 trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
@@ -45,19 +48,14 @@ case class ZendeskOutput(prefix: String,
 
     if(StatusCodes.OK.value === status.value){
       val json = body.parseJson.asJsObject
-      val quoteMark = "\""
-      val labelUnknown = "unknown"
 
-      val subject_id = body.parseJson.asJsObject.getFields("results").flatMap{ obj1: JsValue =>
-        obj1.asInstanceOf[JsArray].elements.map { obj2 =>
-          val fields = obj2.asJsObject.fields
-          (fields.getOrElse("raw_subject", labelUnknown).toString.replaceAll(quoteMark, ""),
-            fields.getOrElse("id", labelUnknown).toString.replaceAll(quoteMark, ""))
-        }
-      }.filter {
-        case (x1, x2) => x1 =/= labelUnknown || x2 =/= labelUnknown
-      }.map {
-        case (value1, value2) => s"""Ticket id $value2 with subject "$value1""""
+      val results = body.parseJson.asJsObject.getFields("results") match {
+        case List(JsArray(elements)) => elements
+      }
+
+      val ticketDetails = results.map( x => x.asJsObject.getFields("raw_subject", "id")).toList.map {
+        case List(subject, identifier) =>
+          s"""Ticket id $identifier with subject $subject"""
       }.mkString("; ")
 
       val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
@@ -72,7 +70,7 @@ case class ZendeskOutput(prefix: String,
           score -> scoreExtracted,
           labelOutputStatus -> status.toString,
           s"$prefix.count" -> count,
-          s"$prefix.tickets" -> subject_id
+          s"$prefix.tickets" -> ticketDetails
         )
       }
 
