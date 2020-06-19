@@ -13,7 +13,7 @@ trait ZendeskTicketCommentsVariableManager extends GenericVariableManager {
   *
   * ticket-id:   14
   *
-  * zendeskSearchTicketComments("ticket-id=14")
+  * zendeskTicketComments("ticket-id=14")
   *
   * Variables set:
   *
@@ -57,7 +57,7 @@ case class TicketCommentsOutput(prefix: String,
         s"${values._1} (${values._2})"
       }.mkString("; ")
 
-      val count = json.fields.get("count").toString  // there should be always at least 1 comment (the creation)
+      val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
 
       Map(
         score -> "1",
