@@ -723,7 +723,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       result.data.extractedVariables.foreach(println)
     }
   */
-    /*
+
     "create a valid zendesk atom configuration" in {
       val variableManager = new ZendeskSearchTicketsVariableManager {}
       val systemConf = SystemConfiguration
@@ -732,7 +732,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
         configuration shouldBe a[Success[_]]
         configuration.map(println)
     }
-  */
+
     /*
   "test ZendeskTicketComments atom" in {
 

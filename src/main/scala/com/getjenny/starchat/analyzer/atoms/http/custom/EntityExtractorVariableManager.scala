@@ -19,6 +19,10 @@ import spray.json._
   * %extracted_entities.LOC.0% = "Milano"
   * %extracted_entities.LOC.1% = "Roma"
   *
+  * To add entities, add the proper label (matching with entity-extractor) in:
+  *  - `EntityExtractorOutput` arguments,
+  *  - `EntityExtractorOutput.bodyParser.entities` list,
+  *  - additional case in `EntityExtractorOutput.bodyParser.entityType` match statement.
   */
 
 trait EntityExtractorVariableManager extends GenericVariableManager {
@@ -43,13 +47,17 @@ case class EntityExtractorOutput(
     val scoreExtracted = "1"
     val scoreNotExtracted = "0"
 
+    val labelLoc = "LOC"
+    val labelNames = "NAMES"
+    val labelCityFi = "CITY_FI"
+
+    val entities = List(labelLoc, labelNames, labelCityFi)
+
     if(StatusCodes.OK.equals(status)){
       val jsonFields = body.parseJson.asJsObject.fields
-      val extractedEntitiesMap = jsonFields.filter(x => {
-        val jsonValue = x._2
-        jsonValue.toString =/= "null"
-      })
-
+      val extractedEntitiesMap = jsonFields.filter{
+        case (entity, value) => (value.toString =/= "null") & entities.contains(entity)
+      }
 
       val s = if(extractedEntitiesMap.isEmpty) scoreNotExtracted else scoreExtracted
 
@@ -60,18 +68,14 @@ case class EntityExtractorOutput(
       }.headOption.getOrElse(List())
 
       def outputMap(extractedEntities: List[Any], typeEntity: String): Map[String, String] = {
-        val output = extractedEntities.zipWithIndex.map(x => {
-          val extractedEntity = x._1
-          val entityNumber = x._2
-          (typeEntity + "." + entityNumber, extractedEntity.toString)
-        })
+        val output = extractedEntities.zipWithIndex.map{ case (item, i) => Tuple2(typeEntity + "." + i, item.toString)}
         output.toMap
       }
 
       val entityType = entityTypeAndList match {
-        case ("LOC", head :: tail) => outputMap(head :: tail, location)
-        case ("NAMES", head :: tail) => outputMap(head :: tail, firstName)
-        case ("CITY_FI", head :: tail) => outputMap(head :: tail, cityFi)
+        case (`labelLoc`, head :: tail) => outputMap(head :: tail, location)
+        case (`labelNames`, head :: tail) => outputMap(head :: tail, firstName)
+        case (`labelCityFi`, head :: tail) => outputMap(head :: tail, cityFi)
         case _ => outputMap(List(), location)
       }
 
