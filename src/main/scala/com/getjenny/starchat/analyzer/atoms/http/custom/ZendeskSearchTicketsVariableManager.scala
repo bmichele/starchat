@@ -1,10 +1,14 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
+import java.awt.Container
+
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
+
+import scala.math.Ordering.Int.equiv
 
 trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
   /** Implement an atom which provides all tickets relative to an user.
@@ -26,42 +30,54 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
   val factoryName = s"zendeskSearchTickets"
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
                AtomValidation[HttpAtomOutputConf] = {
-    val userEmail = findProperty("user-email")
-      .toSuccessNel("user-email not found, unable to create output conf")
-    userEmail.map(x => ZendeskOutput(prefix = factoryName, score = factoryName + ".score"))
+    ZendeskOutput().successNel
   }
 }
 
-case class ZendeskOutput(prefix: String,
-                    override val score: String,
-                   ) extends HttpAtomOutputConf {
+case class ZendeskOutput(
+                          override val score: String = "zendeskSearchTickets.score",
+                          zendeskSearchTicketsStatus: String = "zendeskSearchTickets.status",
+                          numberOfTickets: String = "zendeskSearchTickets.count",
+                          ticketsIdAndSubject: String = "zendeskSearchTickets.tickets",
+                        ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
+
+    val scoreExtracted = "1"
+    val scoreNotExtracted = "0"
+
     if(StatusCodes.OK.value === status.value){
       val json = body.parseJson.asJsObject
 
-      val subject_id = body.parseJson.asJsObject.getFields("results").flatMap{ obj1: JsValue =>
-        obj1.asInstanceOf[JsArray].elements.map { obj2 =>
-          val fields = obj2.asJsObject.fields
-          (fields.getOrElse("raw_subject", "unknown").toString.replaceAll("\"", ""),
-            fields.getOrElse("id", "unknown").toString.replaceAll("\"", ""))
-        }
-      }.filter(x => x._1 =/= "unknown" || x._2 =/= "unknown").map { values =>
-        s"""Ticket id ${values._2} with subject "${values._1}""""
+      val results = body.parseJson.asJsObject.getFields("results") match {
+        case List(JsArray(elements)) => elements
+      }
+
+      val ticketDetails = results.map( x => x.asJsObject.getFields("raw_subject", "id")).toList.map {
+        case List(subject, identifier) =>
+          s"""Ticket id $identifier with subject $subject"""
       }.mkString("; ")
 
-      val count = json.fields.get("count").toString  // there should be always at least 1 comment (the creation)
+      val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
 
-      Map(
-        score -> "1",
-        s"$prefix.status" -> status.toString,
-        s"$prefix.count" -> count,
-        s"$prefix.tickets" -> subject_id
-      )
+      if (equiv(count.toInt, 0)) {
+        Map(
+          score -> scoreNotExtracted,
+          zendeskSearchTicketsStatus -> status.toString
+        )
+      } else {
+        Map(
+          score -> scoreExtracted,
+          zendeskSearchTicketsStatus -> status.toString,
+          numberOfTickets -> count,
+          ticketsIdAndSubject -> ticketDetails
+        )
+      }
+
     } else {
       Map(
-        score -> "0",
-        s"$prefix.status" -> status.toString
+        score -> scoreNotExtracted,
+        zendeskSearchTicketsStatus -> status.toString
       )
     }
   }
