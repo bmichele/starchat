@@ -728,7 +728,13 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       val variableManager = new ZendeskSearchTicketsVariableManager {}
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
-      val configuration = variableManager.validateAndBuild(List("user-email=customer@example.com"), systemConf, Map.empty, "")
+      val atomArgs = List(
+        "user-email=user@example.com",
+        "zendesk-user=customer@example.com",
+        "zendesk-password=1234",
+        "zendesk-domain=zendesk-customer-domain",
+      )
+      val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
         configuration shouldBe a[Success[_]]
         configuration.map(println)
     }
