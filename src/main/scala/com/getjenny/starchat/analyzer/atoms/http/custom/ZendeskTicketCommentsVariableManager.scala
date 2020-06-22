@@ -18,7 +18,7 @@ trait ZendeskTicketCommentsVariableManager extends GenericVariableManager {
   *
   * zendeskTicketComments(
   *                         "ticket-id=14",
-  *                          "username=customer@example.com",
+  *                          "username=customer@example.com/token",
   *                          "password=1234",
   *                          "domain=zendesk-customer-domain"
   *                       )

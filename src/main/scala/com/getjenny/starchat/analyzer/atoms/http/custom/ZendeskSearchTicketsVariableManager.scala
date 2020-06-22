@@ -1,7 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
 
-import akka.http.scaladsl.model.{ContentTypes, HttpMethods, StatusCode, StatusCodes}
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
@@ -20,7 +20,7 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
    *
    * zendeskSearchTickets(
    *                        "user-email=user@example.com",
-   *                        "username=customer@example.com",
+   *                        "username=customer@example.com/token",
    *                        "password=1234",
    *                        "domain=zendesk-customer-domain"
    *                      )
