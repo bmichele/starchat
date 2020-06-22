@@ -11,9 +11,17 @@ trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
   *
   * It accept as input:
   *
-  * ticket-id:   14
+  * ticket-id:   ticket number researched
+  * zendesk-user: admin email to log in into zendesk
+  * zendesk-password: zendesk password
+  * zendesk-domain: the zendesk url used in the search is https://<zendesk-domain>.zendesk.com/...
   *
-  * zendeskTicketComments("ticket-id=14")
+  * zendeskTicketComments(
+  *                         "ticket-id=14",
+  *                          "zendesk-user=customer@example.com",
+  *                          "zendesk-password=1234",
+  *                          "zendesk-domain=zendesk-customer-domain"
+  *                       )
   *
   * Variables set:
   *

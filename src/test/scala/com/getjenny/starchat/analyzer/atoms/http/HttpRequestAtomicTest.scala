@@ -724,7 +724,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     }
   */
 
-    "create a valid zendesk atom configuration" in {
+    "create a valid zendeskSearchTickets atom configuration" in {
       val variableManager = new ZendeskSearchTicketsVariableManager {}
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
@@ -737,6 +737,21 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
         configuration shouldBe a[Success[_]]
         configuration.map(println)
+    }
+
+    "create a valid zendeskTicketComments atom configuration" in {
+      val variableManager = new ZendeskTicketCommentsVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atomArgs = List(
+        "ticket-id=42",
+        "zendesk-user=customer@example.com",
+        "zendesk-password=1234",
+        "zendesk-domain=zendesk-customer-domain",
+      )
+      val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
+      configuration shouldBe a[Success[_]]
+      configuration.map(println)
     }
 
     /*
