@@ -3,11 +3,9 @@ package com.getjenny.starchat.analyzer.atoms.http.custom
 
 import akka.http.scaladsl.model.{ContentTypes, HttpMethods, StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
-import com.getjenny.starchat.analyzer.atoms.http.HttpRequestAtomicConstants.ParameterName._
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
-import scalaz.Success
 
 import scala.math.Ordering.Int.equiv
 
@@ -15,7 +13,10 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
   /** Implement an atom which provides all tickets relative to an user.
    * It accept as input:
    *
-   * user-email:   customer@example.com
+   * user-email: email for which you want to retrieve tickets
+   * zendesk-user: admin email to log in into zendesk
+   * zendesk-password: zendesk password
+   * zendesk-domain: the zendesk url used in the search is https://<zendesk-domain>.zendesk.com/api/v2/search.json
    *
    * zendeskSearchTickets(
    *                        "user-email=user@example.com",
@@ -33,31 +34,19 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
    */
 
   override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
-    val domain = findProperty("zendesk-domain")
-      .toSuccessNel("zendesk domain not found, unable to perform request") match {
-      case Success(x) => x
-    }
-    val url = s"https://d3v-$domain.zendesk.com/api/v2/search.json"
-    HttpAtomUrlConf(url, HttpMethods.GET, ContentTypes.`application/x-www-form-urlencoded`).successNel
+    as[String]("zendesk-domain")
+      .run(configMap)
+      .map{ domain =>
+        val url = s"https://$domain.zendesk.com/api/v2/search.json"
+        HttpAtomUrlConf(url, HttpMethods.GET, ContentTypes.`application/x-www-form-urlencoded`)
+      }
   }
 
   override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
-
-    val zendeskUser = findProperty("zendesk-user")
-      .toSuccessNel("zendesk-user not found, unable to perform request") match {
-      case Success(user) => user  + "/token"
-    }
-    val zendeskPassword = findProperty("zendesk-password")
-      .toSuccessNel("zendesk password not found, unable to perform request") match {
-      case Success(pwd) => pwd
-    }
-
-    val authMap = Map(username -> zendeskUser, password -> zendeskPassword)
-
-    (as[String](username) |@| as[String](password)) ((u, p) => (u |@| p) (BasicAuth))
-      .run(authMap)
+    (as[String]("zendesk-user") |@|
+      as[String]("zendesk-password")) ((u, p) => (u.map(_ + "/token") |@| p ) (BasicAuth))
+      .run(configMap)
       .map(_.some)
-
   }
 
   override def configurationPrefix: Option[String] = Some("http-atom.zendeskSearchTickets")
