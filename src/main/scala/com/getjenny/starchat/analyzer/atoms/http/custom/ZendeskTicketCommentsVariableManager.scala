@@ -6,7 +6,7 @@ import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
 
-trait ZendeskTicketCommentsVariableManager extends GenericVariableManager {
+trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
  /** Implement an atom which provides all tickets relative to an user.
   *
   * It accept as input:

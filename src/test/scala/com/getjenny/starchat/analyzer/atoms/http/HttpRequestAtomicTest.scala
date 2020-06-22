@@ -730,9 +730,9 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
         .createMapFromPath("starchat.atom-values")
       val atomArgs = List(
         "user-email=user@example.com",
-        "username=customer@example.com",
-        "password=1234",
-        "domain=zendesk-customer-domain",
+        "zendesk-user=customer@example.com/token",
+        "zendesk-password=1234",
+        "zendesk-domain=zendesk-customer-domain",
       )
       val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
         configuration shouldBe a[Success[_]]
@@ -745,9 +745,9 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
         .createMapFromPath("starchat.atom-values")
       val atomArgs = List(
         "ticket-id=42",
-        "username=customer@example.com",
-        "password=1234",
-        "domain=zendesk-customer-domain",
+        "zendesk-user=customer@example.com/token",
+        "zendesk-password=1234",
+        "zendesk-domain=zendesk-customer-domain",
       )
       val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
       configuration shouldBe a[Success[_]]

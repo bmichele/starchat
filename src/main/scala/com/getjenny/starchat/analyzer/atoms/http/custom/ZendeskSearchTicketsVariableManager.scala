@@ -9,14 +9,14 @@ import spray.json._
 
 import scala.math.Ordering.Int.equiv
 
-trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
+trait ZendeskSearchTicketsVariableManager extends ZendeskVariableManager {
   /** Implement an atom which provides all tickets relative to an user.
    * It accept as input:
    *
    * user-email: email for which you want to retrieve tickets
    * zendesk-user: admin email to log in into zendesk
    * zendesk-password: zendesk password
-   * zendesk-domain: the zendesk url used in the search is https://<domain>.zendesk.com/api/v2/search.json
+   * zendesk-domain: the zendesk url used in the search is https://<zendesk-domain>.zendesk.com/api/v2/search.json
    *
    * zendeskSearchTickets(
    *                        "user-email=user@example.com",
