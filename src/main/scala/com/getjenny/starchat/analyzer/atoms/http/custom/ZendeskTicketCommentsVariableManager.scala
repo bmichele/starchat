@@ -18,9 +18,9 @@ trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
   *
   * zendeskTicketComments(
   *                         "ticket-id=14",
-  *                          "username=customer@example.com/token",
-  *                          "password=1234",
-  *                          "domain=zendesk-customer-domain"
+  *                          "zendesk-user=customer@example.com/token",
+  *                          "zendesk-password=1234",
+  *                          "zendesk-domain=zendesk-customer-domain"
   *                       )
   *
   * Variables set:
