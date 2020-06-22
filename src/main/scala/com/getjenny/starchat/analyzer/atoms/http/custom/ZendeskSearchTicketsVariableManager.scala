@@ -9,7 +9,7 @@ import spray.json._
 
 import scala.math.Ordering.Int.equiv
 
-trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
+trait ZendeskSearchTicketsVariableManager extends ZendeskVariableManager {
   /** Implement an atom which provides all tickets relative to an user.
    * It accept as input:
    *
@@ -32,22 +32,6 @@ trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
    * The idea is that the user can then ask info about a specific ticket with zendeskTicketInfo
    *
    */
-
-  override def urlConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomUrlConf] = {
-    as[String]("zendesk-domain")
-      .run(configMap)
-      .map{ domain =>
-        val url = s"https://$domain.zendesk.com/api/v2/search.json"
-        HttpAtomUrlConf(url, HttpMethods.GET, ContentTypes.`application/x-www-form-urlencoded`)
-      }
-  }
-
-  override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
-    (as[String]("zendesk-user") |@|
-      as[String]("zendesk-password")) ((u, p) => (u.map(_ + "/token") |@| p ) (BasicAuth))
-      .run(configMap)
-      .map(_.some)
-  }
 
   override def configurationPrefix: Option[String] = Some("http-atom.zendeskSearchTickets")
   val factoryName = s"zendeskSearchTickets"
