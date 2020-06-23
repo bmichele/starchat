@@ -18,14 +18,17 @@ trait ZendeskVariableManager extends GenericVariableManager {
 
   override def authenticationConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomAuthConf]] = {
 
-    keyFromMap(configMap, "zendesk-user") match {
+    val keyZendeskUser = "zendesk-user"
+    val keyZendeskPassword = "zendesk-password"
+
+    keyFromMap(configMap, keyZendeskUser) match {
       case Success(value) => if (value.endsWith("/token")) {
-        (as[String]("zendesk-user") |@|
-          as[String]("zendesk-password")) ((u, p) => (u |@| p) (BasicAuth))
+        (as[String](keyZendeskUser) |@|
+          as[String](keyZendeskPassword)) ((u, p) => (u |@| p) (BasicAuth))
           .run(configMap)
           .map(_.some)
       } else {
-        Failure(NonEmptyList("""zendesk-user should end with "/token""""))
+        Failure(NonEmptyList(s"""$keyZendeskUser should end with "/token""""))
       }
     }
 
