@@ -1,22 +1,29 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
-import java.awt.Container
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
 
 import scala.math.Ordering.Int.equiv
 
-trait ZendeskSearchTicketsVariableManager extends GenericVariableManager {
+trait ZendeskSearchTicketsVariableManager extends ZendeskVariableManager {
   /** Implement an atom which provides all tickets relative to an user.
    * It accept as input:
    *
-   * user-email:   customer@example.com
+   * user-email: email for which you want to retrieve tickets
+   * zendesk-user: admin email to log in into zendesk (should end with /token)
+   * zendesk-password: zendesk password
+   * zendesk-domain: the zendesk url used in the search is https://<zendesk-domain>.zendesk.com/api/v2/search.json
    *
-   * zendeskSearchTickets("user-email=customer@example.com")
+   * zendeskSearchTickets(
+   *                        "user-email=user@example.com",
+   *                        "zendesk-user=customer@example.com/token",
+   *                        "zendesk-password=1234",
+   *                        "zendesk-domain=zendesk-customer-domain"
+   *                      )
    *
    * Variables set:
    * %zendeskSearchTickets.count%: number of tickets found, e.g. 2
