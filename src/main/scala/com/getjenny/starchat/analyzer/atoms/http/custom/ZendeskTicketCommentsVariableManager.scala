@@ -6,14 +6,22 @@ import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import spray.json._
 
-trait ZendeskTicketCommentsVariableManager extends GenericVariableManager {
+trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
  /** Implement an atom which provides all tickets relative to an user.
   *
   * It accept as input:
   *
-  * ticket-id:   14
+  * ticket-id:   ticket number researched
+  * zendesk-user: admin email to log in into zendesk (should end with /token)
+  * zendesk-password: zendesk password
+  * zendesk-domain: the zendesk url used in the search is https://<zendesk-domain>.zendesk.com/...
   *
-  * zendeskTicketComments("ticket-id=14")
+  * zendeskTicketComments(
+  *                         "ticket-id=14",
+  *                          "zendesk-user=customer@example.com/token",
+  *                          "zendesk-password=1234",
+  *                          "zendesk-domain=zendesk-customer-domain"
+  *                       )
   *
   * Variables set:
   *
