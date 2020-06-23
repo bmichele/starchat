@@ -35,48 +35,54 @@ trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
   override def configurationPrefix: Option[String] = Some("http-atom.zendeskTicketComments")
   val factoryName = s"zendeskTicketComments"
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
-               AtomValidation[HttpAtomOutputConf] = {
-    val ticketId = findProperty("ticket-id").toSuccessNel("ticket-id not found")
-    ticketId.map(x => TicketCommentsOutput(prefix = factoryName,
-      score = factoryName + ".score",
-      commentsCount = factoryName + ".count",
-      commentsInfo = factoryName + ".comments")
-    )
-  }
+               AtomValidation[HttpAtomOutputConf] =
+    TicketCommentsOutput().successNel
 }
 
-case class TicketCommentsOutput(prefix: String,
-                                override val score: String,
-                                commentsCount: String,
-                                commentsInfo: String
+case class TicketCommentsOutput(
+                                 override val score: String = "zendeskTicketComments.score",
+                                 zendeskTicketCommentsStatus: String = "zendeskTicketComments.status",
+                                 commentsCount: String = "zendeskTicketComments.count",
+                                 commentsInfo: String = "zendeskTicketComments.comments"
                                ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
+
     if(StatusCodes.OK.equals(status)){
       val json = body.parseJson.asJsObject
 
-      val commentsDate = body.parseJson.asJsObject.getFields("comments").flatMap{ obj1: JsValue =>
-        obj1.asInstanceOf[JsArray].elements.map { obj2 =>
-          val fields = obj2.asJsObject.fields
-          (fields.getOrElse("plain_body", "unknown").toString.replaceAll("\"", ""),
-            fields.getOrElse("created_at", "unknown").toString.replaceAll("\"", "").slice(1,10))
+      val comments = json.getFields("comments") match {
+        case List(JsArray(elements)) => elements
+      }
+
+      val quoteMark = "\""
+
+      val commentDetails = comments.map( x => x.asJsObject.getFields("plain_body", "created_at"))
+        .toList.zipWithIndex
+        .map {
+        case (List(plainBody, createdAt), commentCount) => {
+          "Comment " +
+            (commentCount + 1).toString +
+            ":\n" +
+            plainBody.toString.replaceAll(quoteMark, "") +
+            " (" +
+            createdAt.toString.replaceAll(quoteMark, "").slice(0,10) +
+            ")"
         }
-      }.filter(x => x._1 =/= "unknown" || x._2 =/= "unknown").map { values =>
-        s"${values._1} (${values._2})"
-      }.mkString("; ")
+      }.mkString("\n\n")
 
       val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
 
       Map(
         score -> "1",
-        s"$prefix.status" -> status.toString,
-        s"$prefix.count" -> count,
-        s"$prefix.comments" -> commentsDate
+        zendeskTicketCommentsStatus -> status.toString,
+        commentsCount -> count,
+        commentsInfo -> commentDetails
       )
     } else {
       Map(
         score -> "0",
-        s"$prefix.status" -> status.toString
+        zendeskTicketCommentsStatus -> status.toString
       )
     }
   }
