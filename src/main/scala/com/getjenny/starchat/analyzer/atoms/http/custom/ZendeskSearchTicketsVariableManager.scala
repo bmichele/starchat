@@ -14,7 +14,7 @@ trait ZendeskSearchTicketsVariableManager extends ZendeskVariableManager {
    * It accept as input:
    *
    * user-email: email for which you want to retrieve tickets
-   * zendesk-user: admin email to log in into zendesk
+   * zendesk-user: admin email to log in into zendesk (should end with /token)
    * zendesk-password: zendesk password
    * zendesk-domain: the zendesk url used in the search is https://<zendesk-domain>.zendesk.com/api/v2/search.json
    *
