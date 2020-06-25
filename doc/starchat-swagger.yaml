@@ -4885,17 +4885,13 @@ components:
       type: string
       description: >-
         a time interval description. It can be specified using a number followed by a time unit description <n><unit>
-        for instance : 1m, y, 1h, 50s (multiple not supported for weeks, months, quarters and year).
+        for instance : 1m, 1h, 5d, 50s
         Valid time units are:
-          * `ms`-> milliseconds, multiple supported
-          * `m` -> minutes, multiple supported
-          * `h` -> hours, multiple supported
-          * `d` -> days, multiple supported
-          * `w` -> weeks, multiple not supported, supported value 1w
-          * `M` -> months, multiple not supported, supported value 1M
-          * `q` -> quarters, multiple not supported, supported value 1q
-          * `y` -> years, multiple not supported, supported value 1y
-      example: 1M
+          * `ms`-> milliseconds
+          * `m` -> minutes
+          * `h` -> hours
+          * `d` -> days
+      example: 30d
     CountOverTimeHistogramItem:
       type: object
       required:
