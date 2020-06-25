@@ -39,7 +39,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         t
                       })
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 101, message = e.getMessage)
@@ -70,7 +70,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         t
                       })
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 102, message = e.getMessage)
@@ -101,7 +101,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         t
                       })
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 103, message = e.getMessage)
@@ -154,7 +154,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                           indexName = indexName, conversation = docId, refreshPolicy = RefreshPolicy.`false`)) {
                         case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
-                          val message = logTemplate(user.id, indexName, routeName, request.method, request.uri)
+                          val message = logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage)
                           log.error(message, e)
                           completeResponse(StatusCodes.BadRequest,
                             Option {
@@ -163,7 +163,8 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       }
                     }
                   case _ =>
-                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri))
+                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri,
+                      s"Unsupported operation: $operation"))
                     completeResponse(StatusCodes.BadRequest,
                       Option {
                         ReturnMessageData(code = 105, message = "Error bad operation on QA Documents: " + operation)
@@ -199,14 +200,15 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                             case Some(v) =>
                               completeResponse(StatusCodes.Created, StatusCodes.BadRequest, Some(v))
                             case None =>
-                              log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri))
+                              log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri,
+                                "IndexDocumentResult is Empty"))
                               completeResponse(StatusCodes.BadRequest,
                                 Option {
                                   ReturnMessageData(code = 106, message = "Error indexing new document, empty response")
                                 })
                           }
                         case Failure(e) =>
-                          val message = logTemplate(user.id, indexName, routeName, request.method, request.uri)
+                          val message = logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage)
                           log.error(message, e)
                           completeResponse(StatusCodes.BadRequest,
                             Some(ReturnMessageData(code = 107, message = message)))
@@ -231,7 +233,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         case Success(t) =>
                           completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
-                          log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                          log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                           completeResponse(StatusCodes.BadRequest,
                             Option {
                               ReturnMessageData(code = 108, message = e.getMessage)
@@ -257,7 +259,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                           case Success(t) =>
                             completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                           case Failure(e) =>
-                            log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                            log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 ReturnMessageData(code = 109, message = e.getMessage)
@@ -270,7 +272,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                           case Success(t) =>
                             completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                           case Failure(e) =>
-                            log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                            log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 ReturnMessageData(code = 110, message = e.getMessage)
@@ -299,7 +301,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         case Success(t) =>
                           completeResponse(StatusCodes.Created, StatusCodes.BadRequest, t)
                         case Failure(e) =>
-                          log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                          log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                           completeResponse(StatusCodes.BadRequest,
                             Option {
                               ReturnMessageData(code = 111, message = e.getMessage)
@@ -330,7 +332,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 112, message = e.getMessage)
@@ -356,7 +358,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                        log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                         completeResponse(StatusCodes.BadRequest,
                           Option {
                             ReturnMessageData(code = 113, message = e.getMessage)
@@ -387,7 +389,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 114, message = e.getMessage)
@@ -417,7 +419,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 115, message = e.getMessage)
@@ -449,7 +451,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         t
                       })
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 116, message = e.getMessage)
@@ -493,7 +495,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                   case Success(t) =>
                     completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                   case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                     completeResponse(StatusCodes.BadRequest,
                       Option {
                         ReturnMessageData(code = 117, message = e.getMessage)
@@ -513,7 +515,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 118, message = e.getMessage)
@@ -533,7 +535,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                   case Success(t) =>
                     completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                   case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri), e)
+                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                     completeResponse(StatusCodes.BadRequest,
                       Option {
                         ReturnMessageData(code = 119, message = e.getMessage)

@@ -316,7 +316,9 @@ class QAResourceTest extends TestEnglishBase {
     it should {
       s"return an HTTP code 200 when getting analytics from the $qaRoute" in {
         val request = QAAggregatedAnalyticsRequest(
-          aggregations = Some(QAAggregationsTypes.values.toList)
+          aggregations = Some(QAAggregationsTypes.values.toList.filter(
+            v => v != QAAggregationsTypes.UNKNOWN
+          ))
         )
         Post(s"/index_getjenny_english_0/analytics/$qaRoute", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
