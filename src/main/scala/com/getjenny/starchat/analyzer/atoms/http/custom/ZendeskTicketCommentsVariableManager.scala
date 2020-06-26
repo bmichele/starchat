@@ -1,9 +1,10 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.{VariableConfiguration, keyFromMap}
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
+import scalaz.Success
 import spray.json._
 
 trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
@@ -35,11 +36,16 @@ trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
   override def configurationPrefix: Option[String] = Some("http-atom.zendeskTicketComments")
   val factoryName = s"zendeskTicketComments"
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
-               AtomValidation[HttpAtomOutputConf] =
-    TicketCommentsOutput().successNel
+               AtomValidation[HttpAtomOutputConf] = {
+    keyFromMap(configuration, "include-private") match {
+      case Success("false") =>  TicketCommentsOutput(includePrivate = false).successNel
+      case _ => TicketCommentsOutput(includePrivate = true).successNel  // if not specified, private comments are included
+    }
+  }
 }
 
 case class TicketCommentsOutput(
+                                 includePrivate: Boolean,
                                  override val score: String = "zendeskTicketComments.score",
                                  zendeskTicketCommentsStatus: String = "zendeskTicketComments.status",
                                  commentsCount: String = "zendeskTicketComments.count",
@@ -55,12 +61,16 @@ case class TicketCommentsOutput(
         case List(JsArray(elements)) => elements
       }
 
-      val quoteMark = "\""
-
-      val commentDetails = comments.map( x => x.asJsObject.getFields("plain_body", "created_at"))
-        .toList.zipWithIndex
+      val commentDetails = comments
+        .toList.filter{  // filter out private comments if includePrivate set to false
+        if (includePrivate) (_: JsValue) => true
+        else (x: JsValue) => x.asJsObject.getFields("public").head.toString == "true"
+      }
+        .map( x => x.asJsObject.getFields("plain_body", "created_at"))
+        .zipWithIndex
         .map {
-        case (List(plainBody, createdAt), commentCount) => {
+        case (List(plainBody, createdAt), commentCount) =>
+          val quoteMark = "\""
           "Comment " +
             (commentCount + 1).toString +
             ":\n" +
@@ -69,15 +79,14 @@ case class TicketCommentsOutput(
             createdAt.toString.replaceAll(quoteMark, "").slice(0,10) +
             ")"
         }
-      }.mkString("\n\n")
-
-      val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
 
       Map(
         score -> "1",
         zendeskTicketCommentsStatus -> status.toString,
-        commentsCount -> count,
-        commentsInfo -> commentDetails
+        commentsCount -> {
+          if (includePrivate) json.fields.getOrElse("count", 0).toString else commentDetails.length.toString
+        },
+        commentsInfo -> commentDetails.mkString("\n\n")
       )
     } else {
       Map(
