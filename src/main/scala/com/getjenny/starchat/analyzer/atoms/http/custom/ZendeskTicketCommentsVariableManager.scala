@@ -64,7 +64,7 @@ case class TicketCommentsOutput(
       val commentDetails = comments
         .toList.filter{  // filter out private comments if includePrivate set to false
         if (includePrivate) (_: JsValue) => true
-        else (x: JsValue) => x.asJsObject.getFields("public").head.toString == "true"
+        else (x: JsValue) => x.asJsObject.getFields("public")(0).toString === "true"
       }
         .map( x => x.asJsObject.getFields("plain_body", "created_at"))
         .zipWithIndex
