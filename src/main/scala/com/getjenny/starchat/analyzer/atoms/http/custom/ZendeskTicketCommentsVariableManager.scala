@@ -1,7 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.{VariableConfiguration, keyFromMap}
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
 import scalaz.Success
@@ -37,7 +37,7 @@ trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
   val factoryName = s"zendeskTicketComments"
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
                AtomValidation[HttpAtomOutputConf] = {
-    keyFromMap(configuration, "include-private") match {
+    as[String]("include-private").run(configuration) match {
       case Success("false") =>  TicketCommentsOutput(includePrivate = false).successNel
       case _ => TicketCommentsOutput(includePrivate = true).successNel  // if not specified, private comments are included
     }
