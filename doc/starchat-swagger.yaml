@@ -5077,7 +5077,7 @@ components:
             $ref: '#/components/schemas/QAAggregationsTypes'
           example: ['totalConversations', 'avgFeedbackConvScore', 'scoreHistogram', 'avgAlgorithmConvScoreOverTime']
           default: []
-        timeZone:
+        timezone:
           type: string
           description: an ISO 8601 UTC offset, used for the time based histograms in addition to the EPOC timestamp in millis.
           example: "-08:00"
