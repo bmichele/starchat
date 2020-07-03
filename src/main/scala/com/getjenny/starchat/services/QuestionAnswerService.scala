@@ -759,7 +759,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("conversationsHistogram").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
         }
@@ -773,7 +773,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("conversationsNotTransferredHistogram").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
         }
@@ -787,7 +787,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("conversationsTransferredHistogram").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
         }
@@ -805,7 +805,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("qaPairHistogram").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
         }
@@ -824,7 +824,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("qaPairAnsweredHistogram").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
         }
@@ -843,7 +843,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("qaPairUnansweredHistogram").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
         }
@@ -886,7 +886,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("avgFeedbackNotTransferredConvScoreOverTime").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
                 .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore"))
             )
@@ -899,7 +899,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("avgFeedbackTransferredConvScoreOverTime").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
                 .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore"))
             )
@@ -912,7 +912,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("avgAlgorithmNotTransferredConvScoreOverTime").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
                 .subAggregation(AggregationBuilders.avg("avgScore").field("algorithmConvScore"))
             )
@@ -925,7 +925,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("avgAlgorithmTransferredConvScoreOverTime").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
                 .subAggregation(AggregationBuilders.avg("avgScore").field("algorithmConvScore"))
             )
@@ -936,28 +936,28 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
             AggregationBuilders.filter("filtered", filterQ).subAggregation(
               AggregationBuilders
                 .dateHistogram("avgFeedbackConvScoreOverTime").field("timestamp")
-                .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
                 .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackConvScore")))
         }
         if (reqAggs.contains(QAAggregationsTypes.avgAlgorithmAnswerScoreOverTime)) {
           aggregationBuilderList += AggregationBuilders
             .dateHistogram("avgAlgorithmAnswerScoreOverTime").field("timestamp")
-            .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+            .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
             .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             .subAggregation(AggregationBuilders.avg("avgScore").field("algorithmAnswerScore"))
         }
         if (reqAggs.contains(QAAggregationsTypes.avgFeedbackAnswerScoreOverTime)) {
           aggregationBuilderList += AggregationBuilders
             .dateHistogram("avgFeedbackAnswerScoreOverTime").field("timestamp")
-            .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+            .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
             .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             .subAggregation(AggregationBuilders.avg("avgScore").field("feedbackAnswerScore"))
         }
         if (reqAggs.contains(QAAggregationsTypes.avgAlgorithmConvScoreOverTime)) {
           aggregationBuilderList += AggregationBuilders
             .dateHistogram("avgAlgorithmConvScoreOverTime").field("timestamp")
-            .fixedInterval(dateHistInterval).minDocCount(minDocInBuckets)
+            .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
             .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             .subAggregation(AggregationBuilders.avg("avgScore").field("algorithmConvScore"))
         }
