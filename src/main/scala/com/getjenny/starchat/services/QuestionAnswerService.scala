@@ -647,8 +647,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     val firstIndexInConv: Long = 1
     val query: BoolQueryBuilder = QueryBuilders.boolQuery()
 
-    val dateHistInterval = if (intervalRe.pattern.matcher(request.interval.getOrElse("30d")).matches()) {
-      new DateHistogramInterval(request.interval.getOrElse("30d"))
+    val dateHistInterval = if (intervalRe.pattern.matcher(request.interval.getOrElse("1M")).matches()) {
+      new DateHistogramInterval(request.interval.getOrElse("1M"))
     } else throw QuestionAnswerServiceException("time interval is not well formed")
 
     val minDocInBuckets = request.minDocInBuckets match {
