@@ -1,9 +1,10 @@
 package com.getjenny.starchat.analyzer.atoms.http.custom
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
-import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader.VariableConfiguration
+import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
+import scalaz.Success
 import spray.json._
 
 trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
@@ -36,47 +37,61 @@ trait ZendeskTicketCommentsVariableManager extends ZendeskVariableManager {
   val factoryName = s"zendeskTicketComments"
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]):
                AtomValidation[HttpAtomOutputConf] = {
-    val ticketId = findProperty("ticket-id").toSuccessNel("ticket-id not found")
-    ticketId.map(x => TicketCommentsOutput(prefix = factoryName,
-      score = factoryName + ".score",
-      commentsCount = factoryName + ".count",
-      commentsInfo = factoryName + ".comments")
-    )
+    as[String]("include-private").run(configuration) match {
+      case Success("false") =>  TicketCommentsOutput(includePrivate = false).successNel
+      case _ => TicketCommentsOutput(includePrivate = true).successNel  // if not specified, private comments are included
+    }
   }
 }
 
-case class TicketCommentsOutput(prefix: String,
-                                override val score: String,
-                                commentsCount: String,
-                                commentsInfo: String
+case class TicketCommentsOutput(
+                                 includePrivate: Boolean,
+                                 override val score: String = "zendeskTicketComments.score",
+                                 zendeskTicketCommentsStatus: String = "zendeskTicketComments.status",
+                                 commentsCount: String = "zendeskTicketComments.count",
+                                 commentsInfo: String = "zendeskTicketComments.comments"
                                ) extends HttpAtomOutputConf {
 
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
+
     if(StatusCodes.OK.equals(status)){
       val json = body.parseJson.asJsObject
 
-      val commentsDate = body.parseJson.asJsObject.getFields("comments").flatMap{ obj1: JsValue =>
-        obj1.asInstanceOf[JsArray].elements.map { obj2 =>
-          val fields = obj2.asJsObject.fields
-          (fields.getOrElse("plain_body", "unknown").toString.replaceAll("\"", ""),
-            fields.getOrElse("created_at", "unknown").toString.replaceAll("\"", "").slice(1,10))
-        }
-      }.filter(x => x._1 =/= "unknown" || x._2 =/= "unknown").map { values =>
-        s"${values._1} (${values._2})"
-      }.mkString("; ")
+      val comments = json.getFields("comments") match {
+        case List(JsArray(elements)) => elements
+      }
 
-      val count = json.fields.getOrElse("count", 0).toString  // there should be always at least 1 comment (the creation)
+      val commentDetails = comments
+        .toList.filter{  // filter out private comments if includePrivate set to false
+        if (includePrivate) (_: JsValue) => true
+        else (x: JsValue) => x.asJsObject.getFields("public")(0).toString === "true"
+      }
+        .map( x => x.asJsObject.getFields("plain_body", "created_at"))
+        .zipWithIndex
+        .map {
+        case (List(plainBody, createdAt), commentCount) =>
+          val quoteMark = "\""
+          "Comment " +
+            (commentCount + 1).toString +
+            ":\n" +
+            plainBody.toString.replaceAll(quoteMark, "") +
+            " (" +
+            createdAt.toString.replaceAll(quoteMark, "").slice(0,10) +
+            ")"
+        }
 
       Map(
         score -> "1",
-        s"$prefix.status" -> status.toString,
-        s"$prefix.count" -> count,
-        s"$prefix.comments" -> commentsDate
+        zendeskTicketCommentsStatus -> status.toString,
+        commentsCount -> {
+          if (includePrivate) json.fields.getOrElse("count", 0).toString else commentDetails.length.toString
+        },
+        commentsInfo -> commentDetails.mkString("\n\n")
       )
     } else {
       Map(
         score -> "0",
-        s"$prefix.status" -> status.toString
+        zendeskTicketCommentsStatus -> status.toString
       )
     }
   }
