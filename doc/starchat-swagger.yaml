@@ -4778,7 +4778,7 @@ components:
           * `ANSWERED_FALSE_POSITIVE` -> the answer was provided but the answer was marked as false positive
           * `UNANSWERED` -> Question for which no answer was provided ii.e. StarChat returns empty list or 404 or the agent didn’t answer
           * `UNSPECIFIED` -> when the information is not applicable
-      example: answered
+      example: ANSWERED
       enum:
         - ANSWERED
         - UNANSWERED
