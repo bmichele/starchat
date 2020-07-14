@@ -828,6 +828,25 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
         }
+        if (reqAggs.contains(QAAggregationsTypes.qaPairAnsweredFalsePositiveHistogram)) {
+          aggregationBuilderList +=
+            AggregationBuilders.filter("qaPairAnsweredFalsePositiveHistogram",
+              QueryBuilders.boolQuery()
+                .must(QueryBuilders.termQuery("answered", Answered.ANSWERED_FALSE_POSITIVE.toString))
+                .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
+                .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
+                .mustNot(
+                  QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
+                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
+                )
+            ).subAggregation(
+              AggregationBuilders
+                .dateHistogram("qaPairAnsweredHistogram").field("timestamp")
+                .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
+                .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
+            )
+        }
         if (reqAggs.contains(QAAggregationsTypes.qaPairUnansweredHistogram)) {
           aggregationBuilderList +=
             AggregationBuilders.filter("qaPairUnansweredHistogram",

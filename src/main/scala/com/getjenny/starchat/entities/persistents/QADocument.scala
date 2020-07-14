@@ -71,9 +71,10 @@ object Escalated extends Enumeration {
 }
 
 object Answered extends Enumeration {
-  val ANSWERED,
+  val ANSWERED, /** the answer was provided */
+  ANSWERED_FALSE_POSITIVE, /** the answer was provided but result was marked as false positive */
 
-  /** the answer was provided */
+  /** the answer was not provided */
   UNANSWERED,
 
   /** Question for which no answer was provided i.e. StarChat returns empty list or 404 or the agent didn’t answer */
