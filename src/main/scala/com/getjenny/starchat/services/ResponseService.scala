@@ -39,7 +39,7 @@ object ResponseService extends AbstractDataService {
   override val elasticClient: DecisionTableElasticClient.type = DecisionTableElasticClient
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
-  private[this] val matchTemplateRegex = "%([^%]*)%"
+  private[this] val matchTemplateRegex: String = "%([^%^ ]*)%"
 
   private[this] def extractRequiredStarChatVarNames(input: String): Set[StarChatVariables.Value] = {
     StarChatVariables.values.map(name => (name, input contains "%" + name.toString + "%"))

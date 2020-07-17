@@ -15,6 +15,7 @@ object QAAggregationsTypes extends Enumeration {
   conversationsTransferredHistogram, // time range histogram of the number of conversations on a time range (transferred only)
   qaPairHistogram, // time range histogram of the Q/A documents (only starchat agent, answered + unanswered)
   qaPairAnsweredHistogram, // time range histogram of the number of answered Q/A documents (only starchat agent)
+  qaPairAnsweredFalsePositiveHistogram, // time range histogram of the number of answered Q/A documents marked as false positive (only starchat agent)
   qaPairUnansweredHistogram, // time range histogram of the number of unanswered Q/A documents (only starchat agent)
   qaMatchedStatesHistogram, // histogram of matched states
   qaMatchedStatesWithScoreHistogram, // histogram of matched states with score
