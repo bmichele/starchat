@@ -842,7 +842,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 )
             ).subAggregation(
               AggregationBuilders
-                .dateHistogram("qaPairAnsweredHistogram").field("timestamp")
+                .dateHistogram("qaPairAnsweredFalsePositiveHistogram").field("timestamp")
                 .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
