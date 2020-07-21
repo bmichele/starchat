@@ -819,7 +819,6 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .mustNot(
                   QueryBuilders.boolQuery()
                     .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
-                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
                 )
             ).subAggregation(
               AggregationBuilders
@@ -838,7 +837,6 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .mustNot(
                   QueryBuilders.boolQuery()
                     .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
-                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
                 )
             ).subAggregation(
               AggregationBuilders
@@ -857,7 +855,6 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .mustNot(
                   QueryBuilders.boolQuery()
                     .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
-                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
                 )
             ).subAggregation(
               AggregationBuilders
