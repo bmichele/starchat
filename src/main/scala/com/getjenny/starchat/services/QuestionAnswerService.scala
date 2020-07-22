@@ -797,11 +797,6 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
               QueryBuilders.boolQuery()
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
-                .mustNot(
-                  QueryBuilders.boolQuery()
-                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
-                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
-                )
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("qaPairHistogram").field("timestamp")
@@ -816,11 +811,6 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .must(QueryBuilders.termQuery("answered", Answered.ANSWERED.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
-                .mustNot(
-                  QueryBuilders.boolQuery()
-                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
-                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
-                )
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("qaPairAnsweredHistogram").field("timestamp")
@@ -835,11 +825,6 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .must(QueryBuilders.termQuery("answered", Answered.ANSWERED_FALSE_POSITIVE.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
-                .mustNot(
-                  QueryBuilders.boolQuery()
-                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
-                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
-                )
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("qaPairAnsweredFalsePositiveHistogram").field("timestamp")
@@ -854,11 +839,6 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .must(QueryBuilders.termQuery("answered", Answered.UNANSWERED.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
-                .mustNot(
-                  QueryBuilders.boolQuery()
-                    .must(QueryBuilders.termQuery("index_in_conversation", firstIndexInConv))
-                    .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").lte(1))
-                )
             ).subAggregation(
               AggregationBuilders
                 .dateHistogram("qaPairUnansweredHistogram").field("timestamp")

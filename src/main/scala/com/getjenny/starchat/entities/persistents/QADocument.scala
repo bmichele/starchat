@@ -308,7 +308,10 @@ class QaDocumentEntityManager(indexName: String) extends EsEntityManager[QADocum
           case Some(t) => builder.field("dclass", t)
           case _ =>
         }
-        builder.field("doctype", annotations.doctype.toString)
+        annotations.doctype match {
+          case Some(t) => builder.field("doctype", t.toString)
+          case _ =>
+        }
         annotations.state match {
           case Some(t) =>
             builder.field("state", t)
