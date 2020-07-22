@@ -191,6 +191,20 @@ class QAAggregatedAnalyticsEntityManager(aggregationsTypes: Option[List[QAAggreg
               }.toList
             }
           } else None
+        val qaPairAnsweredFalsePositiveHistogram: Option[List[CountOverTimeHistogramItem]] =
+          if (reqAggs.contains(QAAggregationsTypes.qaPairAnsweredFalsePositiveHistogram)) {
+            val pf: ParsedFilter = response.getAggregations.get("qaPairAnsweredFalsePositiveHistogram")
+            val h: ParsedDateHistogram = pf.getAggregations.get("qaPairAnsweredFalsePositiveHistogram")
+            Some {
+              h.getBuckets.asScala.map { bucket =>
+                CountOverTimeHistogramItem(
+                  key = bucket.getKey.asInstanceOf[ZonedDateTime].toInstant.toEpochMilli,
+                  keyAsString = bucket.getKeyAsString,
+                  docCount = bucket.getDocCount
+                )
+              }.toList
+            }
+          } else None
         val qaPairUnansweredHistogram: Option[List[CountOverTimeHistogramItem]] =
           if (reqAggs.contains(QAAggregationsTypes.qaPairUnansweredHistogram)) {
             val pf: ParsedFilter = response.getAggregations.get("qaPairUnansweredHistogram")
@@ -374,6 +388,7 @@ class QAAggregatedAnalyticsEntityManager(aggregationsTypes: Option[List[QAAggreg
           "conversationsTransferredHistogram" -> conversationsTransferredHistogram,
           "qaPairHistogram" -> qaPairHistogram,
           "qaPairAnsweredHistogram" -> qaPairAnsweredHistogram,
+          "qaPairAnsweredFalsePositiveHistogram" -> qaPairAnsweredFalsePositiveHistogram,
           "qaPairUnansweredHistogram" -> qaPairUnansweredHistogram
         ).filter { case (_, v) => v.nonEmpty }.map { case (k, v) => (k, v.get) }
 
