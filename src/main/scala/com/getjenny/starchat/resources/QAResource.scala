@@ -189,12 +189,14 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
                 parameters("updateAnnotations".as[Boolean] ? true,
-                  "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) {
-                  (updateAnnotations, refreshPolicy) =>
+                  "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`,
+                  "anonymize".as[RefreshPolicy.Value] ? true) {
+                  (updateAnnotations, refreshPolicy, anonymize) =>
                     entity(as[QADocument]) { document =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                       onCompleteWithBreakerFuture(breaker)(
-                        questionAnswerService.create(indexName, document, updateAnnotations, refreshPolicy)) {
+                        questionAnswerService.create(indexName, document, updateAnnotations,
+                          refreshPolicy, anonymize)) {
                         case Success(t) =>
                           t match {
                             case Some(v) =>
