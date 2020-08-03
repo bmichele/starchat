@@ -968,7 +968,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
 
   def create(indexName: String, document: QADocument,
              updateAnnotation: Boolean = true,
-             refreshPolicy: RefreshPolicy.Value): Option[IndexDocumentResult] = {
+             refreshPolicy: RefreshPolicy.Value,
+             anonymize: Boolean): Option[IndexDocumentResult] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     val newDoc = if(document.indexInConversation === 1) {
@@ -977,6 +978,10 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       document.copy(aggAnnotations = Some(AggAnnotations(convIdxCounter = Some(0))))
     }
     val response = indexLanguageCrud.create(newDoc, new QaDocumentEntityManager(indexName), refreshPolicy)
+
+    if(anonymize) {
+
+    }
 
     if(document.indexInConversation =/= 1) {
       val followup = document.annotations.getOrElse(QADocumentAnnotations()).followup.getOrElse(Followup.UNSPECIFIED)
