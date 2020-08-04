@@ -2713,6 +2713,47 @@ paths:
             schema:
               $ref: '#/components/schemas/QADocumentUpdate'
         description: QA entry with new fields
+  '/<index_name>/<qa_route>/delete_by_query':
+    post:
+      tags:
+        - customer
+      summary: delete QA documents by query
+      operationId: post_delete_by_query_qa_route
+      description: delete by query QA documents
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: qa_route
+          description: question anser route
+          required: true
+          schema:
+            type: string
+            enum:
+              - conversation_logs
+              - knowledgebase
+              - prior_data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QADocumentSearch'
+        description: QA document search request
+      responses:
+        '200':
+          description: request successfully executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteDocumentsSummaryResult'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
   '/<index_name>/<qa_route>/search':
     post:
       tags:

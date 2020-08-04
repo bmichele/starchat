@@ -1158,6 +1158,18 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     }
   }
 
+  def deleteByQuery(indexName: String, search: QADocumentSearch, user: User): DeleteDocumentsSummaryResult = {
+    val start = System.currentTimeMillis()
+    val query = queryBuilder(search)
+    val crud = IndexLanguageCrud(elasticClient, indexName)
+    val response = crud.delete(query, RefreshPolicy.`true`)
+
+    log.info("DeleteByQuery requested by {} - deleted documents {} - took {} ms", user.id,
+      search, System.currentTimeMillis() - start)
+
+    DeleteDocumentsSummaryResult("deleteByQuery", response.getDeleted)
+  }
+
   override def delete(indexName: String, ids: List[String], refreshPolicy: RefreshPolicy.Value): DeleteDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val response = indexLanguageCrud.delete(ids, refreshPolicy, new QaDocumentEntityManager(indexName))
