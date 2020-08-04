@@ -316,7 +316,36 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
             }
           }
         }
-    }
+    } ~
+      pathPrefix(indexRegex ~ Slash ~ routeName ~ Slash ~ "delete_by_query") { indexName =>
+        pathEnd {
+          post {
+            post {
+              authenticateBasicAsync(realm = authRealm,
+                authenticator = authenticator.authenticator) { user =>
+                extractRequest { request =>
+                  authorizeAsync(_ =>
+                    authenticator.hasPermissions(user, indexName, Permissions.write)) {
+                    entity(as[QADocumentSearch]) { docsearch =>
+                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                      onCompleteWithBreakerFuture(breaker)(questionAnswerService.deleteByQuery(indexName, docsearch, user)) {
+                        case Success(t) =>
+                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
+                        case Failure(e) =>
+                          log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
+                          completeResponse(StatusCodes.BadRequest,
+                            Option {
+                              ReturnMessageData(code = 115, message = e.getMessage)
+                            })
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
   }
 
   def questionAnswerConversationsRoutes: Route = handleExceptions(routesExceptionHandler) {
