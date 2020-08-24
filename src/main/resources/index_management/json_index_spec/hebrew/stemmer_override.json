@@ -1,0 +1,11 @@
+{
+  "analysis": {
+    "filter": {
+      "hebrew_stemmer": {
+        "type": "stemmer_override",
+        "rules": [
+        ]
+      }
+    }
+  }
+}
