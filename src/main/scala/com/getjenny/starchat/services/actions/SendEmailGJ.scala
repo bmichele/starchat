@@ -54,7 +54,9 @@ object SendEmailGJ extends DtAction {
 
     parameters.get("replyTo")
       .filter(_.nonEmpty)
-      .foreach(replyTo => envelope.replyTo(new InternetAddress(replyTo)))
+      .foreach(replyTo =>
+        envelope = envelope.replyTo(new InternetAddress(replyTo))
+      )
 
     parameters.get("cc")
       .filter(_.nonEmpty)
