@@ -152,7 +152,8 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       onCompleteWithBreakerFuture(breaker)(
                         questionAnswerService.updateConvAnnotations(
                           indexName = indexName, conversation = docId, refreshPolicy = RefreshPolicy.`false`)) {
-                        case Success(t) => completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
+                        case Success(t) =>
+                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
                           val message = logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage)
                           log.error(message, e)

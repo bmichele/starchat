@@ -795,6 +795,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("qaPairHistogram",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
             ).subAggregation(
@@ -808,6 +809,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("qaPairAnsweredHistogram",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .must(QueryBuilders.termQuery("answered", Answered.ANSWERED.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
@@ -822,6 +824,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("qaPairAnsweredFalsePositiveHistogram",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .must(QueryBuilders.termQuery("answered", Answered.ANSWERED_FALSE_POSITIVE.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
@@ -836,6 +839,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("qaPairUnansweredHistogram",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .must(QueryBuilders.termQuery("answered", Answered.UNANSWERED.toString))
                 .must(QueryBuilders.termQuery("doctype", Doctypes.NORMAL.toString))
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
@@ -881,6 +885,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("avgFeedbackNotTransferredConvScoreOverTime",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .mustNot(QueryBuilders.termQuery("escalated", Escalated.TRANSFERRED.toString))
             ).subAggregation(
               AggregationBuilders
@@ -894,6 +899,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("avgFeedbackTransferredConvScoreOverTime",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .must(QueryBuilders.termQuery("escalated", Escalated.TRANSFERRED.toString))
             ).subAggregation(
               AggregationBuilders
@@ -907,6 +913,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("avgAlgorithmNotTransferredConvScoreOverTime",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .mustNot(QueryBuilders.termQuery("escalated", Escalated.TRANSFERRED.toString))
             ).subAggregation(
               AggregationBuilders
@@ -920,6 +927,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           aggregationBuilderList +=
             AggregationBuilders.filter("avgAlgorithmTransferredConvScoreOverTime",
               QueryBuilders.boolQuery()
+                .must(QueryBuilders.rangeQuery("starchatAnnotations.convIdxCounter").gt(1))
                 .must(QueryBuilders.termQuery("escalated", Escalated.TRANSFERRED.toString))
             ).subAggregation(
               AggregationBuilders
@@ -988,13 +996,8 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       if (followup == Followup.UNSPECIFIED) { // increment only if not FOLLOWUP
         /* increment conversation counter */
         if (updateAnnotation && response.created) {
-          updateByQuery( //increment annotation
-            indexName = indexName,
-            searchReq =
-              QADocumentSearch(conversation = Some(List(newDoc.conversation)), indexInConversation = Some(1)),
-            script = Some(incrementConvIdxCounterScript),
-            refreshPolicy = refreshPolicy
-          )
+          updateConvAnnotations(indexName = indexName,
+            conversation = newDoc.conversation, refreshPolicy = refreshPolicy)
         }
       }
     }
