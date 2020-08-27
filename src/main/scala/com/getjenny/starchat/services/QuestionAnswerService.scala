@@ -865,7 +865,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
             ).subAggregation(
               AggregationBuilders
-                .dateHistogram("qaPairHistogram").field("timestamp")
+                .dateHistogram("qaPairTriggeredHistogram").field("timestamp")
                 .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
@@ -881,7 +881,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
             ).subAggregation(
               AggregationBuilders
-                .dateHistogram("qaPairAnsweredHistogram").field("timestamp")
+                .dateHistogram("qaPairAnsweredTriggeredHistogram").field("timestamp")
                 .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
@@ -897,7 +897,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
                 .must(QueryBuilders.termQuery("agent", Agent.STARCHAT.toString))
             ).subAggregation(
               AggregationBuilders
-                .dateHistogram("qaPairAnsweredFalsePositiveHistogram").field("timestamp")
+                .dateHistogram("qaPairAnsweredFalsePositiveTriggeredHistogram").field("timestamp")
                 .calendarInterval(dateHistInterval).minDocCount(minDocInBuckets)
                 .timeZone(dateHistTimezone).format("yyyy-MM-dd : HH:mm:ss")
             )
