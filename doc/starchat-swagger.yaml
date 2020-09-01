@@ -4902,33 +4902,36 @@ components:
           * `avgAlgorithmConvScoreOverTime` -> average score for the answers (transferred and transferred) on each time interval, the scores are provided by an algorithm
       example: avgFeedbackConvScore
       enum:
-        - avgFeedbackConvScore
-        - avgFeedbackAnswerScore
-        - avgAlgorithmConvScore
         - avgAlgorithmAnswerScore
-        - scoreHistogram
-        - scoreHistogramNotTransferred
-        - scoreHistogramTransferred
+        - avgAlgorithmAnswerScoreOverTime
+        - avgAlgorithmConvScore
+        - avgAlgorithmConvScoreOverTime
+        - avgAlgorithmNotTransferredAnswerScoreOverTime
+        - avgAlgorithmNotTransferredConvScoreOverTime
+        - avgAlgorithmTransferredAnswerScoreOverTime
+        - avgAlgorithmTransferredConvScoreOverTime
+        - avgFeedbackAnswerScore
+        - avgFeedbackAnswerScoreOverTime
+        - avgFeedbackConvScore
+        - avgFeedbackConvScoreOverTime
+        - avgFeedbackNotTransferredAnswerScoreOverTime
+        - avgFeedbackNotTransferredConvScoreOverTime
+        - avgFeedbackTransferredAnswerScoreOverTime
+        - avgFeedbackTransferredConvScoreOverTime
         - conversationsHistogram
         - conversationsNotTransferredHistogram
         - conversationsTransferredHistogram
-        - qaPairHistogram
-        - qaPairAnsweredHistogram
-        - qaPairAnsweredFalsePositiveHistogram
-        - qaPairUnansweredHistogram
         - qaMatchedStatesHistogram
-        - avgFeedbackNotTransferredConvScoreOverTime
-        - avgFeedbackTransferredConvScoreOverTime
-        - avgAlgorithmNotTransferredConvScoreOverTime
-        - avgAlgorithmTransferredConvScoreOverTime
-        - avgFeedbackNotTransferredAnswerScoreOverTime
-        - avgFeedbackTransferredAnswerScoreOverTime
-        - avgAlgorithmNotTransferredAnswerScoreOverTime
-        - avgAlgorithmTransferredAnswerScoreOverTime
-        - avgFeedbackConvScoreOverTime
-        - avgAlgorithmAnswerScoreOverTime
-        - avgFeedbackAnswerScoreOverTime
-        - avgAlgorithmConvScoreOverTime
+        - qaPairAnsweredFalsePositiveHistogram
+        - qaPairAnsweredFalsePositiveTriggeredHistogram
+        - qaPairAnsweredHistogram
+        - qaPairAnsweredTriggeredHistogram
+        - qaPairHistogram
+        - qaPairTriggeredHistogram
+        - qaPairUnansweredHistogram
+        - scoreHistogram
+        - scoreHistogramNotTransferred
+        - scoreHistogramTransferred
     TimeInterval:
       type: string
       description: >-
