@@ -20,3 +20,4 @@ To contribute to StarChat, please send us a [pull request](https://help.github.c
 from your fork of this repository!
 
 Our concise [contribution guideline](https://github.com/GetJenny/starchat/blob/master/CONTRIBUTING.md) contains the bare minumum requirements for the contributions.
+
