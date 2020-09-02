@@ -428,9 +428,12 @@ class QAAggregatedAnalyticsEntityManager(aggregationsTypes: Option[List[QAAggreg
           "conversationsHistogram" -> conversationsHistogram,
           "conversationsNotTransferredHistogram" -> conversationsNotTransferredHistogram,
           "conversationsTransferredHistogram" -> conversationsTransferredHistogram,
-          "qaPairHistogram" -> qaPairHistogram,
-          "qaPairAnsweredHistogram" -> qaPairAnsweredHistogram,
           "qaPairAnsweredFalsePositiveHistogram" -> qaPairAnsweredFalsePositiveHistogram,
+          "qaPairAnsweredFalsePositiveTriggeredHistogram" -> qaPairAnsweredFalsePositiveTriggeredHistogram,
+          "qaPairAnsweredHistogram" -> qaPairAnsweredHistogram,
+          "qaPairAnsweredTriggeredHistogram" -> qaPairAnsweredTriggeredHistogram,
+          "qaPairHistogram" -> qaPairHistogram,
+          "qaPairTriggeredHistogram" -> qaPairTriggeredHistogram,
           "qaPairUnansweredHistogram" -> qaPairUnansweredHistogram
         ).filter { case (_, v) => v.nonEmpty }.map { case (k, v) => (k, v.get) }
 
