@@ -177,6 +177,20 @@ class QAAggregatedAnalyticsEntityManager(aggregationsTypes: Option[List[QAAggreg
               }.toList
             }
           } else None
+        val qaPairTriggeredHistogram: Option[List[CountOverTimeHistogramItem]] =
+          if (reqAggs.contains(QAAggregationsTypes.qaPairTriggeredHistogram)) {
+            val pf: ParsedFilter = response.getAggregations.get("qaPairTriggeredHistogram")
+            val h: ParsedDateHistogram = pf.getAggregations.get("qaPairTriggeredHistogram")
+            Some {
+              h.getBuckets.asScala.map { bucket =>
+                CountOverTimeHistogramItem(
+                  key = bucket.getKey.asInstanceOf[ZonedDateTime].toInstant.toEpochMilli,
+                  keyAsString = bucket.getKeyAsString,
+                  docCount = bucket.getDocCount
+                )
+              }.toList
+            }
+          } else None
         val qaPairAnsweredHistogram: Option[List[CountOverTimeHistogramItem]] =
           if (reqAggs.contains(QAAggregationsTypes.qaPairAnsweredHistogram)) {
             val pf: ParsedFilter = response.getAggregations.get("qaPairAnsweredHistogram")
@@ -191,10 +205,38 @@ class QAAggregatedAnalyticsEntityManager(aggregationsTypes: Option[List[QAAggreg
               }.toList
             }
           } else None
+        val qaPairAnsweredTriggeredHistogram: Option[List[CountOverTimeHistogramItem]] =
+          if (reqAggs.contains(QAAggregationsTypes.qaPairAnsweredTriggeredHistogram)) {
+            val pf: ParsedFilter = response.getAggregations.get("qaPairAnsweredTriggeredHistogram")
+            val h: ParsedDateHistogram = pf.getAggregations.get("qaPairAnsweredTriggeredHistogram")
+            Some {
+              h.getBuckets.asScala.map { bucket =>
+                CountOverTimeHistogramItem(
+                  key = bucket.getKey.asInstanceOf[ZonedDateTime].toInstant.toEpochMilli,
+                  keyAsString = bucket.getKeyAsString,
+                  docCount = bucket.getDocCount
+                )
+              }.toList
+            }
+          } else None
         val qaPairAnsweredFalsePositiveHistogram: Option[List[CountOverTimeHistogramItem]] =
           if (reqAggs.contains(QAAggregationsTypes.qaPairAnsweredFalsePositiveHistogram)) {
             val pf: ParsedFilter = response.getAggregations.get("qaPairAnsweredFalsePositiveHistogram")
             val h: ParsedDateHistogram = pf.getAggregations.get("qaPairAnsweredFalsePositiveHistogram")
+            Some {
+              h.getBuckets.asScala.map { bucket =>
+                CountOverTimeHistogramItem(
+                  key = bucket.getKey.asInstanceOf[ZonedDateTime].toInstant.toEpochMilli,
+                  keyAsString = bucket.getKeyAsString,
+                  docCount = bucket.getDocCount
+                )
+              }.toList
+            }
+          } else None
+        val qaPairAnsweredFalsePositiveTriggeredHistogram: Option[List[CountOverTimeHistogramItem]] =
+          if (reqAggs.contains(QAAggregationsTypes.qaPairAnsweredFalsePositiveTriggeredHistogram)) {
+            val pf: ParsedFilter = response.getAggregations.get("qaPairAnsweredFalsePositiveTriggeredHistogram")
+            val h: ParsedDateHistogram = pf.getAggregations.get("qaPairAnsweredFalsePositiveTriggeredHistogram")
             Some {
               h.getBuckets.asScala.map { bucket =>
                 CountOverTimeHistogramItem(
