@@ -730,7 +730,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  /user:
+  '/user':
     post:
       tags:
         - admin
@@ -756,6 +756,7 @@ paths:
             schema:
               $ref: '#/components/schemas/User'
         description: User to add
+  '/user/{id}':
     put:
       tags:
         - admin
@@ -919,7 +920,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/cluster_node/<uuid>':
+  '/cluster_node/{uuid}':
     get:
       tags:
         - admin
@@ -1019,7 +1020,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/node_dt_update':
+  '/{index_name}/node_dt_update':
     get:
       tags:
         - customer
@@ -1053,7 +1054,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/get_next_response':
+  '/{index_name}/get_next_response':
     post:
       tags:
         - customer
@@ -1088,7 +1089,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ResponseRequestIn'
         description: DecisionTable entry to create
-  '/<index_name>/decisiontable':
+  '/{index_name}/decisiontable':
     post:
       tags:
         - customer
@@ -1256,7 +1257,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/delete':
+  '/{index_name}/decisiontable/delete':
     post:
       tags:
         - customer
@@ -1314,7 +1315,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/all':
+  '/{index_name}/decisiontable/all':
     delete:
       tags:
         - customer
@@ -1349,7 +1350,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/search':
+  '/{index_name}/decisiontable/search':
     post:
       tags:
         - customer
@@ -1380,7 +1381,7 @@ paths:
             schema:
               $ref: '#/components/schemas/DTDocumentSearch'
         description: DecisionTable document with the query parameters
-  '/<src_index_name>/decisiontable/clone/<dst_index_name>':
+  '/{src_index_name}/decisiontable/clone/{dst_index_name}':
     post:
       tags:
         - customer
@@ -1426,7 +1427,7 @@ paths:
           description: 'invalid input, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/bulk':
+  '/{index_name}/decisiontable/bulk':
     post:
       tags:
         - customer
@@ -1434,7 +1435,7 @@ paths:
       summary: Bulk creation
       deprecated: true
       description: >-
-        bulk create operation, this is deprecated, use `/<index_name>/decisiontable/bulk/create`
+        bulk create operation, this is deprecated, use `/{index_name}/decisiontable/bulk/create`
       parameters:
         - in: path
           name: index_name
@@ -1471,7 +1472,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/bulk/create':
+  '/{index_name}/decisiontable/bulk/create':
     post:
       tags:
         - customer
@@ -1515,7 +1516,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/upload/<format>':
+  '/{index_name}/decisiontable/upload/{format}':
     post:
       tags:
         - customer
@@ -1558,7 +1559,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/analyzer/async':
+  '/{index_name}/decisiontable/analyzer/async':
     post:
       tags:
         - customer
@@ -1583,7 +1584,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/analyzer':
+  '/{index_name}/decisiontable/analyzer':
     post:
       tags:
         - customer
@@ -1645,7 +1646,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/bayescache/async':
+  '/{index_name}/decisiontable/bayescache/async':
     post:
       tags:
         - customer
@@ -1674,7 +1675,7 @@ paths:
                 $ref: '#/components/schemas/BayesOperatorCacheServiceResponse'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/decisiontable/bayescache':
+  '/{index_name}/decisiontable/bayescache':
     post:
       tags:
         - customer
@@ -1703,7 +1704,7 @@ paths:
                 $ref: '#/components/schemas/BayesOperatorCacheServiceResponse'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/spellcheck/terms':
+  '/{index_name}/spellcheck/terms':
     post:
       tags:
         - customer
@@ -1734,7 +1735,7 @@ paths:
             schema:
               $ref: '#/components/schemas/SpellcheckTermsRequest'
         description: Spellcheck request
-  '/<index_name>/language_guesser':
+  '/{index_name}/language_guesser':
     post:
       tags:
         - customer
@@ -1765,7 +1766,7 @@ paths:
             schema:
               $ref: '#/components/schemas/LanguageGuesserRequestIn'
         description: Language guesser request
-  '/<index_name>/language_guesser/<language>':
+  '/{index_name}/language_guesser/{language}':
     get:
       tags:
         - customer
@@ -1796,7 +1797,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/tokenizers':
+  '/{index_name}/tokenizers':
     post:
       tags:
         - customer
@@ -1851,7 +1852,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/stream/term':
+  '/{index_name}/stream/term':
     get:
       tags:
         - customer
@@ -1876,7 +1877,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term/index':
+  '/{index_name}/term/index':
     post:
       tags:
         - customer
@@ -1907,7 +1908,7 @@ paths:
             schema:
               $ref: '#/components/schemas/Terms'
         description: Terms to index
-  '/<index_name>/term/distance':
+  '/{index_name}/term/distance':
     post:
       tags:
         - customer
@@ -1939,7 +1940,7 @@ paths:
               $ref: '#/components/schemas/DocsIds'
             example: {'ids': ['hello', 'hi']}
         description: Documents to compare
-  '/<index_name>/term/index_default_synonyms':
+  '/{index_name}/term/index_default_synonyms':
     post:
       tags:
         - customer
@@ -1964,7 +1965,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term/index_synonyms':
+  '/{index_name}/term/index_synonyms':
     post:
       tags:
         - customer
@@ -1999,7 +2000,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term/get':
+  '/{index_name}/term/get':
     post:
       tags:
         - customer
@@ -2031,7 +2032,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term/delete':
+  '/{index_name}/term/delete':
     post:
       tags:
         - customer
@@ -2073,7 +2074,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term':
+  '/{index_name}/term':
     put:
       tags:
         - customer
@@ -2114,7 +2115,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term/term':
+  '/{index_name}/term/term':
     post:
       tags:
         - customer
@@ -2145,7 +2146,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term/text':
+  '/{index_name}/term/text':
     post:
       tags:
         - customer
@@ -2184,7 +2185,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/extraction/frequencies':
+  '/{index_name}/extraction/frequencies':
     post:
       tags:
         - customer
@@ -2215,7 +2216,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/extraction/keywords':
+  '/{index_name}/extraction/keywords':
     post:
       tags:
         - customer
@@ -2251,7 +2252,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/extraction/synonyms':
+  '/{index_name}/extraction/synonyms':
     post:
       tags:
         - customer
@@ -2284,7 +2285,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/conv/annotations/<qa_route>/convIdxCounter':
+  '/{index_name}/conv/annotations/{qa_route}/convIdxCounter':
     post:
       tags:
         - customer
@@ -2325,7 +2326,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/analytics/<qa_route>':
+  '/{index_name}/analytics/{qa_route}':
     post:
       tags:
         - customer
@@ -2366,7 +2367,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/term_count/<qa_route>':
+  '/{index_name}/term_count/{qa_route}':
     get:
       tags:
         - customer
@@ -2421,7 +2422,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/dict_size/<qa_route>':
+  '/{index_name}/dict_size/{qa_route}':
     get:
       tags:
         - customer
@@ -2463,7 +2464,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/total_terms/<qa_route>':
+  '/{index_name}/total_terms/{qa_route}':
     get:
       tags:
         - customer
@@ -2505,7 +2506,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/stream/<qa_route>':
+  '/{index_name}/stream/{qa_route}':
     get:
       tags:
         - customer
@@ -2540,7 +2541,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/<qa_route>':
+  '/{index_name}/{qa_route}':
     post:
       tags:
         - customer
@@ -2713,7 +2714,7 @@ paths:
             schema:
               $ref: '#/components/schemas/QADocumentUpdate'
         description: QA entry with new fields
-  '/<index_name>/<qa_route>/delete_by_query':
+  '/{index_name}/{qa_route}/delete_by_query':
     post:
       tags:
         - customer
@@ -2754,7 +2755,7 @@ paths:
           description: 'invalid input, object invalid, bad request'
         '401':
           description: authorization denied or authentication failed
-  '/<index_name>/<qa_route>/search':
+  '/{index_name}/{qa_route}/search':
     post:
       tags:
         - customer
@@ -2797,7 +2798,7 @@ paths:
             schema:
               $ref: '#/components/schemas/QADocumentSearch'
         description: QA document search entity
-  '/<index_name>/<qa_route>/conversations':
+  '/{index_name}/{qa_route}/conversations':
     post:
       tags:
         - customer
@@ -2879,7 +2880,7 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateQAByQueryReq'
         description: QA entry with new fields, the id field must be an empty list
-  '/<index_name>/updateTerms/<qa_route>':
+  '/{index_name}/updateTerms/{qa_route}':
     put:
       tags:
         - customer
@@ -2960,7 +2961,7 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateQATermsRequest'
         description: manaus terms update request
-  '/<index_name>/cache/<qa_route>':
+  '/{index_name}/cache/{qa_route}':
     delete:
       tags:
         - admin
@@ -4883,7 +4884,10 @@ components:
           * `conversationsNotTransferredHistogram` -> time range histogram of the number of conversations on a time range (non-transferred only)
           * `conversationsTransferredHistogram` -> time range histogram of the number of conversations on a time range (transferred only)
           * `qaPairHistogram` -> time range histogram of the Q/A documents (only starchat agent, answered + unanswered)
+          * `qaPairTriggeredHistogram` ->  time range histogram of the triggered Q/A documents (only starchat agent, answered + unanswered)
           * `qaPairAnsweredHistogram` -> time range histogram of the number of answered Q/A documents (only starchat agent)
+          * `qaPairAnsweredFalsePositiveTriggeredHistogram` -> time range histogram of the number of answered and triggered Q/A documents marked as false positive (only starchat agent)
+          * `qaPairAnsweredTriggeredHistogram` -> time range histogram of the number of answered and triggered Q/A documents (only starchat agent)
           * `qaPairAnsweredFalsePositiveHistogram` -> time range histogram of the number of answered Q/A documents marked as false positive (only starchat agent)
           * `qaPairUnansweredHistogram` -> time range histogram of the number of unanswered Q/A documents (only starchat agent)
           * `qaMatchedStatesHistogram` -> histogram of matched states
@@ -4898,33 +4902,36 @@ components:
           * `avgAlgorithmConvScoreOverTime` -> average score for the answers (transferred and transferred) on each time interval, the scores are provided by an algorithm
       example: avgFeedbackConvScore
       enum:
-        - avgFeedbackConvScore
-        - avgFeedbackAnswerScore
-        - avgAlgorithmConvScore
         - avgAlgorithmAnswerScore
-        - scoreHistogram
-        - scoreHistogramNotTransferred
-        - scoreHistogramTransferred
+        - avgAlgorithmAnswerScoreOverTime
+        - avgAlgorithmConvScore
+        - avgAlgorithmConvScoreOverTime
+        - avgAlgorithmNotTransferredAnswerScoreOverTime
+        - avgAlgorithmNotTransferredConvScoreOverTime
+        - avgAlgorithmTransferredAnswerScoreOverTime
+        - avgAlgorithmTransferredConvScoreOverTime
+        - avgFeedbackAnswerScore
+        - avgFeedbackAnswerScoreOverTime
+        - avgFeedbackConvScore
+        - avgFeedbackConvScoreOverTime
+        - avgFeedbackNotTransferredAnswerScoreOverTime
+        - avgFeedbackNotTransferredConvScoreOverTime
+        - avgFeedbackTransferredAnswerScoreOverTime
+        - avgFeedbackTransferredConvScoreOverTime
         - conversationsHistogram
         - conversationsNotTransferredHistogram
         - conversationsTransferredHistogram
-        - qaPairHistogram
-        - qaPairAnsweredHistogram
-        - qaPairAnsweredFalsePositiveHistogram
-        - qaPairUnansweredHistogram
         - qaMatchedStatesHistogram
-        - avgFeedbackNotTransferredConvScoreOverTime
-        - avgFeedbackTransferredConvScoreOverTime
-        - avgAlgorithmNotTransferredConvScoreOverTime
-        - avgAlgorithmTransferredConvScoreOverTime
-        - avgFeedbackNotTransferredAnswerScoreOverTime
-        - avgFeedbackTransferredAnswerScoreOverTime
-        - avgAlgorithmNotTransferredAnswerScoreOverTime
-        - avgAlgorithmTransferredAnswerScoreOverTime
-        - avgFeedbackConvScoreOverTime
-        - avgAlgorithmAnswerScoreOverTime
-        - avgFeedbackAnswerScoreOverTime
-        - avgAlgorithmConvScoreOverTime
+        - qaPairAnsweredFalsePositiveHistogram
+        - qaPairAnsweredFalsePositiveTriggeredHistogram
+        - qaPairAnsweredHistogram
+        - qaPairAnsweredTriggeredHistogram
+        - qaPairHistogram
+        - qaPairTriggeredHistogram
+        - qaPairUnansweredHistogram
+        - scoreHistogram
+        - scoreHistogramNotTransferred
+        - scoreHistogramTransferred
     TimeInterval:
       type: string
       description: >-
