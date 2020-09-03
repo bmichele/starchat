@@ -33,7 +33,7 @@ trait DecisionTableResource extends StarChatResource {
 
   def decisionTableCloneIndexRoutes: Route = handleExceptions(routesExceptionHandler) {
     pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "clone" ~ Slash ~ indexRegex) {
-      (indexNameSrc, indexNameDst)  =>
+      (indexNameSrc, indexNameDst) =>
         pathEnd {
           post {
             authenticateBasicAsync(realm = authRealm,
@@ -345,6 +345,23 @@ trait DecisionTableResource extends StarChatResource {
             }
           }
         }
+        get {
+          parameters("q".as[String] ? "") { q =>
+            val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+            onCompleteWithBreakerFuture(breaker)(decisionTableService.searchTest(q)) {
+              case Success(t) =>
+                completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Option {
+                  t
+                })
+              case Failure(e) =>
+                log.error("Error during test", e)
+                completeResponse(StatusCodes.BadRequest,
+                  Option {
+                    ReturnMessageData(code = 111, message = e.getMessage)
+                  })
+            }
+          }
+        }
       }
     }
   }
@@ -584,7 +601,7 @@ trait DecisionTableResource extends StarChatResource {
                   val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(maxFailure = 5, callTimeout = 60.seconds, resetTimeout = 120.seconds)
                   onCompleteWithBreakerFuture(breaker)(bayesOperatorCacheService.load(indexName)) {
                     case Success(t) =>
-                      val status = if(t.status) StatusCodes.OK else StatusCodes.BadRequest
+                      val status = if (t.status) StatusCodes.OK else StatusCodes.BadRequest
                       completeResponse(status, StatusCodes.BadRequest, Option(t))
                     case Failure(e) =>
                       log.error(logTemplate(user.id, indexName, "decisionTableCacheLoad", request.method, request.uri), e)
@@ -598,7 +615,7 @@ trait DecisionTableResource extends StarChatResource {
             }
           }
         }
-      }, pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bayescache"  ~ Slash ~ "async") { indexName =>
+      }, pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bayescache" ~ Slash ~ "async") { indexName =>
         pathEnd {
           post {
             extractRequest { request =>
@@ -607,7 +624,7 @@ trait DecisionTableResource extends StarChatResource {
                   val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                   onCompleteWithBreakerFuture(breaker)(bayesOperatorCacheService.loadAsync(indexName)) {
                     case Success(t) =>
-                      val status = if(t.status) StatusCodes.OK else StatusCodes.BadRequest
+                      val status = if (t.status) StatusCodes.OK else StatusCodes.BadRequest
                       completeResponse(status, StatusCodes.BadRequest, Option(t))
                     case Failure(e) =>
                       log.error(logTemplate(user.id, indexName, "decisionTableCacheLoadAsync", request.method, request.uri), e)

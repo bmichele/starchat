@@ -53,6 +53,13 @@
                 "fielddata": true,
                 "analyzer": "jenny_base_analyzer"
               },
+              "synonym": {
+                "type": "text",
+                "store": true,
+                "index": true,
+                "fielddata": "true",
+                "analyzer": "synonym_analyzer"
+              },
               "stop": {
                 "type": "text",
                 "fielddata": true,
@@ -155,7 +162,8 @@
         "store": true,
         "index": true,
         "fielddata": "true",
-        "term_vector": "with_positions_offsets"
+        "term_vector": "with_positions_offsets",
+        "analyzer": "synonym_analyzer"
       },
       "action": {
         "type": "keyword",

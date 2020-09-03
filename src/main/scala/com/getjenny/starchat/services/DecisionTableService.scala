@@ -16,7 +16,7 @@ import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import com.getjenny.starchat.services.esclient.{CloneDtElasticClient, DecisionTableElasticClient}
 import com.getjenny.starchat.utils.Index
 import org.apache.lucene.search.join._
-import org.elasticsearch.action.search.SearchType
+import org.elasticsearch.action.search.{SearchResponse, SearchType}
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.index.query.{BoolQueryBuilder, InnerHitBuilder, QueryBuilder, QueryBuilders}
 import org.elasticsearch.index.reindex.{BulkByScrollResponse, DeleteByQueryRequest, ReindexRequest}
@@ -42,6 +42,31 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   private[this] val queriesScoreMode: Map[String, ScoreMode] =
     Map[String, ScoreMode]("min" -> ScoreMode.Min,
       "max" -> ScoreMode.Max, "avg" -> ScoreMode.Avg, "total" -> ScoreMode.Total)
+
+  def searchTest(query: String) = {
+    /*val fullQuery = s"""queries.query.synonym:\"$query\" """
+    val scriptBody = "return doc['queries.query.ngram_2'] ;"
+    val script: Script = new Script(scriptBody)
+    println(fullQuery)
+    val queryBuilder = QueryBuilders
+      .nestedQuery("queries", QueryBuilders.queryStringQuery(fullQuery), ScoreMode.Max)
+      .ignoreUnmapped(true)
+      .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100))
+    val indexLanguageCrud = IndexLanguageCrud(elasticClient, "index_getjenny_english_0")
+    var documents: SearchResponse = null
+    try {
+      documents = indexLanguageCrud.esCrudBase.read(queryBuilder, version = Option(true),
+        from = Option(0),
+        maxItems = Option(10))
+      println(documents.getHits.getTotalHits.value)
+      println(documents.getHits.getHits.map(_.toString).mkString(";"))
+    } catch {
+      case e: Throwable => e.printStackTrace()
+    }
+
+    documents.getHits.getHits.map(x => x.getSourceAsString)*/
+    search("index_getjenny_english_0", DTDocumentSearch(None, None, None, None, None, None, None, Some(query), Some(SearchAlgorithm.SYNONYM)))
+  }
 
   def handleNgrams(indexName: String, analyzer: String, queries: String,
                    dtDocuments: List[SearchDTDocumentsAndNgrams]): List[SearchDTDocument] = {
@@ -73,6 +98,15 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
                                          ): (QueryBuilder, Option[(String, SearchAlgorithm.Value)]) = {
     val searchAlgorithm = documentSearch.searchAlgorithm.getOrElse(SearchAlgorithm.DEFAULT)
     searchAlgorithm match {
+      case SearchAlgorithm.SYNONYM => val scriptBody = "return doc['queries.query.ngram_2'] ;"
+        val script: Script = new Script(scriptBody)
+        val fullQuery = s"""queries.query.synonym:\"$value\" """
+        val queryBuilder = QueryBuilders
+          .nestedQuery("queries", QueryBuilders.queryStringQuery(fullQuery), ScoreMode.Max)
+          .ignoreUnmapped(true)
+          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100))
+        (queryBuilder,
+          Option("ngram2" -> searchAlgorithm))
       case SearchAlgorithm.AUTO | SearchAlgorithm.DEFAULT =>
         val (scriptBody, matchQueryEs, analyzer, algorithm) = if (documentSearch.queries.getOrElse("").length > 3) {
           (
@@ -272,10 +306,15 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     }.getOrElse(orderedQueryExtractor)
 
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val documents = indexLanguageCrud.read(queryBuilder, version = Option(true),
-      from = documentSearch.from.orElse(Option(0)),
-      maxItems = documentSearch.size.orElse(Option(10)),
-      entityManager = new SearchDTDocumentEntityManager(queryExtractorFunction))
+    var documents: List[SearchDTDocumentsAndNgrams] = null
+    try {
+      documents = indexLanguageCrud.read(queryBuilder, version = Option(true),
+        from = documentSearch.from.orElse(Option(0)),
+        maxItems = documentSearch.size.orElse(Option(10)),
+        entityManager = new SearchDTDocumentEntityManager(queryExtractorFunction))
+    } catch {
+      case e: Throwable => e.printStackTrace()
+    }
 
     val res = isNgram.map { case (analyzer, _) => handleNgrams(indexName, analyzer,
       documentSearch.queries.getOrElse(""), documents)
@@ -364,7 +403,7 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     response
   }
 
-  def getDTDocuments(indexName: String ): SearchDTDocumentsResults = {
+  def getDTDocuments(indexName: String): SearchDTDocumentsResults = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val query = QueryBuilders.matchAllQuery
 
@@ -445,7 +484,7 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   }
 
   def bulkCreate(indexName: String, documents: IndexedSeq[DTDocument],
-                               check: Boolean = true, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
+                 check: Boolean = true, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     val listOfDocRes = indexLanguageCrud.bulkCreate(documents.toList,
@@ -715,17 +754,17 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     val bulkResponse2: BulkByScrollResponse =
       CloneDtElasticClient.httpClient.reindex(reindexReq2, RequestOptions.DEFAULT);
 
-    if(bulkResponse1.getCreated =/= bulkResponse2.getCreated ||
+    if (bulkResponse1.getCreated =/= bulkResponse2.getCreated ||
       bulkResponse1.getTotal =/= bulkResponse2.getTotal ||
       bulkResponse1.getDeleted =/= bulkResponse2.getDeleted ||
       bulkResponse1.getUpdated =/= bulkResponse2.getUpdated ||
       bulkResponse1.getVersionConflicts =/= bulkResponse2.getVersionConflicts
-    ){
+    ) {
       throw DecisionTableServiceException(s"Error cloning index $indexNameSrc into " +
         s"$indexNameDst")
     }
 
-    if(propagate)
+    if (propagate)
       instanceRegistryService.updateTimestamp(dtIndexName = indexNameDst)
 
     ReindexResult(
@@ -753,14 +792,14 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
 
     val srcDocuments = getDTDocuments(indexName = indexNameSrc)
     val documents = srcDocuments.hits.map(_.document).toIndexedSeq
-    val createResult = this.bulkCreate(indexName=indexNameDst,
+    val createResult = this.bulkCreate(indexName = indexNameDst,
       documents = documents, refreshPolicy = refreshPolicy)
 
-    if(createResult.data.length =/= srcDocuments.total)
+    if (createResult.data.length =/= srcDocuments.total)
       throw DecisionTableServiceException(s"Error cloning index $indexNameSrc into " +
         s"$indexNameDst: ${createResult.data.length} != ${srcDocuments.total}")
 
-    if(propagate)
+    if (propagate)
       instanceRegistryService.updateTimestamp(dtIndexName = indexNameDst)
 
     createResult

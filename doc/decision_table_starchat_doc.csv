@@ -3,6 +3,7 @@ help,1,0,"band(vOneKeyword(""help""))",,"Ask me questions like... how to install
 hello,1,0,"search()","[""hello"", ""hi""]",Hello!,,,,,,
 hello2,1,0,"search()","[""ciao"", ""buongiorno""]",Buongiorno!,,,,,,
 hello3,1,0,"search(""hello3"")","[""buonasera""]",Buonasera,,,,,,
+cat,1,0,"search(""cat"")","[""cat""]",cat,,,,,,
 contribute,1,0,"bor(vOneKeyword(""contribute""))",,"To contribute to <a href=""http://git.io/*chat"">StarChat</a>, please send us a pull request from your fork of this repository.
 <br>Our concise contribution guideline contains the bare minimum requirements of the code contributions.
 <br>Before contributing (or opening issues), you might want to email us at starchat@getjenny.com.",,,,,,default

@@ -25,7 +25,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
 
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
 
-  private[this] val esCrudBase = new EsCrudBase(client, index)
+  val esCrudBase = new EsCrudBase(client, index)
   val instanceFieldName = client.instanceFieldName
 
   private[this] val instanceMissingMessage = "instance field must be present while indexing a new document"

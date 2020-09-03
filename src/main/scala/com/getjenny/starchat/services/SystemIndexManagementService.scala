@@ -81,8 +81,12 @@ object SystemIndexManagementService {
           .put("index.number_of_replicas", item.numberOfReplicas)
       ).source(schemaJson, XContentType.JSON)
 
-      val createIndexRes: CreateIndexResponse = item.httpClient.indices.create(createIndexReq, RequestOptions.DEFAULT)
-
+      var createIndexRes: CreateIndexResponse = null
+      try {
+        createIndexRes = item.httpClient.indices.create(createIndexReq, RequestOptions.DEFAULT)
+      } catch {
+        case e: Throwable => e.printStackTrace()
+      }
       (item.indexSuffix + "(" + fullIndexName + ", " + createIndexRes.isAcknowledged + ")",
         createIndexRes.isAcknowledged)
     })
