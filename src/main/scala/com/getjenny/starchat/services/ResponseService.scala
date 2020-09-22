@@ -5,6 +5,7 @@ package com.getjenny.starchat.services
  */
 
 import java.security.SecureRandom
+import java.util.regex.Pattern
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.analyzers._
@@ -40,6 +41,7 @@ object ResponseService extends AbstractDataService {
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   private[this] val decisionTableService: DecisionTableService.type = DecisionTableService
   private[this] val matchTemplateRegex: String = "%([^%^ ]*)%"
+  private[this] val matchUrlEncodedRegex: Pattern = Pattern.compile("%[A-Z0-9]{2}")
 
   private[this] def extractRequiredStarChatVarNames(input: String): Set[StarChatVariables.Value] = {
     StarChatVariables.values.map(name => (name, input contains "%" + name.toString + "%"))
@@ -319,7 +321,11 @@ object ResponseService extends AbstractDataService {
   }
 
   private[this] def clearNonSubstitutedTemplates(input: String): String = {
-    input.replaceAll(matchTemplateRegex, "")
+    if(matchUrlEncodedRegex.matcher(input).find()){
+      input
+    } else {
+      input.replaceAll(matchTemplateRegex, "")
+    }
   }
 
   private[this] def randomizeBubble(bubble: String): String = {

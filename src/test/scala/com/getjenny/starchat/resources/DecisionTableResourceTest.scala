@@ -627,6 +627,58 @@ class DecisionTableResourceTest extends TestEnglishBase {
   }
 
   it should {
+    "return an HTTP code 200 and not replacing ascii encoded urls" in {
+      val encodedUrl = "https://aaaa.fi/zzzz/bbbb/ccfff%2C%20sss%20tudixc.jpg"
+      val actionInput = Seq(
+        Map("test url" -> encodedUrl).toJson.asJsObject
+      )
+      val decisionTableRequest = DTDocument(
+        state = "forgot_password",
+        executionOrder = 0,
+        maxStateCount = 0,
+        analyzer = "reinfConjunction(bor(vOneKeyword(\"forgot\"), vOneKeyword(\"don't remember\")), bor(vOneKeyword(\"password\")))",
+        queries = List("I forgot my password",
+          "my password is wrong",
+          "don't remember the password"),
+        bubble = "Hello %name% how can I help you?",
+        action = "show_button",
+        actionInput = actionInput,
+        stateData = Map("url" -> "www.getjenny.com"),
+        successValue = "eval(show_buttons)",
+        failureValue = "dont_understand",
+        evaluationClass = Some("default"),
+        version = None
+      )
+
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+
+      val request = ResponseRequestIn(conversationId = "conv_12131",
+        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"))),
+        state = None,
+        data = Some(Map.empty),
+        threshold = Some(0),
+        evaluationClass = None,
+        maxResults = Some(1),
+        searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
+      )
+
+      Post("/index_getjenny_english_0/get_next_response", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[List[ResponseRequestOut]]
+        val headResponseRequestOut: ResponseRequestOut = response.headOption.getOrElse(fail)
+        headResponseRequestOut.actionInput.head shouldEqual Map("test url" -> encodedUrl).toJson.asJsObject
+      }
+    }
+  }
+
+  it should {
     "return an HTTP code 200 and call an http atom" in {
       val decisionTableRequest = DTDocument(
         state = "forgot_password",
@@ -682,7 +734,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         headDeleteDocumentResult.index should be ("index_english.state")
         headDeleteDocumentResult.id should be ("forgot_password")
         headDeleteDocumentResult.found should be (true)
-        headDeleteDocumentResult.version should be (9)
+        headDeleteDocumentResult.version should be (10)
       }
     }
   }

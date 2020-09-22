@@ -16,6 +16,7 @@ trait RestInterface extends RootAPIResource
   with TermResource with TokenizersResource
   with DecisionTableResource with AnalyzersPlaygroundResource with TermsExtractionResource
   with SpellcheckResource
+  with SpellcheckResource2
   with KnowledgeBaseResource with ConversationLogsResource with PriorDataResource
   with UserResource with NodeDtLoadingStatusResource with ClusterNodesResource with LanguageIndexManagementResource {
 
@@ -30,6 +31,7 @@ trait RestInterface extends RootAPIResource
   lazy val analyzerService: AnalyzerService.type = AnalyzerService
   lazy val userService: UserService.type = UserService
   lazy val spellcheckService: SpellcheckService.type = SpellcheckService
+  lazy val spellcheckService2: SpellcheckService2.type = SpellcheckService2
   lazy val clusterNodesServices: ClusterNodesService.type = ClusterNodesService
   lazy val nodeDtLoadingStatusService: NodeDtLoadingStatusService.type = NodeDtLoadingStatusService
   lazy val cronReloadDTService: CronReloadDTService.type = CronReloadDTService
@@ -84,6 +86,7 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResult(postUserRoutes) ~
     LoggingEntities.logRequestAndResult(putUserRoutes) ~
     LoggingEntities.logRequestAndResult(spellcheckRoutes) ~
+    LoggingEntities.logRequestAndResult(spellcheckRoutes2) ~
     LoggingEntities.logRequestAndResult(synExtractionRoutes) ~
     LoggingEntities.logRequestAndResult(systemGetIndexesRoutes) ~
     LoggingEntities.logRequestAndResult(systemIndexManagementRoutes) ~
