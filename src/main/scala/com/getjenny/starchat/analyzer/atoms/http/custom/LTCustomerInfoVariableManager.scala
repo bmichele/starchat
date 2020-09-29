@@ -6,9 +6,15 @@ import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpAt
 import scalaz.Scalaz._
 import spray.json._
 
+/**
+* Connect to the customer info api to get all customer info fields
+* ltCustomerInfo("lt-api-url=<base url>"")
+*
+* Takes <query> as parameter, query has to be a valid customer id
+*/
 trait LTCustomerInfoVariableManager extends GenericVariableManager{
 
-  override def configurationPrefix: Option[String] = Some("http-atom.lt")
+  override def configurationPrefix: Option[String] = Some("http-atom.lt-customer-info")
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     LTCustomerInfoOutput().successNel
