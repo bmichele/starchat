@@ -110,7 +110,6 @@ object Followup extends Enumeration {
   def value(v: String): Followup.Value = values.find(_.toString === v).getOrElse(UNSPECIFIED)
 }
 
-
 case class QADocumentCore(
                            question: Option[String] = None, /* usually what the user of the chat says */
                            questionNegative: Option[List[String]] = None, /* list of sentences different to the main question */

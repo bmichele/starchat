@@ -83,10 +83,11 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                parameters("refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { refreshPolicy =>
+                parameters("permanent".as[Boolean] ? false,
+                  "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { (permanent, refreshPolicy) =>
                   val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
                   onCompleteWithBreakerFuture(breaker)(
-                    decisionTableService.deleteAll(indexName, refreshPolicy)
+                    decisionTableService.deleteOrMarkAll(indexName, refreshPolicy, permanent)
                   ) {
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
@@ -523,10 +524,10 @@ trait DecisionTableResource extends StarChatResource {
               authorizeAsync(_ =>
                 authenticator.hasPermissions(user, indexName, Permissions.write)) {
                 extractRequest { request =>
-                  parameters("id".as[String].*,
-                    "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { (ids, refreshPolicy) =>
+                  parameters("permanent".as[Boolean] ? false, "id".as[String].*,
+                    "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`false`) { (permanent, ids, refreshPolicy) =>
                     val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                    onCompleteWithBreakerFuture(breaker)(decisionTableService.delete(indexName, ids.toList, refreshPolicy)) {
+                    onCompleteWithBreakerFuture(breaker)(decisionTableService.deleteOrMark(indexName, ids.toList, refreshPolicy, permanent)) {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                       case Failure(e) =>
@@ -634,20 +635,22 @@ trait DecisionTableResource extends StarChatResource {
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
                 entity(as[DocsIds]) { ids =>
-                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                  onCompleteWithBreakerFuture(breaker)(
-                    decisionTableService.delete(indexName,
-                      ids.ids, RefreshPolicy.`wait_for`)
-                  ) {
-                    case Success(t) =>
-                      completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
-                    case Failure(e) =>
-                      log.error(logTemplate(user.id,
-                        indexName, "decisionTableRoutesBulkDeleteRoutes", request.method, request.uri), e)
-                      completeResponse(StatusCodes.BadRequest,
-                        Option {
-                          ReturnMessageData(code = 121, message = e.getMessage)
-                        })
+                  parameters("permanent".as[Boolean] ? true) { permanent =>
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                    onCompleteWithBreakerFuture(breaker)(
+                      decisionTableService.deleteOrMark(indexName,
+                        ids.ids, RefreshPolicy.`wait_for`, permanent)
+                    ) {
+                      case Success(t) =>
+                        completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
+                      case Failure(e) =>
+                        log.error(logTemplate(user.id,
+                          indexName, "decisionTableRoutesBulkDeleteRoutes", request.method, request.uri), e)
+                        completeResponse(StatusCodes.BadRequest,
+                          Option {
+                            ReturnMessageData(code = 121, message = e.getMessage)
+                          })
+                    }
                   }
                 }
               }

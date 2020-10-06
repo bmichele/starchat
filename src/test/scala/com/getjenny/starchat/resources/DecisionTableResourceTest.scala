@@ -133,7 +133,8 @@ class DecisionTableResourceTest extends TestEnglishBase {
         stateData = None,
         successValue = None,
         failureValue = None,
-        evaluationClass = None
+        evaluationClass = None,
+        status = None
       )
 
       Put(s"/index_getjenny_english_0/decisiontable", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -163,7 +164,8 @@ class DecisionTableResourceTest extends TestEnglishBase {
         stateData = Some(Map()),
         successValue = Some(""),
         failureValue = Some(""),
-        evaluationClass = Some("")
+        evaluationClass = Some(""),
+        status = None
       )
 
       Put(s"/index_getjenny_english_0/decisiontable", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {

@@ -12,5 +12,8 @@ case class DTDocumentSearch(from: Option[Int],
                             state: Option[String],
                             evaluationClass: Option[String],
                             queries: Option[String],
-                            searchAlgorithm: Option[SearchAlgorithm.Value]
+                            searchAlgorithm: Option[SearchAlgorithm.Value],
+                            timestampGte: Option[Long] = None, /* min indexing timestamp, None means no lower bound */
+                            timestampLte: Option[Long] = None, /* max indexing timestamp, None means no upper bound*/
+                            status: Option[DTDocumentStatus.Value] = None
                            )

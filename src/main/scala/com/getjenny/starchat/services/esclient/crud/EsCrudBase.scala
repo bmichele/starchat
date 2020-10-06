@@ -197,7 +197,7 @@ class EsCrudBase(val client: ElasticClient, val index: String) {
   def updateByQuery(queryBuilder: QueryBuilder,
                     script: Option[Script], batchSize: Option[Int],
                     refreshPolicy: RefreshPolicy.Value): BulkByScrollResponse = {
-    val request = new UpdateByQueryRequest(index)
+    val request: UpdateByQueryRequest = new UpdateByQueryRequest(index)
     request.setConflicts("proceed")
     request.setQuery(queryBuilder)
     script match {

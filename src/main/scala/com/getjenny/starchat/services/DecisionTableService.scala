@@ -245,8 +245,27 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     )
 
     val boolQueryBuilder: BoolQueryBuilder = QueryBuilders.boolQuery()
+
     documentSearch.state match {
       case Some(value) => boolQueryBuilder.must(QueryBuilders.termQuery("state", value))
+      case _ => ;
+    }
+
+    documentSearch.status match {
+      case Some(value) =>
+        boolQueryBuilder.must(QueryBuilders.termQuery("status", value.toString))
+      case _ => ;
+    }
+
+    documentSearch.timestampGte match {
+      case Some(value) =>
+        boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").gte(value))
+      case _ => ;
+    }
+
+    documentSearch.timestampLte match {
+      case Some(value) =>
+        boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").lte(value))
       case _ => ;
     }
 
@@ -314,7 +333,8 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
           analyzerEvaluateRequest.query
         },
         searchAlgorithm = analyzerEvaluateRequest.searchAlgorithm,
-        evaluationClass = analyzerEvaluateRequest.evaluationClass
+        evaluationClass = analyzerEvaluateRequest.evaluationClass,
+        status = Some(DTDocumentStatus.VALID)
       )
 
     this.search(indexName, dtDocumentSearch)
@@ -445,7 +465,7 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   }
 
   def bulkCreate(indexName: String, documents: IndexedSeq[DTDocument],
-                               check: Boolean = true, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
+                 check: Boolean = true, refreshPolicy: RefreshPolicy.Value): IndexDocumentListResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
 
     val listOfDocRes = indexLanguageCrud.bulkCreate(documents.toList,
@@ -766,6 +786,53 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     createResult
   }
 
+  private[this] def markAsDeletedScriptStr =
+    s"""ctx._source.timestamp = ${System.currentTimeMillis()}L ;
+       |ctx._source.status = "DELETED" ;""".stripMargin
+  private[this] def markAsDeletedScript: Script = new Script(markAsDeletedScriptStr)
+
+  private[this] def markAsDeleted(indexName: String, ids: List[String],
+                                  refreshPolicy: RefreshPolicy.Value) : DeleteDocumentsResult = {
+    val boolQueryBuilder: BoolQueryBuilder = QueryBuilders.boolQuery()
+    //boolQueryBuilder.must(QueryBuilders.termQuery("status", DTDocumentStatus.VALID.toString))
+    val orQuery = QueryBuilders.boolQuery()
+    ids.foreach { cId => orQuery.should(QueryBuilders.termQuery("state", cId)) }
+    boolQueryBuilder.must(orQuery)
+    val updateRes: UpdateByQueryResult = IndexLanguageCrud(elasticClient, indexName)
+      .updateByQuery(queryBuilder = boolQueryBuilder,
+        script = Some(markAsDeletedScript),
+        batchSize = None,
+        refreshPolicy = refreshPolicy)
+
+    if(updateRes.updatedDocs =/= ids.length.toLong ||
+      updateRes.totalDocs =/= updateRes.updatedDocs ||
+      updateRes.timedOut)
+      throw DecisionTableServiceException(s"Errors marking documents as Deleted: Tot(${updateRes.totalDocs}) Updated(${updateRes.updatedDocs}) Ids(${ids.length.toLong})")
+
+    DeleteDocumentsResult(
+      data = ids.map(id => {
+        DeleteDocumentResult(
+          index = indexName,
+          id = id,
+          version = 0,
+          found = true)
+      })
+    )
+  }
+
+  private[this] def markAsDeletedAll(indexName: String,
+                                     refreshPolicy: RefreshPolicy.Value) : DeleteDocumentsSummaryResult = {
+    val updateRes: UpdateByQueryResult = IndexLanguageCrud(elasticClient, indexName)
+      .updateByQuery(queryBuilder = QueryBuilders.matchAllQuery,
+        script = Some(markAsDeletedScript),
+        batchSize = None,
+        refreshPolicy = refreshPolicy)
+    DeleteDocumentsSummaryResult(
+      message = "delete",
+      deleted = updateRes.updatedDocs
+    )
+  }
+
   override def delete(indexName: String, ids: List[String],
                       refreshPolicy: RefreshPolicy.Value): DeleteDocumentsResult = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
@@ -779,6 +846,23 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     val response = indexLanguageCrud.delete(QueryBuilders.matchAllQuery, refreshPolicy)
 
     DeleteDocumentsSummaryResult(message = "delete", deleted = response.getTotal)
+  }
+
+  def deleteOrMark(indexName: String, ids: List[String],
+                   refreshPolicy: RefreshPolicy.Value,
+                   permament: Boolean = false): DeleteDocumentsResult = {
+    if(permament)
+      delete(indexName, ids, refreshPolicy)
+    else
+      markAsDeleted(indexName, ids, refreshPolicy)
+  }
+
+  def deleteOrMarkAll(indexName: String, refreshPolicy: RefreshPolicy.Value,
+                      permament: Boolean = false): DeleteDocumentsSummaryResult = {
+    if(permament)
+      deleteAll(indexName, refreshPolicy)
+    else
+      markAsDeletedAll(indexName, refreshPolicy)
   }
 
 }

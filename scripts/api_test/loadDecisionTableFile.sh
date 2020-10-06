@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-HOST=${1:-http://localhost}
-PORT=${2:-8888}
-INDEX_NAME=${3:-index_getjenny_english_0}
-FILENAME=${4:-"../../doc/decision_table_starchat_doc.csv"}
+INDEX_NAME=${1:-index_getjenny_english_0}
+FILENAME=${2:-"../../doc/decision_table_starchat_doc.csv"}
+HOST=${3:-http://localhost}
+PORT=${4:-8888}
 FORMAT=${5:-csv}
 
 curl -k -v -H "Authorization: Basic $(echo -n 'test_user:p4ssw0rd' | base64)" \

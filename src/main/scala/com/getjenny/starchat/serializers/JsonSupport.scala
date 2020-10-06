@@ -210,8 +210,8 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val responseRequestUserInputFormat = jsonFormat3(ResponseRequestInUserInput)
   implicit val responseRequestInputFormat = jsonFormat9(ResponseRequestIn)
   implicit val responseRequestOutputFormat = jsonFormat14(ResponseRequestOut)
-  implicit val dtDocumentFormat = jsonFormat13(DTDocument)
-  implicit val dtDocumentUpdateFormat = jsonFormat12(DTDocumentUpdate)
+  implicit val dtDocumentFormat = jsonFormat15(DTDocument)
+  implicit val dtDocumentUpdateFormat = jsonFormat13(DTDocumentUpdate)
   implicit val qaAggAnnotationsFormat = jsonFormat1(AggAnnotations)
   implicit val qaAggAnnotationsSearchFormat = jsonFormat2(AggAnnotationsSearch)
   implicit val qaDocumentAnnotationsSearchFormat = jsonFormat20(QADocumentAnnotationsSearch)
@@ -224,7 +224,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val searchQAResultsFormat = jsonFormat4(SearchQADocumentsResults)
   implicit val searchDTResultsFormat = jsonFormat3(SearchDTDocumentsResults)
   implicit val qaDocumentSearchFormat = jsonFormat14(QADocumentSearch)
-  implicit val dtDocumentSearchFormat = jsonFormat9(DTDocumentSearch)
+  implicit val dtDocumentSearchFormat = jsonFormat12(DTDocumentSearch)
   implicit val indexDocumentResultFormat = jsonFormat4(IndexDocumentResult)
   implicit val updateDocumentResultFormat = jsonFormat4(UpdateDocumentResult)
   implicit val deleteDocumentResultFormat = jsonFormat4(DeleteDocumentResult)
@@ -425,6 +425,25 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
           case _ => throw DeserializationException("RefreshPolicy string is invalid")
         }
       case _ => throw DeserializationException("RefreshPolicy string expected")
+    }
+  }
+
+  implicit val dtDocumentStatusUnmarshalling:
+    Unmarshaller[String, DTDocumentStatus.Value] =
+    Unmarshaller.strict[String, DTDocumentStatus.Value] { enumValue =>
+      DTDocumentStatus.value(enumValue)
+    }
+
+  implicit object DTDocumentStatusFormat extends JsonFormat[DTDocumentStatus.Value] {
+    def write(obj: DTDocumentStatus.Value): JsValue = JsString(obj.toString)
+
+    def read(json: JsValue): DTDocumentStatus.Value = json match {
+      case JsString(str) =>
+        DTDocumentStatus.values.find(_.toString === str) match {
+          case Some(t) => t
+          case _ => throw DeserializationException("DTDocumentStatus string is invalid")
+        }
+      case _ => throw DeserializationException("DTDocumentStatus string expected")
     }
   }
 

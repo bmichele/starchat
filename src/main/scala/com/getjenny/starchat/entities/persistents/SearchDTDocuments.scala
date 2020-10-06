@@ -12,6 +12,7 @@ import spray.json.{JsObject, _}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
+import com.getjenny.starchat.entities.io.DTDocumentStatus
 
 /**
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
@@ -91,6 +92,16 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       case None => "default"
     }
 
+    val timestamp: Long = source.get("timestamp") match {
+      case Some(t) => t.asInstanceOf[Long]
+      case None => System.currentTimeMillis
+    }
+
+    val status: DTDocumentStatus.Value = source.get("timestamp") match {
+      case Some(t) => DTDocumentStatus.value(t.asInstanceOf[String])
+      case None => DTDocumentStatus.VALID
+    }
+
     val state = extractId(id)
 
     val document: DTDocument = DTDocument(state = state,
@@ -105,6 +116,8 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       successValue = successValue,
       failureValue = failureValue,
       evaluationClass = Some(evaluationClass),
+      timestamp = timestamp,
+      status = Some(status),
       version = version
     )
 
@@ -166,6 +179,8 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       case _ => "default"
     }
     builder.field("evaluation_class", evaluationClass)
+    builder.field("status", document.status.getOrElse(DTDocumentStatus.VALID).toString)
+    builder.field("timestamp", System.currentTimeMillis())
     builder.endObject()
 
     createId(instance, document.state) -> builder
@@ -210,7 +225,8 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
     document.successValue.foreach(x => builder.field("success_value", x))
     document.failureValue.foreach(x => builder.field("failure_value", x))
     document.evaluationClass.foreach(x => builder.field("evaluation_class", x))
-
+    builder.field("status", document.status.getOrElse(DTDocumentStatus.VALID).toString)
+    builder.field("timestamp", System.currentTimeMillis())
     builder.endObject()
 
     createId(instance, document.state) -> builder

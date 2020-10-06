@@ -15,7 +15,7 @@ import com.getjenny.starchat.entities.persistents.{DecisionTableEntityManager, T
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import com.getjenny.starchat.utils.SystemConfiguration
-import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import scalaz.Scalaz._
 import spray.json.JsObject
 
@@ -50,6 +50,7 @@ case class DecisionTableRuntimeItem(
                                      failureValue: String = "",
 
                                      evaluationClass: String = "default",
+                                     timestamp: Long = -1L,
                                      version: Long = -1L
                                    )
 
@@ -72,13 +73,22 @@ object AnalyzerService extends AbstractDataService {
 
   def getAnalyzers(indexName: String): mutable.LinkedHashMap[String, DecisionTableRuntimeItem] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
-    val query = QueryBuilders.matchAllQuery
+    val lastReloadingTimestamp = analyzersMap.get(indexName) match {
+      case Some(am) => am.lastReloadingTimestamp
+      case _ => 0L
+    }
+    val query: BoolQueryBuilder = QueryBuilders.boolQuery()
+    query.must(QueryBuilders.rangeQuery("timestamp").gte(lastReloadingTimestamp))
+
+    //TODO: delete documents from runtime map
+    query.must(QueryBuilders.termQuery("status", DTDocumentStatus.VALID.toString))
+
     val decisionTableItems = indexLanguageCrud.read(query,
       maxItems = Option(10000),
       version = Option(true),
       fetchSource = Option(Array("state", "execution_order", "max_state_counter",
         "analyzer", "queries", "bubble", "evaluation_class", "action", "action_input",
-        "state_data", "success_value", "failure_value")),
+        "state_data", "success_value", "failure_value", "timestamp")),
       scroll = true,
       entityManager = DecisionTableEntityManager
     )
@@ -104,6 +114,7 @@ object AnalyzerService extends AbstractDataService {
             successValue = item.successValue,
             failureValue = item.failureValue,
             evaluationClass = item.evaluationClass,
+            timestamp = item.timestamp,
             version = item.version)
         (item.state, decisionTableRuntimeItem)
     }.sortWith {

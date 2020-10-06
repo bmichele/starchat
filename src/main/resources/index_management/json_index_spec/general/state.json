@@ -180,6 +180,18 @@
         "store": true,
         "index": true,
         "null_value": "default"
+      },
+      "status": {
+        "type": "keyword",
+        "index": true,
+        "store": true,
+        "null_value": "VALID"
+      },
+      "timestamp": {
+        "type": "date",
+        "format": "epoch_millis",
+        "store": true,
+        "index": true
       }
     }
   }

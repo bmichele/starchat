@@ -1,9 +1,16 @@
 {
   "properties": {
-    "starchatAnnotations": {
-      "type": "object",
-      "dynamic": true,
-      "enabled": true
+    "status": {
+      "type": "keyword",
+      "index": true,
+      "store": true,
+      "null_value": "VALID"
+    },
+    "timestamp": {
+      "type": "date",
+      "format": "epoch_millis",
+      "store": true,
+      "index": true
     }
   }
 }

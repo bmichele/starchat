@@ -15,6 +15,7 @@ import scala.collection.immutable.{List, Map}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
+import com.getjenny.starchat.entities.io.DTDocumentStatus
 
 case class FileToDocumentsException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
@@ -111,6 +112,8 @@ object FileToDocuments extends JsonSupport {
           stateData = stateData,
           successValue = entry(header("successValue")),
           failureValue = entry(header("failureValue")),
+          status = Some(DTDocumentStatus.VALID),
+          timestamp = System.currentTimeMillis(),
           evaluationClass =  evaluationClass
         )
 

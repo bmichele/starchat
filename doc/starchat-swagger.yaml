@@ -1,11 +1,11 @@
 openapi: 3.0.3
 servers:
-  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.3'
+  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.7'
 info:
   description: An Open Source, scalable conversational engine for B2B applications. You can find
     out more about StarChat at [starchat.ai](http://starchat.ai) or on
     [github GetJenny/starchat](https://github.com/GetJenny/starchat).
-  version: "v5.3"
+  version: "v5.7"
   title: StarChat APIs
   contact:
     email: angelo@getjenny.com
@@ -1216,9 +1216,9 @@ paths:
       tags:
         - customer
       deprecated: true
-      summary: delete one or more entries from the DecisionTable
+      summary: delete or mark as "DELETED" one or more entries from the DecisionTable
       operationId: delete_decisiontable_ids
-      description: delete documents from the DecisionTable. The index must exists and the customer has write permissions on it.
+      description: delete or mark as "DELETED" documents from the DecisionTable. The index must exists and the customer has write permissions on it.
       parameters:
         - in: path
           name: index_name
@@ -1246,6 +1246,15 @@ paths:
           required: false
           schema:
             type: string
+        - in: query
+          name: permanent
+          description: >-
+            if `true` delete the documents permanently
+            if `false` mark the documents as "DELETED"
+            default is `false`
+          required: false
+          schema:
+            type: boolean
       responses:
         '200':
           description: success
@@ -1262,8 +1271,8 @@ paths:
       tags:
         - customer
       operationId: post_decisiontable_bulk_delete
-      summary: delete one or more entries from the DecisionTable
-      description: delete documents from the DecisionTable. The index must exists and the customer has write permissions on it.
+      summary: delete permanently or mark as "DELETED" one or more entries from the DecisionTable
+      description: delete permanently or mark as "DELETED" documents from the DecisionTable. The index must exists and the customer has write permissions on it.
       parameters:
         - in: path
           name: index_name
@@ -1281,6 +1290,15 @@ paths:
           required: false
           schema:
             type: string
+        - in: query
+          name: permanent
+          description: >-
+            if `true` delete the documents permanently
+            if `false` mark the documents as "DELETED"
+            default is `false`
+          required: false
+          schema:
+            type: boolean
       requestBody:
         content:
           application/json:
@@ -1319,9 +1337,9 @@ paths:
     delete:
       tags:
         - customer
-      summary: delete all entries from the DecisionTable
+      summary: delete permanently or mark as "DELETED" all entries from the DecisionTable
       operationId: delete_decisiontable_all
-      description: delete all documents from the DecisionTable. The index must exists and the customer has write permissions on it.
+      description: delete permanently or mark as "DELETED" all documents from the DecisionTable. The index must exists and the customer has write permissions on it.
       parameters:
         - in: path
           name: index_name
@@ -1339,6 +1357,15 @@ paths:
           required: false
           schema:
             type: string
+        - in: query
+          name: permanent
+          description: >-
+            if `true` delete the documents permanently
+            if `false` mark the documents as "DELETED"
+            default is `false`
+          required: false
+          schema:
+            type: boolean
       responses:
         '200':
           description: success
@@ -3360,6 +3387,18 @@ components:
           format: integer
           description: the version of the document, this field is automatically calculated and should not be used for indexing requests.
           example: 12
+        timestamp:
+          type: number
+          format: integer
+          description: "last edit timestamp"
+          example: 1601922672000
+        status:
+          type: string
+          description: indicate if the state was deleted or is a valid state
+          enum:
+            - DELETED
+            - VALID
+          example: VALID
     DTDocumentUpdate:
       type: object
       required:
@@ -3419,6 +3458,18 @@ components:
           type: string
           description: the evaluation class for the state, used to apply filters during evaluation
           example: default
+        timestamp:
+          type: number
+          format: integer
+          description: "last edit timestamp"
+          example: 1601922672000
+        status:
+          type: string
+          description: indicate if the state was deleted or is a valid state
+          enum:
+            - DELETED
+            - VALID
+          example: VALID
     DTAnalyzerLoad:
       type: object
       properties:
@@ -3774,6 +3825,23 @@ components:
           example: "hello, when should I renew my insurance?"
         searchAlgorithm:
           $ref: '#/components/schemas/SearchAlgorithm'
+        timestampGte:
+          type: number
+          format: integer
+          description: "min indexing timestamp, None means no lower bound "
+          example: 1601922654000
+        timestampLte:
+          type: number
+          format: integer
+          description: "max indexing timestamp, None means no upper bound "
+          example: 1601922672000
+        status:
+          type: string
+          description: indicate if the state was deleted or is a valid state
+          enum:
+            - DELETED
+            - VALID
+          example: VALID
     permission:
       type: string
       description: permissions for the endpoints
@@ -5700,7 +5768,7 @@ components:
           example: 10
         coreData:
           $ref: '#/components/schemas/QADocumentCoreSearch'
-        aggnotations:
+        aggAnotations:
           $ref: '#/components/schemas/AggAnnotationsSearch'
         annotations:
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'

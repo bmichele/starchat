@@ -16,6 +16,7 @@ case class DecisionTableItem(state: String,
                              executionOrder: Int = 0,
                              maxStateCounter: Int = -1,
                              evaluationClass: String = "default",
+                             timestamp: Long = -1L,
                              version: Long = -1L,
                              queries: List[String] = List.empty[String],
                              bubble: String,
@@ -96,6 +97,11 @@ object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
       case None => ""
     }
 
+    val timestamp: Long = source.get("timestamp") match {
+      case Some(t) => t.asInstanceOf[Long]
+      case None => System.currentTimeMillis()
+    }
+
     val state = extractId(id)
 
     val decisionTableRuntimeItem: DecisionTableItem =
@@ -111,6 +117,7 @@ object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
         stateData = stateData,
         successValue = successValue,
         failureValue = failureValue,
+        timestamp = timestamp,
         version = version)
     decisionTableRuntimeItem
   }
