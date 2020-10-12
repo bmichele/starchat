@@ -3,8 +3,7 @@ servers:
   - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.7'
 info:
   description: An Open Source, scalable conversational engine for B2B applications. You can find
-    out more about StarChat at [starchat.ai](http://starchat.ai) or on
-    [github GetJenny/starchat](https://github.com/GetJenny/starchat).
+    out more about StarChat at [github GetJenny/starchat](https://github.com/GetJenny/starchat).
   version: "v5.7"
   title: StarChat APIs
   contact:
@@ -1448,6 +1447,7 @@ paths:
           description: execute an incremental update instead of compiling all the analyzers, default is true
           schema:
             type: boolean
+            default: true
           required: false
       responses:
         '200':
@@ -1611,6 +1611,7 @@ paths:
           description: execute an incremental update instead of compiling all the analyzers, default is true
           schema:
             type: boolean
+            default: true
           required: false
       responses:
         '202':
@@ -1649,6 +1650,7 @@ paths:
           description: execute an incremental update instead of compiling all the analyzers, default is true
           schema:
             type: boolean
+            default: true
           required: false
       responses:
         '200':
