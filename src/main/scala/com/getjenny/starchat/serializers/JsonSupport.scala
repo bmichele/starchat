@@ -211,7 +211,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val responseRequestInputFormat = jsonFormat9(ResponseRequestIn)
   implicit val responseRequestOutputFormat = jsonFormat14(ResponseRequestOut)
   implicit val dtDocumentFormat = jsonFormat15(DTDocument)
-  implicit val dtDocumentUpdateFormat = jsonFormat13(DTDocumentUpdate)
+  implicit val dtDocumentUpdateFormat = jsonFormat14(DTDocumentUpdate)
   implicit val qaAggAnnotationsFormat = jsonFormat1(AggAnnotations)
   implicit val qaAggAnnotationsSearchFormat = jsonFormat2(AggAnnotationsSearch)
   implicit val qaDocumentAnnotationsSearchFormat = jsonFormat20(QADocumentAnnotationsSearch)
@@ -288,7 +288,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val userFormat = jsonFormat4(User)
   implicit val userUpdateFormat = jsonFormat4(UserUpdate)
   implicit val userDelete = jsonFormat1(UserId)
-  implicit val dtReloadTimestamp = jsonFormat2(DtReloadTimestamp)
+  implicit val dtReloadTimestamp = jsonFormat3(DtReloadTimestamp)
   implicit val openCloseIndexFormat = jsonFormat5(OpenCloseIndex)
 
   implicit val commonOrSpecificSearchUnmarshalling:

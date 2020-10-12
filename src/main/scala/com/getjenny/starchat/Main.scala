@@ -94,6 +94,9 @@ final class StarChatService(parameters: Option[Parameters] = None) extends RestI
 
   cronDeleteInstanceService.scheduleAction()
   cronCleanDtLoadingRecordsService.scheduleAction()
+
+  /* activate the job to clean the deleted states on DT */
+  cronCleanDeletedDecisionTableStatesService.scheduleAction()
 }
 
 object Main extends App {

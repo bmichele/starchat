@@ -27,7 +27,7 @@ case class DTDocument(override val state: String,
                       evaluationClass: Option[String] = Some("default"),
                       version: Option[Long] = Some(0L),
                       status: Option[DTDocumentStatus.Value] = Some(DTDocumentStatus.VALID),
-                      timestamp: Long = 0L
+                      timestamp: Option[Long] = Some(System.currentTimeMillis())
                      ) extends DTDocumentBase
 
 case class DTDocumentUpdate(override val state: String,
@@ -42,6 +42,7 @@ case class DTDocumentUpdate(override val state: String,
                             successValue: Option[String],
                             failureValue: Option[String],
                             evaluationClass: Option[String],
-                            status: Option[DTDocumentStatus.Value]
+                            status: Option[DTDocumentStatus.Value],
+                            timestamp: Option[Long] = Some(System.currentTimeMillis())
                            ) extends DTDocumentBase
 

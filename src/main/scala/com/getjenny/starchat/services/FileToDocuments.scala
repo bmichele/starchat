@@ -113,7 +113,7 @@ object FileToDocuments extends JsonSupport {
           successValue = entry(header("successValue")),
           failureValue = entry(header("failureValue")),
           status = Some(DTDocumentStatus.VALID),
-          timestamp = System.currentTimeMillis(),
+          timestamp = Some(System.currentTimeMillis()),
           evaluationClass =  evaluationClass
         )
 

@@ -6,7 +6,7 @@ package com.getjenny.starchat
 
 import akka.http.scaladsl.server.Route
 import com.getjenny.starchat.resources._
-import com.getjenny.starchat.services._
+import com.getjenny.starchat.services.{CronCleanDeletedDecisionTableStatesService, _}
 
 import scala.concurrent.ExecutionContext
 
@@ -39,6 +39,7 @@ trait RestInterface extends RootAPIResource
   lazy val cronCleanDeadNodesService: CronCleanDeadNodesService.type = CronCleanDeadNodesService
   lazy val cronNodeAliveSignalService: CronNodeAliveSignalService.type = CronNodeAliveSignalService
   lazy val cronCleanDtLoadingRecordsService: CronCleanDtLoadingRecordsService.type = CronCleanDtLoadingRecordsService
+  lazy val cronCleanDeletedDecisionTableStatesService: CronCleanDeletedDecisionTableStatesService.type = CronCleanDeletedDecisionTableStatesService
   lazy val cronDeleteInstanceService: CronDeleteInstanceService.type = CronDeleteInstanceService
   lazy val cronInitializeSystemIndicesService: CronInitializeSystemIndicesService.type = CronInitializeSystemIndicesService
   lazy val systemService: InstanceRegistryService.type = InstanceRegistryService

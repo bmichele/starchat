@@ -14,7 +14,9 @@ trait CronService {
   protected[this] val analyzerService: AnalyzerService.type = AnalyzerService
   protected[this] val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
   protected[this] val clusterNodesService: ClusterNodesService.type = ClusterNodesService
+  protected[this] val decisionTableService: DecisionTableService.type = DecisionTableService
   protected[this] val systemIndexManagementService: SystemIndexManagementService.type = SystemIndexManagementService
+  protected[this] val languageIndexManagementService: LanguageIndexManagementService.type = LanguageIndexManagementService
   protected[this] val nodeDtLoadingStatusService: NodeDtLoadingStatusService.type = NodeDtLoadingStatusService
 
   protected[this] val tickMessage = "tick"

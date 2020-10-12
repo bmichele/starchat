@@ -2,6 +2,7 @@ package com.getjenny.starchat.entities.persistents
 
 import java.util
 
+import com.getjenny.starchat.entities.io.DTDocumentStatus
 import com.getjenny.starchat.utils.Base64
 import org.elasticsearch.action.get.GetResponse
 import org.elasticsearch.action.search.SearchResponse
@@ -16,6 +17,7 @@ case class DecisionTableItem(state: String,
                              executionOrder: Int = 0,
                              maxStateCounter: Int = -1,
                              evaluationClass: String = "default",
+                             status: DTDocumentStatus.Value = DTDocumentStatus.VALID,
                              timestamp: Long = -1L,
                              version: Long = -1L,
                              queries: List[String] = List.empty[String],
@@ -97,6 +99,11 @@ object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
       case None => ""
     }
 
+    val status: DTDocumentStatus.Value = source.get("status") match {
+      case Some(t) => DTDocumentStatus.value(t.asInstanceOf[String])
+      case None => DTDocumentStatus.VALID
+    }
+
     val timestamp: Long = source.get("timestamp") match {
       case Some(t) => t.asInstanceOf[Long]
       case None => System.currentTimeMillis()
@@ -117,6 +124,7 @@ object DecisionTableEntityManager extends ReadEntityManager[DecisionTableItem] {
         stateData = stateData,
         successValue = successValue,
         failureValue = failureValue,
+        status = status,
         timestamp = timestamp,
         version = version)
     decisionTableRuntimeItem

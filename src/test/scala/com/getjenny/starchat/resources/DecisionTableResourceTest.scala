@@ -369,7 +369,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
       )
 
       Post("/index_getjenny_english_0/get_next_response", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
+        status shouldEqual StatusCodes.NotFound
         val response = responseAs[ResponseRequestOutOperationResult]
       }
     }
@@ -446,7 +446,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.Created
       }
 
-      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
 
@@ -500,7 +500,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.Created
       }
 
-      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
 
@@ -604,7 +604,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.Created
       }
 
-      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
 
@@ -656,7 +656,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.Created
       }
 
-      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
 
@@ -682,7 +682,22 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 200 and call an http atom" in {
-      val decisionTableRequest = DTDocument(
+      val decisionTableRequest1 = DTDocument(
+        state = "thanks_email",
+        executionOrder = 0,
+        maxStateCount = 0,
+        analyzer = "",
+        queries = List.empty[String],
+        bubble = "Thank you, your email is: %email%",
+        action = "",
+        actionInput = List.empty,
+        stateData = Map.empty[String, String],
+        successValue = "",
+        failureValue = "",
+        evaluationClass = Some("default")
+      )
+
+      val decisionTableRequest2 = DTDocument(
         state = "forgot_password",
         executionOrder = 0,
         maxStateCount = 0,
@@ -694,26 +709,25 @@ class DecisionTableResourceTest extends TestEnglishBase {
         stateData = Map("url" -> "www.getjenny.com"),
         successValue = "thanks_email",
         failureValue = "dont_understand",
-        evaluationClass = Some("default"),
-        version = None
+        evaluationClass = Some("default")
       )
 
-      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest1) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
       }
 
-      Post(s"/index_getjenny_english_0/decisiontable/analyzer", decisionTableRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Post(s"/index_getjenny_english_0/decisiontable?refresh=wait_for", decisionTableRequest2) ~> addCredentials(testUserCredentials) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+      }
+
+      Post(s"/index_getjenny_english_0/decisiontable/analyzer?propagate=true&incremental=true") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
         traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
         userInput = Some(ResponseRequestInUserInput(text = Some("my email is this.is.test@email.com"))),
-        state = Some(List("forgot_password")),
-        data = None,
         threshold = Some(0.5),
-        evaluationClass = None,
-        maxResults = None,
         searchAlgorithm = Some(SearchAlgorithm.NGRAM3)
       )
 
@@ -729,7 +743,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
 
   it should {
     "return an HTTP code 200 when deleting a document" in {
-      Delete("/index_getjenny_english_0/decisiontable?id=forgot_password&refresh=wait_for") ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Delete("/index_getjenny_english_0/decisiontable?id=forgot_password&refresh=wait_for&permanent=true") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsResult]
         val headDeleteDocumentResult = response.data.headOption.getOrElse(fail)
@@ -756,16 +770,16 @@ class DecisionTableResourceTest extends TestEnglishBase {
     "return an HTTP code 200 when bulk deleting documents" in {
       val request = DocsIds(ids = List("hello2","hello3"))
       Post("/index_getjenny_english_0/decisiontable/delete", request) ~> addCredentials(testUserCredentials) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val response = responseAs[DeleteDocumentsResult]
-          response.data.size should be (2)
+        status shouldEqual StatusCodes.OK
+        val response = responseAs[DeleteDocumentsResult]
+        response.data.size should be (2)
       }
     }
   }
 
   it should {
     "return an HTTP code 200 when deleting all documents" in {
-      Delete("/index_getjenny_english_0/decisiontable/all") ~> addCredentials(testUserCredentials) ~> routes ~> check {
+      Delete("/index_getjenny_english_0/decisiontable/all?permanent=true") ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[DeleteDocumentsSummaryResult]
         response.deleted should be (21)

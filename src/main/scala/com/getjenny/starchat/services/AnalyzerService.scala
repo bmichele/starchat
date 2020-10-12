@@ -50,6 +50,7 @@ case class DecisionTableRuntimeItem(
                                      failureValue: String = "",
 
                                      evaluationClass: String = "default",
+                                     status: DTDocumentStatus.Value = DTDocumentStatus.VALID,
                                      timestamp: Long = -1L,
                                      version: Long = -1L
                                    )
@@ -71,24 +72,24 @@ object AnalyzerService extends AbstractDataService {
   val dtMaxTables: Long = elasticClient.config.getLong("es.dt_max_tables")
   private[this] val atomConfigurationBasePath = "starchat.atom-values"
 
-  def getAnalyzers(indexName: String): mutable.LinkedHashMap[String, DecisionTableRuntimeItem] = {
+  def getAnalyzers(indexName: String, complete: Boolean = false): mutable.LinkedHashMap[String, DecisionTableRuntimeItem] = {
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val lastReloadingTimestamp = analyzersMap.get(indexName) match {
       case Some(am) => am.lastReloadingTimestamp
       case _ => 0L
     }
     val query: BoolQueryBuilder = QueryBuilders.boolQuery()
-    query.must(QueryBuilders.rangeQuery("timestamp").gte(lastReloadingTimestamp))
 
-    //TODO: delete documents from runtime map
-    query.must(QueryBuilders.termQuery("status", DTDocumentStatus.VALID.toString))
+    if(! complete) { // if complete is false, take only the items modified more recently.
+      query.must(QueryBuilders.rangeQuery("timestamp").gte(lastReloadingTimestamp))
+    }
 
     val decisionTableItems = indexLanguageCrud.read(query,
       maxItems = Option(10000),
       version = Option(true),
       fetchSource = Option(Array("state", "execution_order", "max_state_counter",
         "analyzer", "queries", "bubble", "evaluation_class", "action", "action_input",
-        "state_data", "success_value", "failure_value", "timestamp")),
+        "state_data", "success_value", "failure_value", "status", "timestamp")),
       scroll = true,
       entityManager = DecisionTableEntityManager
     )
@@ -114,6 +115,7 @@ object AnalyzerService extends AbstractDataService {
             successValue = item.successValue,
             failureValue = item.failureValue,
             evaluationClass = item.evaluationClass,
+            status = item.status,
             timestamp = item.timestamp,
             version = item.version)
         (item.state, decisionTableRuntimeItem)
@@ -131,67 +133,78 @@ object AnalyzerService extends AbstractDataService {
                                                message: String)
 
   def buildAnalyzers(indexName: String,
-                     analyzersMap: mutable.LinkedHashMap[String, DecisionTableRuntimeItem],
+                     persistentAnalyzersMap: mutable.LinkedHashMap[String, DecisionTableRuntimeItem],
                      incremental: Boolean = true):
   mutable.LinkedHashMap[String, DecisionTableRuntimeItem] = {
-    val inPlaceIndexAnalyzers = AnalyzerService.analyzersMap.getOrElse(indexName,
+    val newInPlaceIndexAnalyzers = AnalyzerService.analyzersMap.getOrElse(indexName,
       ActiveAnalyzers(mutable.LinkedHashMap.empty[String, DecisionTableRuntimeItem]))
-    val result = analyzersMap.map { case (stateId, runtimeItem) =>
+    val newInPlaceAnalyzersMap = if(incremental) {
+      newInPlaceIndexAnalyzers.analyzerMap.clone()
+    } else {
+      mutable.LinkedHashMap.empty[String, DecisionTableRuntimeItem]
+    }
+    persistentAnalyzersMap.foreach { case (stateId, runtimeItem) =>
       val analyzerDeclaration = runtimeItem.analyzer.declaration
-      val version: Long = runtimeItem.version
-      val buildAnalyzerResult: BuildAnalyzerResult =
-        if (analyzerDeclaration =/= "") {
-          val restrictedArgs: Map[String, String] = SystemConfiguration
-            .createMapFromPath(atomConfigurationBasePath) + ("index_name" -> indexName)
-          val inPlaceAnalyzer: DecisionTableRuntimeItem =
-            inPlaceIndexAnalyzers.analyzerMap.getOrElse(stateId, DecisionTableRuntimeItem())
-          if (incremental && inPlaceAnalyzer.version > 0 && inPlaceAnalyzer.version === version) {
-            log.debug("Analyzer already built index({}) state({}) version({}:{})",
-              indexName, stateId, version, inPlaceAnalyzer.version)
-            BuildAnalyzerResult(analyzer = inPlaceAnalyzer.analyzer.analyzer,
-              version = version, message = "Analyzer already built: " + stateId,
-              build = inPlaceAnalyzer.analyzer.build)
-          } else {
-            Try(new StarChatAnalyzer(analyzerDeclaration, restrictedArgs)) match {
-              case Success(analyzerObject) =>
-                val msg = "Analyzer successfully built index(" + indexName + ") state(" + stateId +
-                  ") version(" + version + ":" + inPlaceAnalyzer.version + ")"
-                log.debug(msg)
-                BuildAnalyzerResult(analyzer = Some(analyzerObject),
-                  version = version, message = msg, build = true)
-              case Failure(e) =>
-                val msg = "Error building analyzer index(" + indexName + ") state(" + stateId +
-                  ") declaration(" + analyzerDeclaration +
-                  ") version(" + version + ":" + inPlaceAnalyzer.version + ") : " + e.getMessage
-                log.error(msg)
-                BuildAnalyzerResult(analyzer = None, version = -1L, message = msg, build = false)
+      runtimeItem.status match {
+        case DTDocumentStatus.DELETED =>
+          newInPlaceAnalyzersMap.remove(stateId)
+        case DTDocumentStatus.VALID =>
+          val currentState: DecisionTableRuntimeItem =
+            newInPlaceAnalyzersMap.getOrElse(stateId, DecisionTableRuntimeItem())
+          val requireReloading: Boolean = currentState.version < 0 ||
+            currentState.version =/= runtimeItem.version ||
+            currentState.timestamp < runtimeItem.timestamp
+          if(requireReloading) {
+            val analyzerItem = if(incremental && analyzerDeclaration =/= "" &&
+              currentState.analyzer.declaration === runtimeItem.analyzer.declaration) {
+              log.debug("Analyzer already built index({}) state({}) version({}:{})",
+                indexName, stateId, runtimeItem.version, currentState.version)
+              currentState.analyzer
+            } else if(analyzerDeclaration =/= "") {
+              val restrictedArgs: Map[String, String] = SystemConfiguration
+                .createMapFromPath(atomConfigurationBasePath) + ("index_name" -> indexName)
+              Try(new StarChatAnalyzer(analyzerDeclaration, restrictedArgs)) match {
+                case Success(analyzerObject) =>
+                  val msg = "Analyzer successfully built index(" + indexName + ") state(" + stateId +
+                    ") version(" + runtimeItem.version + ")"
+                  log.debug(msg)
+                  AnalyzerItem(declaration = analyzerDeclaration,
+                    analyzer = Some(analyzerObject), build = true, message = msg)
+                case Failure(e) =>
+                  val msg = "Error building analyzer index(" + indexName + ") state(" + stateId +
+                    ") declaration(" + analyzerDeclaration +
+                    ") version(" + runtimeItem.version + ") : " + e.getMessage
+                  log.error(msg)
+                  AnalyzerItem(declaration = analyzerDeclaration, analyzer = None, build = false, message = msg)
+              }
+            } else {
+              val msg = "index(" + indexName + ") : state(" + stateId + ") : analyzer declaration is empty"
+              log.debug(msg)
+              AnalyzerItem(declaration = analyzerDeclaration,
+                analyzer = None, message = msg, build = true)
             }
-          }
-        } else {
-          val msg = "index(" + indexName + ") : state(" + stateId + ") : analyzer declaration is empty"
-          log.debug(msg)
-          BuildAnalyzerResult(analyzer = None, version = version, message = msg, build = true)
-        }
 
-      val decisionTableRuntimeItem = runtimeItem.copy(
-        analyzer =
-          AnalyzerItem(
-            declaration = analyzerDeclaration,
-            build = buildAnalyzerResult.build,
-            analyzer = buildAnalyzerResult.analyzer,
-            message = buildAnalyzerResult.message
-          )
-      )
-      (stateId, decisionTableRuntimeItem)
-    }.filter { case (_, decisionTableRuntimeItem) => decisionTableRuntimeItem.analyzer.build }
-    result
+            if(analyzerItem.build) {
+              val decisionTableRuntimeItem = runtimeItem.copy(
+                analyzer = analyzerItem
+              )
+              newInPlaceAnalyzersMap.put(stateId, decisionTableRuntimeItem)
+            }
+          } // else no reloading required
+        case _ => throw AnalyzerServiceException(s"invalid Status: ${runtimeItem.status}")
+      }
+    }
+    newInPlaceAnalyzersMap
   }
 
   def loadAnalyzers(indexName: String, incremental: Boolean = true, propagate: Boolean = false): DTAnalyzerLoad = {
-    val analyzerMap = buildAnalyzers(indexName = indexName,
-      analyzersMap = getAnalyzers(indexName), incremental = incremental)
+    val persistentsAnalyzers = getAnalyzers(indexName = indexName, complete = ! incremental)
 
-    val dtAnalyzerLoad = DTAnalyzerLoad(numOfEntries = analyzerMap.size)
+    val analyzerMap = buildAnalyzers(indexName = indexName,
+      persistentAnalyzersMap = persistentsAnalyzers,
+      incremental = incremental)
+
+    val   dtAnalyzerLoad = DTAnalyzerLoad(numOfEntries = analyzerMap.size)
     val activeAnalyzers: ActiveAnalyzers = ActiveAnalyzers(analyzerMap = analyzerMap,
       lastReloadingTimestamp = System.currentTimeMillis)
     if (AnalyzerService.analyzersMap.contains(indexName)) {
@@ -271,7 +284,6 @@ object AnalyzerService extends AbstractDataService {
           case _ =>
             Some(AnalyzerEvaluateResponse(build = true,
               value = 0.0, data = Option.empty[AnalyzersData], buildMessage = "success"))
-
         }
     }
   }

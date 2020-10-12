@@ -106,7 +106,7 @@ trait LanguageIndexManagementResource extends StarChatResource {
       pathPrefix(languageIndexManagement ~ Slash ~ """(mappings|settings)""".r) { mappingOrSettings =>
         pathEnd {
           put {
-            parameters('index_name, 'indexSuffix.as[String].*) { (languageIndex, indexSuffix) =>
+            parameters("index_name", "indexSuffix".as[String].*) { (languageIndex, indexSuffix) =>
               authenticateBasicAsync(realm = authRealm, authenticator = authenticator.authenticator) { user =>
                 authorizeAsync(_ =>
                   authenticator.hasPermissions(user, languageIndex, Permissions.admin)) {

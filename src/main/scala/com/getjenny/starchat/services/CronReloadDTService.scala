@@ -39,7 +39,8 @@ object CronReloadDTService extends CronService {
               if (dtReloadEntry.timestamp > 0 && localReloadIndexTimestamp < dtReloadEntry.timestamp) {
                 log.info("dt reloading for index(" + dtReloadEntry.indexName +
                   ") timestamp (" + startUpdateTimestamp + ") : " + dtReloadEntry.timestamp)
-                Try(analyzerService.loadAnalyzers(indexName = dtReloadEntry.indexName)) match {
+                Try(analyzerService.loadAnalyzers(indexName = dtReloadEntry.indexName,
+                  incremental = dtReloadEntry.incremental)) match {
                   case Success(relRes) =>
                     updateTimestamp = math.max(updateTimestamp, localReloadIndexTimestamp)
                     log.info("Analyzer loaded for index(" + dtReloadEntry + "), timestamp (" +

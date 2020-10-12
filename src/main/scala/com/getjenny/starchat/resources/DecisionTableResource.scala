@@ -43,13 +43,15 @@ trait DecisionTableResource extends StarChatResource {
                   extractRequest { request =>
                     parameters("reset".as[Boolean] ? true,
                       "propagate".as[Boolean] ? true,
-                      "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { (reset, propagate, refreshPolicy) =>
+                      "incremental".as[Boolean] ? true,
+                      "refresh".as[RefreshPolicy.Value] ? RefreshPolicy.`wait_for`) { (reset, propagate, incremental, refreshPolicy) =>
                       val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
                       onCompleteWithBreakerFuture(breaker)(
                         decisionTableService.cloneIndexContentReindex(
                           indexNameSrc = indexNameSrc,
                           indexNameDst = indexNameDst,
                           reset = reset,
+                          incremental = incremental,
                           propagate = propagate,
                           refreshPolicy = refreshPolicy
                         )
@@ -124,7 +126,7 @@ trait DecisionTableResource extends StarChatResource {
                           file = file, skipLines = 0, refreshPolicy = RefreshPolicy.`wait_for`)
                       } else if (fileType === "json") {
                         decisionTableService.indexJSONFileIntoDecisionTable(indexName = indexName, file = file,
-                          refreshPolicy = RefreshPolicy.`false`)
+                          refreshPolicy = RefreshPolicy.`wait_for`)
                       } else {
                         throw DecisionTableServiceException("Bad or unsupported file format: " + fileType)
                       }
@@ -135,7 +137,7 @@ trait DecisionTableResource extends StarChatResource {
                           t
                         })
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableUploadCSVRoutes",
+                        log.error(logTemplate(user.id, indexName, "decisionTableUploadFilesRoutes",
                           request.method, request.uri), e)
                         if (file.exists()) {
                           file.delete()
@@ -236,19 +238,23 @@ trait DecisionTableResource extends StarChatResource {
             authorizeAsync(_ =>
               authenticator.hasPermissions(user, indexName, Permissions.write)) {
               extractRequest { request =>
-                val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                onCompleteWithBreakerFuture(breaker)(dtReloadService.updateTimestamp(indexName)) {
-                  case Success(t) =>
-                    completeResponse(StatusCodes.Accepted, StatusCodes.BadRequest, Option {
-                      t
-                    })
-                  case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, "decisionTableAsyncReloadRoutes",
-                      request.method, request.uri), e)
-                    completeResponse(StatusCodes.BadRequest,
-                      Option {
-                        ReturnMessageData(code = 108, message = e.getMessage)
+                parameters("incremental".as[Boolean] ? true) { (incremental) =>
+                  val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                  onCompleteWithBreakerFuture(breaker)(
+                    dtReloadService.updateTimestamp(dtIndexName = indexName,
+                      incremental = incremental)) {
+                    case Success(t) =>
+                      completeResponse(StatusCodes.Accepted, StatusCodes.BadRequest, Option {
+                        t
                       })
+                    case Failure(e) =>
+                      log.error(logTemplate(user.id, indexName, "decisionTableAsyncReloadRoutes",
+                        request.method, request.uri), e)
+                      completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          ReturnMessageData(code = 108, message = e.getMessage)
+                        })
+                  }
                 }
               }
             }
@@ -293,7 +299,7 @@ trait DecisionTableResource extends StarChatResource {
                 extractRequest { request =>
                   parameters("propagate".as[Boolean] ? true,
                     "incremental".as[Boolean] ? true) { (propagate, incremental) =>
-                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 120.seconds)
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker(callTimeout = 180.seconds)
                     onCompleteWithBreakerFuture(breaker)(analyzerService.loadAnalyzers(indexName = indexName,
                       incremental = incremental, propagate = propagate)) {
                       case Success(t) =>
@@ -382,7 +388,7 @@ trait DecisionTableResource extends StarChatResource {
                           case e@(_: AnalyzerEvaluationException) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "Unable to complete the request, due to analyzer")
-                            log.error(message, e)
+                            log.error(message + " : " + e.getMessage)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(
@@ -395,8 +401,8 @@ trait DecisionTableResource extends StarChatResource {
                           case e@(_: ResponseServiceDocumentNotFoundException) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "Requested document not found")
-                            log.error(message, e)
-                            completeResponse(StatusCodes.BadRequest,
+                            log.error(message + " : " + e.getMessage)
+                            completeResponse(StatusCodes.NotFound,
                               Option {
                                 io.ResponseRequestOutOperationResult(
                                   ReturnMessageData(code = 114, message = message),
@@ -408,7 +414,7 @@ trait DecisionTableResource extends StarChatResource {
                           case e@(_: CircuitBreakerOpenRejection) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "The request the takes too much time")
-                            log.error(message, e)
+                            log.error(message + " : " + e.getMessage)
                             completeResponse(StatusCodes.RequestTimeout,
                               Option {
                                 io.ResponseRequestOutOperationResult(
@@ -421,7 +427,7 @@ trait DecisionTableResource extends StarChatResource {
                           case NonFatal(nonFatalE) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "Unable to complete the request")
-                            log.error(message, e)
+                            log.error(message + " : " + e.getMessage)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(

@@ -7,9 +7,10 @@
         "store": true,
         "index": true
       },
-      "enabled": {"type":  "boolean"},
-      "delete": {"type":  "boolean"},
-      "deleted": {"type":  "boolean"}
+      "enabled": {"type": "boolean"},
+      "delete": {"type": "boolean"},
+      "deleted": {"type": "boolean"},
+      "incremental": {"type": "boolean"}
     }
   }
 }

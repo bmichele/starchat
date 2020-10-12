@@ -97,7 +97,7 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       case None => System.currentTimeMillis
     }
 
-    val status: DTDocumentStatus.Value = source.get("timestamp") match {
+    val status: DTDocumentStatus.Value = source.get("status") match {
       case Some(t) => DTDocumentStatus.value(t.asInstanceOf[String])
       case None => DTDocumentStatus.VALID
     }
@@ -116,7 +116,7 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
       successValue = successValue,
       failureValue = failureValue,
       evaluationClass = Some(evaluationClass),
-      timestamp = timestamp,
+      timestamp = Some(timestamp),
       status = Some(status),
       version = version
     )
@@ -226,7 +226,7 @@ class SearchDTDocumentEntityManager(extractor: (Map[String, SearchHits], Map[Str
     document.failureValue.foreach(x => builder.field("failure_value", x))
     document.evaluationClass.foreach(x => builder.field("evaluation_class", x))
     builder.field("status", document.status.getOrElse(DTDocumentStatus.VALID).toString)
-    builder.field("timestamp", System.currentTimeMillis())
+    builder.field("timestamp", document.timestamp.getOrElse(System.currentTimeMillis()))
     builder.endObject()
 
     createId(instance, document.state) -> builder

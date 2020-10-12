@@ -10,6 +10,6 @@ curl -v -H "Authorization: Basic $(echo -n 'admin:adminp4ssw0rd' | base64)" \
 	\"userInput\": { \"text\": \"${QUERY}\" },
 	\"data\": {\"varname2\": \"value1\", \"varname2\": \"value2\"},
 	\"threshold\": 0.0,
-	\"maxResults\": 4,
+	\"maxResults\": 1,
 	\"searchAlgorithm\": \"${ALGORITHM}\"
 }"

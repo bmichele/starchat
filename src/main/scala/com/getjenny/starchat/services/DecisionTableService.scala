@@ -17,7 +17,7 @@ import com.getjenny.starchat.services.esclient.{CloneDtElasticClient, DecisionTa
 import com.getjenny.starchat.utils.Index
 import org.apache.lucene.search.join._
 import org.elasticsearch.action.search.SearchType
-import org.elasticsearch.client.RequestOptions
+import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.index.query.{BoolQueryBuilder, InnerHitBuilder, QueryBuilder, QueryBuilders}
 import org.elasticsearch.index.reindex.{BulkByScrollResponse, DeleteByQueryRequest, ReindexRequest}
 import org.elasticsearch.script.Script
@@ -678,6 +678,7 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
 
   def cloneIndexContentReindex(indexNameSrc: String, indexNameDst: String,
                                reset: Boolean = true, propagate: Boolean = true,
+                               incremental: Boolean = true,
                                refreshPolicy: RefreshPolicy.Value
                               ): ReindexResult = {
 
@@ -746,7 +747,7 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     }
 
     if(propagate)
-      instanceRegistryService.updateTimestamp(dtIndexName = indexNameDst)
+      instanceRegistryService.updateTimestamp(dtIndexName = indexNameDst, incremental = incremental)
 
     ReindexResult(
       created = bulkResponse2.getCreated,
@@ -794,7 +795,6 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   private[this] def markAsDeleted(indexName: String, ids: List[String],
                                   refreshPolicy: RefreshPolicy.Value) : DeleteDocumentsResult = {
     val boolQueryBuilder: BoolQueryBuilder = QueryBuilders.boolQuery()
-    //boolQueryBuilder.must(QueryBuilders.termQuery("status", DTDocumentStatus.VALID.toString))
     val orQuery = QueryBuilders.boolQuery()
     ids.foreach { cId => orQuery.should(QueryBuilders.termQuery("state", cId)) }
     boolQueryBuilder.must(orQuery)
@@ -848,10 +848,26 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     DeleteDocumentsSummaryResult(message = "delete", deleted = response.getTotal)
   }
 
+  def cleanStaleDeletedStates(indexName: String): DeleteDocumentsSummaryResult = {
+    val compareTs = System.currentTimeMillis() - elasticClient.cleanDeletedDTStatesProcessInterval
+    val client: RestHighLevelClient = elasticClient.httpClient
+    val boolQueryBuilder : BoolQueryBuilder = QueryBuilders.boolQuery()
+    boolQueryBuilder.must(QueryBuilders.rangeQuery("timestamp").lt(compareTs))
+    boolQueryBuilder.must(QueryBuilders.termQuery("status", DTDocumentStatus.DELETED.toString))
+
+    val request: DeleteByQueryRequest =
+      new DeleteByQueryRequest(indexName)
+    request.setConflicts("proceed")
+    request.setQuery(boolQueryBuilder)
+    val bulkResponse = client.deleteByQuery(request, RequestOptions.DEFAULT)
+
+    DeleteDocumentsSummaryResult(message = s"delete stale States", bulkResponse.getTotal)
+  }
+
   def deleteOrMark(indexName: String, ids: List[String],
                    refreshPolicy: RefreshPolicy.Value,
-                   permament: Boolean = false): DeleteDocumentsResult = {
-    if(permament)
+                   permanent: Boolean = false): DeleteDocumentsResult = {
+    if(permanent)
       delete(indexName, ids, refreshPolicy)
     else
       markAsDeleted(indexName, ids, refreshPolicy)

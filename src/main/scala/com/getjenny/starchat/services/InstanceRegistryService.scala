@@ -27,7 +27,9 @@ class InstanceRegistryException(message: String = "", cause: Throwable = None.or
 case class InstanceRegistryDocument(timestamp: Option[Long] = None,
                                     enabled: Option[Boolean] = None,
                                     delete: Option[Boolean] = None,
-                                    deleted: Option[Boolean] = None) {
+                                    deleted: Option[Boolean] = None,
+                                    incremental: Option[Boolean] = None
+                                   ) {
 
   import InstanceRegistryStatus._
 
@@ -37,6 +39,7 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
     enabled.foreach(e => builder.field("enabled", e))
     delete.foreach(d => builder.field("delete", d))
     deleted.foreach(d => builder.field("deleted", d))
+    incremental.foreach(d => builder.field("incremental", d))
     builder.endObject()
   }
 
@@ -45,13 +48,13 @@ case class InstanceRegistryDocument(timestamp: Option[Long] = None,
   }
 
   def status(): InstanceRegistryStatus = {
-    (timestamp, enabled, delete, deleted) match {
-      case (_, _, _, Some(true)) | (_, None, None, None) => Missing
-      case (_, _, Some(delete), _) if delete => MarkedForDeletion
-      case (_, Some(true), _, _) => Enabled
-      case (_, Some(false), _, _) => Disabled
+    (timestamp, enabled, delete, deleted, incremental) match {
+      case (_, _, _, Some(true), _) | (_, None, None, None, _) => Missing
+      case (_, _, Some(delete), _, _) if delete => MarkedForDeletion
+      case (_, Some(true), _, _, _) => Enabled
+      case (_, Some(false), _, _, _) => Disabled
       case _ => throw new InstanceRegistryException(s"Instance registry has inconsistent state: " +
-        s"(timestamp $timestamp, enabled $enabled, delete $delete, deleted $deleted)")
+        s"(timestamp $timestamp, enabled $enabled, delete $delete, deleted $deleted, incremental $incremental)")
     }
   }
 
@@ -69,7 +72,8 @@ object InstanceRegistryDocument {
     val enabled = source.get("enabled").map(_.asInstanceOf[Boolean])
     val delete = source.get("delete").map(_.asInstanceOf[Boolean])
     val isDeleted = source.get("deleted").map(_.asInstanceOf[Boolean])
-    InstanceRegistryDocument(Option(timestamp), enabled, delete, isDeleted)
+    val incremental = source.get("incremental").map(_.asInstanceOf[Boolean])
+    InstanceRegistryDocument(Option(timestamp), enabled, delete, isDeleted, incremental)
   }
 
   def empty: InstanceRegistryDocument = {
@@ -96,18 +100,21 @@ object InstanceRegistryService extends AbstractDataService {
 
   def updateTimestamp(dtIndexName: String,
                       timestamp: Long =
-                        InstanceRegistryDocument.InstanceRegistryTimestampDefault): Option[DtReloadTimestamp] = {
+                        InstanceRegistryDocument.InstanceRegistryTimestampDefault,
+                      incremental: Boolean = true
+                     ): Option[DtReloadTimestamp] = {
     val ts: Long = if (timestamp === InstanceRegistryDocument.InstanceRegistryTimestampDefault)
       System.currentTimeMillis
     else
       timestamp
 
     val response = updateInstance(dtIndexName, timestamp = ts.some,
-      enabled = None, delete = None, deleted = None, refreshPolicy = RefreshPolicy.`wait_for`)
+      enabled = None, delete = None, deleted = None, incremental = Some(incremental),
+      refreshPolicy = RefreshPolicy.`wait_for`)
 
     log.debug("dt reload timestamp response status: {}", response.status())
 
-    DtReloadTimestamp(indexName = instanceRegistryIndex, timestamp = ts).some
+    DtReloadTimestamp(indexName = instanceRegistryIndex, timestamp = ts, incremental = incremental).some
   }
 
   def addInstance(indexName: String): IndexManagementResponse = {
@@ -118,7 +125,8 @@ object InstanceRegistryService extends AbstractDataService {
       timestamp = InstanceRegistryDocument.InstanceRegistryTimestampDefault.some,
       enabled = true.some,
       delete = false.some,
-      deleted = false.some
+      deleted = false.some,
+      incremental = true.some
     )
 
     val instanceRegistryDocument = findInstance(indexName)
@@ -148,7 +156,8 @@ object InstanceRegistryService extends AbstractDataService {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None,
-      enabled = true.some, delete = None, deleted = None, refreshPolicy = RefreshPolicy.`wait_for`)
+      enabled = true.some, delete = None, deleted = None, incremental = None,
+      refreshPolicy = RefreshPolicy.`wait_for`)
     userEsService.enablePermissionForIndex(indexName)
     IndexManagementResponse(s"Enabled instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -157,7 +166,8 @@ object InstanceRegistryService extends AbstractDataService {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None,
-      enabled = false.some, delete = None, deleted = None, refreshPolicy = RefreshPolicy.`wait_for`)
+      enabled = false.some, delete = None, deleted = None, incremental = None,
+      refreshPolicy = RefreshPolicy.`wait_for`)
     userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -166,7 +176,8 @@ object InstanceRegistryService extends AbstractDataService {
     require(!findInstance(indexName).isEmpty, s"Instance $indexName does not exists")
 
     val response = updateInstance(indexName, timestamp = None, enabled = false.some,
-      delete = true.some, deleted = None, refreshPolicy= RefreshPolicy.`wait_for`)
+      delete = true.some, deleted = None, incremental = None,
+      refreshPolicy= RefreshPolicy.`wait_for`)
     userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -176,6 +187,7 @@ object InstanceRegistryService extends AbstractDataService {
                                    enabled: Option[Boolean],
                                    delete: Option[Boolean],
                                    deleted: Option[Boolean],
+                                   incremental: Option[Boolean],
                                    refreshPolicy: RefreshPolicy.Value): UpdateResponse = {
     if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
@@ -219,6 +231,7 @@ object InstanceRegistryService extends AbstractDataService {
   def markAsDeleted(ids: List[String]): Unit = {
     ids.foreach { entry =>
       updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some,
+        incremental = false.some,
         refreshPolicy = RefreshPolicy.`wait_for`)
       userEsService.disablePermissionForIndex(entry)
     }
@@ -265,10 +278,11 @@ object InstanceRegistryService extends AbstractDataService {
       .map { timestampEntry =>
         val item: SearchHit = timestampEntry
         val docId: String = item.getId // the id is the index name
-
         val document = InstanceRegistryDocument(item.getSourceAsMap.asScala.toMap)
         DtReloadTimestamp(docId, document.timestamp
-          .getOrElse(InstanceRegistryDocument.InstanceRegistryTimestampDefault))
+          .getOrElse(InstanceRegistryDocument.InstanceRegistryTimestampDefault),
+          incremental = document.incremental.getOrElse(false)
+        )
       }
     dtReloadTimestamps
   }
