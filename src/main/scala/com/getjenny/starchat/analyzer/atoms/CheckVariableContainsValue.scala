@@ -6,12 +6,12 @@ import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
 import scala.util.matching.Regex
 
 /**
- * Created by Henri on .
+ * Created by Henri Vuorinen on 14/10/2020.
  */
 
 /** test if a variable exists on dictionary of variables and contains the value, eg:
  *
- * checkVariableContainsValue(variable_name, variable_value)
+ * checkVariableContainsValue(variableName, variableValue)
  *
  * @param arguments: <variable>, <value>
  */
@@ -33,12 +33,9 @@ class CheckVariableContainsValue(val arguments: List[String], restrictedArgs: Ma
    *
    * @param query the user query
    * @param data  the dictionary of variables
-   * @return Result with 1.0 if the variable exists and match the specified value score = 0.0 otherwise
+   * @return Result with 1.0 if the variable contains the specified value score = 0.0 otherwise
    */
 
-  /*override val varValue: Regex = {"""(?ui)\b""" + varValue.replace("*", """[\p{L}\p{N}.\-_@\~]*""") + """\b"""}.r
-  /*{"""(?ui)\b""" + varValue.replace("*", """[\p{L}\p{N}.\-_@#%\~]*""") + """\b"""}.r)*/
-   */
   override def evaluate(query: String, data: AnalyzersDataInternal): Result = {
     if(data.extractedVariables.getOrElse(varName, varValue + ".").contains(varValue)) {
       Result(score = 1.0)
