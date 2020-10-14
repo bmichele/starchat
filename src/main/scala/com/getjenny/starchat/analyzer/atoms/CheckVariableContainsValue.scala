@@ -1,9 +1,7 @@
 package com.getjenny.analyzer.atoms
 
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
-import scalaz.Scalaz._
-import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
-import scala.util.matching.Regex
+
 
 /**
  * Created by Henri Vuorinen on 14/10/2020.
@@ -37,7 +35,7 @@ class CheckVariableContainsValue(val arguments: List[String], restrictedArgs: Ma
    */
 
   override def evaluate(query: String, data: AnalyzersDataInternal): Result = {
-    if(data.extractedVariables.getOrElse(varName, varValue + ".").contains(varValue)) {
+    if((data.extractedVariables isDefinedAt varName) & data.extractedVariables.getOrElse(varName, varValue + ".").contains(varValue)) {
       Result(score = 1.0)
     } else {
       Result(score = 0.0)
