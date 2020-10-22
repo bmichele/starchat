@@ -22,6 +22,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "checkTimestamp",
     "checkTimestampVariable",
     "checkVariableValue",
+    "checkVariableContainsValue",
     "cosDistanceKeywords",
     "distance",
     "doubleNumberVariable",
@@ -73,6 +74,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "checkTimestamp" => new CheckTimestampAtomic(argument, restrictedArgs)
     case "checkTimestampVariable" => new CheckTimestampVariableAtomic(argument, restrictedArgs)
     case "checkVariableValue" => new CheckVariableValue(argument, restrictedArgs)
+    case "checkVariableContainsValue" => new CheckVariableContainsValue(argument, restrictedArgs)
     case "distance" | "cosDistanceKeywords" => new CosineDistanceAnalyzer(argument, restrictedArgs)
     case "doubleNumberVariable" => new DoubleNumberVariableAtomic(argument, restrictedArgs)
     case "existsVariable" => new ExistsVariableAtomic(argument, restrictedArgs)
