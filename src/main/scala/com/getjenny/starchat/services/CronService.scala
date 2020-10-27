@@ -13,6 +13,7 @@ trait CronService {
   protected[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
   protected[this] val analyzerService: AnalyzerService.type = AnalyzerService
   protected[this] val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
+  protected[this] val conversationLogsService: ConversationLogsService.type = ConversationLogsService
   protected[this] val clusterNodesService: ClusterNodesService.type = ClusterNodesService
   protected[this] val decisionTableService: DecisionTableService.type = DecisionTableService
   protected[this] val systemIndexManagementService: SystemIndexManagementService.type = SystemIndexManagementService

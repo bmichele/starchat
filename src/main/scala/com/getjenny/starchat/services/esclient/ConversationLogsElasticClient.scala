@@ -16,4 +16,6 @@ object ConversationLogsElasticClient extends QuestionAnswerElasticClient {
   override val updateMappingPath: String = "/index_management/json_index_spec/general/update/question_answer.json"
   override val numberOfShards: Int = config.getInt("es.logs_data_idx_number_of_shards")
   override val numberOfReplicas: Int = config.getInt("es.logs_data_idx_number_of_replicas")
+
+  val cleanVisitorMessageCronInterval: Long = config.getLong("es.clean_visitor_message_cron_interval")
 }

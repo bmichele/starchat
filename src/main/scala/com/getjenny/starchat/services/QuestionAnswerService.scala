@@ -26,6 +26,7 @@ import scalaz.Scalaz._
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+
 case class QuestionAnswerServiceException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
@@ -38,6 +39,7 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
   val nested_score_mode: Map[String, ScoreMode] = Map[String, ScoreMode]("min" -> ScoreMode.Min,
     "max" -> ScoreMode.Max, "avg" -> ScoreMode.Avg, "total" -> ScoreMode.Total)
 
+  private[this] val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
   private[this] val intervalRe = """(?:([1-9][0-9]*)([ms|m|h|d|w|M|q|y]{1}))""".r
 
   var cacheStealTimeMillis: Int
@@ -72,6 +74,33 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       searchType = SearchType.DFS_QUERY_THEN_FETCH,
       maxItems = Option(0),
       requestCache = Option(true), entityManager = DictSizeEntityManager).head
+  }
+
+  /** get the Stale age for the anonymization of the logs
+   * @param indexName the index name
+   * @return the value fetched from the persisten storage
+   */
+  def getStaleAge(indexName: String): Long = {
+    instanceRegistryService.getInstance(indexName).staleAge.getOrElse(0L)
+  }
+
+  /** set the Stale age for the anonymization of the logs
+   * @param indexName the index name
+   * @param age the value in seconds to be set
+   * @return the value set on the persisten storage
+   */
+  def setStaleAge(indexName: String, age: Long = 0L): Long = {
+    val update = instanceRegistryService.updateInstance(indexName: String,
+      timestamp = None,
+      enabled = None,
+      delete = None,
+      deleted = None,
+      incremental = None,
+      staleAge = age.some,
+      refreshPolicy = RefreshPolicy.`true`)
+    if (update.getShardInfo.getFailed =/= 0)
+      throw InstanceRegistryException("Failed updating the staleAge parameter")
+    age
   }
 
   /** Return the the dictionary size for one index i.e. the number of unique terms
@@ -338,25 +367,39 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     // begin core data
     coreDataIn.question match {
       case Some(questionQuery) =>
+        questionQuery match {
+          case "" =>
+            val questionPositiveQuery: QueryBuilder = QueryBuilders.boolQuery ()
+              .mustNot(QueryBuilders.wildcardQuery("question.raw", "?*"))
+              .boost(elasticClient.questionExactMatchBoost)
+            boolQueryBuilder.must(questionPositiveQuery)
+          case "*" =>
+            val questionPositiveQuery: QueryBuilder = QueryBuilders.boolQuery ()
+              .must(QueryBuilders.existsQuery("question.raw"))
+              .must(QueryBuilders.wildcardQuery("question.raw", "?*"))
+              .boost(elasticClient.questionExactMatchBoost)
+            boolQueryBuilder.must(questionPositiveQuery)
+          case _ =>
+            val questionPositiveQuery: QueryBuilder = QueryBuilders.boolQuery ()
+              .must(QueryBuilders.existsQuery("question.raw"))
+              .must (QueryBuilders.matchQuery ("question.stem", questionQuery) )
+              .should (QueryBuilders.matchPhraseQuery ("question.raw", questionQuery)
+                .boost (elasticClient.questionExactMatchBoost) )
 
-        val questionPositiveQuery: QueryBuilder = QueryBuilders.boolQuery()
-          .must(QueryBuilders.matchQuery("question.stem", questionQuery))
-          .should(QueryBuilders.matchPhraseQuery("question.raw", questionQuery)
-            .boost(elasticClient.questionExactMatchBoost))
+            val questionNegativeNestedQuery: QueryBuilder = QueryBuilders.nestedQuery (
+              "question_negative",
+              QueryBuilders.matchQuery ("question_negative.query.base", questionQuery)
+                .minimumShouldMatch (elasticClient.questionNegativeMinimumMatch),
+              ScoreMode.Total
+            ).ignoreUnmapped (true)
+              .innerHit (new InnerHitBuilder ().setSize (100) )
 
-        val questionNegativeNestedQuery: QueryBuilder = QueryBuilders.nestedQuery(
-          "question_negative",
-          QueryBuilders.matchQuery("question_negative.query.base", questionQuery)
-            .minimumShouldMatch(elasticClient.questionNegativeMinimumMatch),
-          ScoreMode.Total
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().setSize(100))
-
-        boolQueryBuilder.should(
-          QueryBuilders.boostingQuery(questionPositiveQuery,
-            questionNegativeNestedQuery
-          ).negativeBoost(elasticClient.questionNegativeBoost)
-        )
+            boolQueryBuilder.should (
+              QueryBuilders.boostingQuery (questionPositiveQuery,
+                questionNegativeNestedQuery
+              ).negativeBoost (elasticClient.questionNegativeBoost)
+            )
+        }
       case _ =>
     }
 
@@ -1099,6 +1142,12 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
       script = script,
       batchSize = None,
       refreshPolicy = refreshPolicy)
+  }
+
+  def clearQuestionField(indexName: String,
+                         documentSearch: QADocumentSearch,
+                         refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
+    updateByQuery(indexName, documentSearch, Some(resetQuestionFieldScript), refreshPolicy)
   }
 
   def updateConvAnnotations(indexName: String,
