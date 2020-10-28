@@ -1776,6 +1776,37 @@ paths:
             schema:
               $ref: '#/components/schemas/SpellcheckTermsRequest'
         description: Spellcheck request
+  '/{index_name}/spellcheck2/terms':
+    post:
+      tags:
+        - customer
+      summary: spellchecker a sentence taking ngram frequencies into account
+      operationId: post_spellcheck2
+      description: execute the spellchecker on a sentence and returns the suggestion for each token
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: request successfully executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpellcheckTermsResponse2'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpellcheckTermsRequest2'
+        description: Spellcheck request
   '/{index_name}/language_guesser':
     post:
       tags:
@@ -4069,6 +4100,39 @@ components:
           default: 2
           description: >-
             the max edit distance between the suggested token and the original token
+    SpellcheckTermsRequest2:
+      required:
+        - text
+      type: object
+      properties:
+        text:
+          type: string
+          description: the text to be spellchecked
+          example: "is this text misplelled?"
+        prefixLength:
+          type: number
+          format: integer
+          default: 3
+          description: >-
+            the number of minimal prefix characters that must match in order be a candidate suggestion
+        minDocFreq:
+          type: number
+          format: integer
+          default: 1
+          description: >-
+            the minimal occurrence in knowledgebase corpus of each suggested token
+        minWordLength:
+          type: number
+          format: integer
+          default: 2
+          description: >-
+            the minimal length of words that are to be checked
+        maxEdit:
+          type: number
+          format: integer
+          default: 2
+          description: >-
+            the max edit distance between the suggested token and the original token
     SpellcheckTokenSuggestions:
       type: object
       required:
@@ -4081,6 +4145,45 @@ components:
           format: double
           description: the candidate term score
           example: 0.800000011920929
+        freq:
+          type: number
+          format: integer
+          description: the occurrence of candidate term
+          example: 1284,
+        text:
+          type: string
+          description: the candidate term
+          example: hello
+    SpellcheckTokenSuggestions2:
+      type: object
+      required:
+        - score
+        - scoreUnigram
+        - scoreBigram
+        - scoreTrigram
+        - freq
+        - text
+      properties:
+        score:
+          type: number
+          format: double
+          description: the candidate term score
+          example: 0.6748971343040466
+        scoreUnigram:
+          type: number
+          format: double
+          description: the candidate term score based on term frequency only
+          example: 0.000006860922439955175
+        scoreBigram:
+          type: number
+          format: double
+          description: the candidate term score based on bigram frequencies (considers up to one word preceding and up to one word following the candidate term)
+          example: 0.0000019773945041379193
+        scoreTrigram:
+          type: number
+          format: double
+          description: the candidate term score based on trigram frequencies (considers up to two words preceding and up to two words following the candidate term)
+          example: 0.000002265780494781211
         freq:
           type: number
           format: integer
@@ -4116,6 +4219,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SpellcheckTokenSuggestions'
+    SpellcheckToken2:
+      type: object
+      required:
+        - text
+        - offset
+        - length
+        - options
+      properties:
+        text:
+          type: string
+          description: the original token in text
+          example: hellp
+        offset:
+          type: number
+          format: integer
+          description: the token offset
+          example: 0
+        length:
+          type: number
+          format: integer
+          description: the potentially mispelled word
+          example: 5
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellcheckTokenSuggestions2'
     SpellcheckTermsResponse:
       type: object
       required:
@@ -4125,6 +4254,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SpellcheckToken'
+    SpellcheckTermsResponse2:
+      type: object
+      required:
+        - tokens
+      properties:
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellcheckToken2'
     LanguageGuesserRequestIn:
       type: object
       required:
@@ -5782,7 +5920,7 @@ components:
           example: 10
         coreData:
           $ref: '#/components/schemas/QADocumentCoreSearch'
-        aggAnotations:
+        aggAnnotations:
           $ref: '#/components/schemas/AggAnnotationsSearch'
         annotations:
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'
