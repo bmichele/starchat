@@ -42,7 +42,7 @@ trait RestInterface extends RootAPIResource
   lazy val cronCleanDeletedDecisionTableStatesService: CronCleanDeletedDecisionTableStatesService.type = CronCleanDeletedDecisionTableStatesService
   lazy val cronDeleteInstanceService: CronDeleteInstanceService.type = CronDeleteInstanceService
   lazy val cronInitializeSystemIndicesService: CronInitializeSystemIndicesService.type = CronInitializeSystemIndicesService
-  lazy val systemService: InstanceRegistryService.type = InstanceRegistryService
+  lazy val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
   lazy val knowledgeBaseService: KnowledgeBaseService.type = KnowledgeBaseService
   lazy val conversationLogsService: ConversationLogsService.type = ConversationLogsService
   lazy val priorDataService: PriorDataService.type = PriorDataService
@@ -92,27 +92,28 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResult(systemGetIndexesRoutes) ~
     LoggingEntities.logRequestAndResult(systemIndexManagementRoutes) ~
     LoggingEntities.logRequestAndResult(termsExtractionRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(clAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clQuestionAnswerAnalyticsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clQuestionAnswerConversationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clQuestionAnswerRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clQuestionAnswerStreamRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(clAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(clusterNodesRoutes) ~
     LoggingEntities.logRequestAndResultReduced(decisionTableBulkCreateRoutes) ~
     LoggingEntities.logRequestAndResultReduced(decisionTableBulkUploadAndMultiCreateRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(instanceRegistryRoute) ~
+    LoggingEntities.logRequestAndResultReduced(kbAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerAnalyticsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerConversationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbQuestionAnswerStreamRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(kbAnnotationsRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(languageIndexManagementRoutes) ~
     LoggingEntities.logRequestAndResultReduced(nodeDtLoadingStatusRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(pdAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerAnalyticsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerConversationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerRoutes) ~
     LoggingEntities.logRequestAndResultReduced(pdQuestionAnswerStreamRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(pdAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(termRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(termStreamRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(languageIndexManagementRoutes)
+    LoggingEntities.logRequestAndResultReduced(termStreamRoutes)
 
 }
