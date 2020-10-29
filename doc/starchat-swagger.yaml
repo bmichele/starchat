@@ -5750,7 +5750,7 @@ components:
           description: >-
             a text to be matched with the question field
             * to match all
-            an empty string to match the document with emoty or null question field
+            an empty string to match the document with empty or null question field
           example: >-
             when should I renew my insurance?
         questionScoredTerms:
