@@ -120,7 +120,6 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResultReduced(systemGetIndexesRoutes) ~
     LoggingEntities.logRequestAndResultReduced(systemIndexManagementRoutes) ~
     LoggingEntities.logRequestAndResultReduced(termRoutes) ~
-    LoggingEntities.logRequestAndResultReduced(termStreamRoutes)
     LoggingEntities.logRequestAndResultReduced(termStreamRoutes) ~
     LoggingEntities.logRequestAndResultReduced(termsExtractionRoutes)
 }
