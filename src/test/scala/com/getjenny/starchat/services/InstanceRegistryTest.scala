@@ -2,6 +2,7 @@ package com.getjenny.starchat.services
 
 import com.getjenny.starchat.TestBase
 import com.getjenny.starchat.entities.io.CreateLanguageIndexRequest
+import com.getjenny.starchat.entities.io.{InstanceRegistryDocument => InstanceRegistryDocumentCC}
 import com.getjenny.starchat.services.InstanceRegistryStatus._
 import scalaz.Scalaz._
 
@@ -57,31 +58,31 @@ class InstanceRegistryTest extends TestBase {
     }
 
     "evaluate correctly statuses" in {
-      InstanceRegistryDocument().status() shouldEqual Missing
-      InstanceRegistryDocument(deleted = true.some).status() shouldEqual Missing
-      InstanceRegistryDocument(enabled = false.some, deleted = true.some).status shouldEqual Missing
+      InstanceRegistryDocumentCC().status() shouldEqual Missing
+      InstanceRegistryDocumentCC(deleted = true.some).status() shouldEqual Missing
+      InstanceRegistryDocumentCC(enabled = false.some, deleted = true.some).status shouldEqual Missing
 
       intercept[Exception] {
-        InstanceRegistryDocument(deleted = false.some).status()
+        InstanceRegistryDocumentCC(deleted = false.some).status()
       }
 
-      InstanceRegistryDocument(enabled = true.some).status() shouldEqual Enabled
-      InstanceRegistryDocument(enabled = true.some, delete = false.some).status() shouldEqual Enabled
-      InstanceRegistryDocument(enabled = false.some).status() shouldEqual Disabled
-      InstanceRegistryDocument(enabled = false.some, delete = false.some).status() shouldEqual Disabled
-      InstanceRegistryDocument(enabled = false.some, delete = true.some).status() shouldEqual MarkedForDeletion
-      InstanceRegistryDocument(enabled = true.some, delete = true.some).status() shouldEqual MarkedForDeletion
-      InstanceRegistryDocument(enabled = true.some, delete = true.some, deleted = false.some)
+      InstanceRegistryDocumentCC(enabled = true.some).status() shouldEqual Enabled
+      InstanceRegistryDocumentCC(enabled = true.some, delete = false.some).status() shouldEqual Enabled
+      InstanceRegistryDocumentCC(enabled = false.some).status() shouldEqual Disabled
+      InstanceRegistryDocumentCC(enabled = false.some, delete = false.some).status() shouldEqual Disabled
+      InstanceRegistryDocumentCC(enabled = false.some, delete = true.some).status() shouldEqual MarkedForDeletion
+      InstanceRegistryDocumentCC(enabled = true.some, delete = true.some).status() shouldEqual MarkedForDeletion
+      InstanceRegistryDocumentCC(enabled = true.some, delete = true.some, deleted = false.some)
         .status() shouldEqual MarkedForDeletion
-      InstanceRegistryDocument(delete = true.some).status() shouldEqual MarkedForDeletion
+      InstanceRegistryDocumentCC(delete = true.some).status() shouldEqual MarkedForDeletion
     }
 
     "evaluate correctly is empty" in {
-      InstanceRegistryDocument().isEmpty shouldBe true
-      InstanceRegistryDocument(deleted = true.some).isEmpty shouldBe true
-      InstanceRegistryDocument(deleted = true.some, enabled = true.some).isEmpty shouldBe true
-      InstanceRegistryDocument(deleted = true.some, delete = true.some).isEmpty shouldBe true
-      InstanceRegistryDocument(deleted = true.some, timestamp = 0L.some).isEmpty shouldBe true
+      InstanceRegistryDocumentCC().isEmpty shouldBe true
+      InstanceRegistryDocumentCC(deleted = true.some).isEmpty shouldBe true
+      InstanceRegistryDocumentCC(deleted = true.some, enabled = true.some).isEmpty shouldBe true
+      InstanceRegistryDocumentCC(deleted = true.some, delete = true.some).isEmpty shouldBe true
+      InstanceRegistryDocumentCC(deleted = true.some, timestamp = 0L.some).isEmpty shouldBe true
     }
 
     "add an instance" in {

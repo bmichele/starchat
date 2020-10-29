@@ -43,7 +43,7 @@ trait RestInterface extends RootAPIResource
   lazy val cronCleanQuestionFieldOnStalesLogsService: CronCleanQuestionFieldOnStalesLogsService.type = CronCleanQuestionFieldOnStalesLogsService
   lazy val cronDeleteInstanceService: CronDeleteInstanceService.type = CronDeleteInstanceService
   lazy val cronInitializeSystemIndicesService: CronInitializeSystemIndicesService.type = CronInitializeSystemIndicesService
-  lazy val systemService: InstanceRegistryService.type = InstanceRegistryService
+  lazy val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
   lazy val knowledgeBaseService: KnowledgeBaseService.type = KnowledgeBaseService
   lazy val conversationLogsService: ConversationLogsService.type = ConversationLogsService
   lazy val priorDataService: PriorDataService.type = PriorDataService
@@ -84,6 +84,7 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResultReduced(decisionTableUploadFilesRoutes) ~
     LoggingEntities.logRequestAndResultReduced(esTokenizersRoutes) ~
     LoggingEntities.logRequestAndResultReduced(freqExtractionRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(instanceRegistryRoute) ~
     LoggingEntities.logRequestAndResultReduced(kbAnnotationsRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbAnonymConfigRoutes) ~
     LoggingEntities.logRequestAndResultReduced(kbCountersCacheSizeRoutes) ~
@@ -119,6 +120,7 @@ trait RestInterface extends RootAPIResource
     LoggingEntities.logRequestAndResultReduced(systemGetIndexesRoutes) ~
     LoggingEntities.logRequestAndResultReduced(systemIndexManagementRoutes) ~
     LoggingEntities.logRequestAndResultReduced(termRoutes) ~
+    LoggingEntities.logRequestAndResultReduced(termStreamRoutes)
     LoggingEntities.logRequestAndResultReduced(termStreamRoutes) ~
     LoggingEntities.logRequestAndResultReduced(termsExtractionRoutes)
 }

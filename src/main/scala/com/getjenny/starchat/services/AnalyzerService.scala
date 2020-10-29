@@ -215,7 +215,7 @@ object AnalyzerService extends AbstractDataService {
 
     val nodeDtLoadingTimestamp = System.currentTimeMillis()
     if (propagate) {
-      Try(instanceRegistryService.updateTimestamp(indexName, nodeDtLoadingTimestamp)) match {
+      Try(instanceRegistryService.updateTimestamp(indexName, nodeDtLoadingTimestamp, incremental = incremental)) match {
         case Success(dtReloadTimestamp) =>
           val ts = dtReloadTimestamp
             .getOrElse(DtReloadTimestamp(indexName, InstanceRegistryDocument.InstanceRegistryTimestampDefault))
@@ -287,6 +287,5 @@ object AnalyzerService extends AbstractDataService {
         }
     }
   }
-
 }
 

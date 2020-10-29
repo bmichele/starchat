@@ -6,6 +6,7 @@ import akka.pattern.CircuitBreaker
 import com.getjenny.starchat.entities.io.{NodeDtLoadingStatus, Permissions, RefreshPolicy, ReturnMessageData}
 import com.getjenny.starchat.routing.{StarChatCircuitBreaker, StarChatResource}
 import com.getjenny.starchat.services.{NodeDtLoadingStatusService, NodeDtLoadingStatusServiceException}
+import com.getjenny.starchat.services.InstanceRegistryService
 
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
@@ -16,9 +17,44 @@ import scala.util.{Failure, Success}
 
 trait NodeDtLoadingStatusResource extends StarChatResource {
   private[this] val nodeDtLoadingStatusService: NodeDtLoadingStatusService.type = NodeDtLoadingStatusService
-  private[this] val routeName: String = """node_dt_update"""
+  private[this] val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
+
+  def instanceRegistryRoute: Route = handleExceptions(routesExceptionHandler) {
+    val routeName: String = """instanceRegistry"""
+    pathPrefix(routeName) {
+      pathEnd {
+        get {
+          authenticateBasicAsync(realm = authRealm,
+            authenticator = authenticator.authenticator) { user =>
+            authorizeAsync(_ =>
+              authenticator.hasPermissions(user, "admin", Permissions.admin)) {
+              extractRequest { request =>
+                val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                onCompleteWithBreakerFuture(breaker)(instanceRegistryService.getAll) {
+                  case Success(t) =>
+                    completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
+                  case Failure(e) =>
+                    log.error(logTemplate(user.id, "", "instanceRegistry", request.method, request.uri), e)
+                    e match {
+                      case authException: NodeDtLoadingStatusServiceException =>
+                        completeResponse(StatusCodes.BadRequest, authException.getMessage)
+                      case NonFatal(nonFatalE) =>
+                        completeResponse(StatusCodes.BadRequest,
+                          ReturnMessageData(code = 100, message = e.getMessage))
+                      case _: Exception =>
+                        completeResponse(StatusCodes.BadRequest, e.getMessage)
+                    }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   def nodeDtLoadingStatusRoutes: Route = handleExceptions(routesExceptionHandler) {
+    val routeName: String = """node_dt_update"""
     pathPrefix(indexRegex ~ Slash ~ routeName) { indexName =>
       get {
         authenticateBasicAsync(realm = authRealm,
