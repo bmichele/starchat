@@ -54,15 +54,15 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
 
     val queryVector = TokenToVector.tokensToVector(queryTokens, ngramsIndex)
 
-    dtDocuments.map { case SearchDTDocumentsAndNgrams(searchDocument, queriesNgrams) =>
-      val score = queriesNgrams.map(ngrams => {
+    dtDocuments.par.map { case SearchDTDocumentsAndNgrams(searchDocument, queriesNgrams) =>
+      val score = queriesNgrams.par.map(ngrams => {
         1.0 - TokenToVector.cosineDist(queryVector, TokenToVector.tokensToVector(ngrams, ngramsIndex))
       }).max
       (searchDocument, score)
     }.map { case (searchDtDocument, score) =>
       val document: DTDocument = searchDtDocument.document
       SearchDTDocument(score = score.toFloat, document = document)
-    }
+    }.toList
   }
 
   private[this] def documentSearchQueries(indexName: String,
@@ -74,7 +74,7 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     val searchAlgorithm = documentSearch.searchAlgorithm.getOrElse(SearchAlgorithm.DEFAULT)
     searchAlgorithm match {
       case SearchAlgorithm.AUTO | SearchAlgorithm.DEFAULT =>
-        val (scriptBody, matchQueryEs, analyzer, algorithm) = if (documentSearch.queries.getOrElse("").length > 3) {
+        val (scriptBody, matchQueryEs, analyzer, algorithm) = if (documentSearch.queries.getOrElse("").length >= 3) {
           (
             "return doc['queries.query.ngram_3'] ;",
             "queries.query.ngram_3",
@@ -440,10 +440,10 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
         })
         val queryArray = t.asInstanceOf[java.util.ArrayList[java.util.HashMap[String, String]]].asScala.toList
           .map(q_e => q_e.get("query"))
-        offsetsAndNgrams.map { e =>
+        offsetsAndNgrams.par.map { e =>
           val qNgrams = queryArray(e).toLowerCase().replaceAll("\\s", "").sliding(sliding).toList
           (queryArray(e), qNgrams)
-        }.unzip
+        }.toList.unzip
       case None => (List.empty, List.empty[List[String]])
     }
   }
