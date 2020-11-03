@@ -18,6 +18,7 @@ import scalaz.Scalaz._
 import spray.json.{JsString, _}
 
 import scala.collection.immutable.Map
+import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 case class ResponseServiceException(message: String = "", cause: Throwable = None.orNull)
@@ -241,10 +242,11 @@ object ResponseService extends AbstractDataService {
       val stateId = stateName
       (stateId, analyzerEvaluation)
     }.filter { case (_, analyzerEvaluation) => analyzerEvaluation.score >= threshold }
-      .sortWith {
-        case ((_, analyzerEvaluation1), (_, analyzerEvaluation2)) =>
-          analyzerEvaluation1.score > analyzerEvaluation2.score
-      }.take(maxResults).toMap
+      .foldLeft(
+        mutable.PriorityQueue.empty[(String, Result)](Ordering.by[(String, Result), Double](_._2.score))
+      )((acc, e) => {
+        (acc += e).take(maxResults)
+      }).dequeueAll.toMap
 
     if (analyzersEvalData.isEmpty) {
       throw ResponseServiceNoResponseException(
