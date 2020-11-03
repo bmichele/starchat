@@ -7,12 +7,11 @@ package com.getjenny.starchat.services
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io.{DtReloadTimestamp, IndexManagementResponse, IndexManagementStatusResponse, RefreshPolicy}
+import com.getjenny.starchat.entities.io.{InstanceRegistryDocument => InstanceRegistryDocumentCC}
 import com.getjenny.starchat.services.esclient.crud.EsCrudBase
 import com.getjenny.starchat.services.esclient.{InstanceRegistryElasticClient, NodeDtLoadingStatusElasticClient}
 import com.getjenny.starchat.utils.Index
 import org.elasticsearch.action.update.UpdateResponse
-import org.elasticsearch.common.xcontent.XContentBuilder
-import org.elasticsearch.common.xcontent.XContentFactory._
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder, QueryBuilders}
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.search.sort.{FieldSortBuilder, SortOrder}
@@ -22,48 +21,13 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
 import scala.util.{Failure, Success, Try}
 
-class InstanceRegistryException(message: String = "", cause: Throwable = None.orNull) extends Exception(message, cause)
-
-case class InstanceRegistryDocument(timestamp: Option[Long] = None,
-                                    enabled: Option[Boolean] = None,
-                                    delete: Option[Boolean] = None,
-                                    deleted: Option[Boolean] = None,
-                                    incremental: Option[Boolean] = None
-                                   ) {
-
-  import InstanceRegistryStatus._
-
-  def builder: XContentBuilder = {
-    val builder = jsonBuilder().startObject()
-    timestamp.foreach(t => builder.field("timestamp", t))
-    enabled.foreach(e => builder.field("enabled", e))
-    delete.foreach(d => builder.field("delete", d))
-    deleted.foreach(d => builder.field("deleted", d))
-    incremental.foreach(d => builder.field("incremental", d))
-    builder.endObject()
-  }
-
-  def isEmpty: Boolean = {
-    deleted.getOrElse(false) || timestamp.isEmpty && enabled.isEmpty && delete.isEmpty
-  }
-
-  def status(): InstanceRegistryStatus = {
-    (timestamp, enabled, delete, deleted, incremental) match {
-      case (_, _, _, Some(true), _) | (_, None, None, None, _) => Missing
-      case (_, _, Some(delete), _, _) if delete => MarkedForDeletion
-      case (_, Some(true), _, _, _) => Enabled
-      case (_, Some(false), _, _, _) => Disabled
-      case _ => throw new InstanceRegistryException(s"Instance registry has inconsistent state: " +
-        s"(timestamp $timestamp, enabled $enabled, delete $delete, deleted $deleted, incremental $incremental)")
-    }
-  }
-
-}
+case class InstanceRegistryException(message: String = "", cause: Throwable = None.orNull)
+  extends Exception(message, cause)
 
 object InstanceRegistryDocument {
   val InstanceRegistryTimestampDefault: Long = 0L
 
-  def apply(source: Map[String, Any]): InstanceRegistryDocument = {
+  def apply(source: Map[String, Any]): InstanceRegistryDocumentCC = {
     val timestamp = source.get("timestamp") match {
       case Some(value: Long) => value
       case Some(value: Int) => value.toLong
@@ -73,11 +37,16 @@ object InstanceRegistryDocument {
     val delete = source.get("delete").map(_.asInstanceOf[Boolean])
     val isDeleted = source.get("deleted").map(_.asInstanceOf[Boolean])
     val incremental = source.get("incremental").map(_.asInstanceOf[Boolean])
-    InstanceRegistryDocument(Option(timestamp), enabled, delete, isDeleted, incremental)
+    val staleAge = source.get("staleAge") match {
+      case Some(value: Long) => value
+      case Some(value: Int) => value.toLong
+      case _ => 0L
+    }
+    InstanceRegistryDocumentCC(timestamp.some, enabled, delete, isDeleted, incremental, staleAge.some)
   }
 
-  def empty: InstanceRegistryDocument = {
-    InstanceRegistryDocument()
+  def empty: InstanceRegistryDocumentCC = {
+    InstanceRegistryDocumentCC()
   }
 }
 
@@ -100,7 +69,7 @@ object InstanceRegistryService extends AbstractDataService {
 
   def updateTimestamp(dtIndexName: String,
                       timestamp: Long =
-                        InstanceRegistryDocument.InstanceRegistryTimestampDefault,
+                      InstanceRegistryDocument.InstanceRegistryTimestampDefault,
                       incremental: Boolean = true
                      ): Option[DtReloadTimestamp] = {
     val ts: Long = if (timestamp === InstanceRegistryDocument.InstanceRegistryTimestampDefault)
@@ -110,7 +79,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(dtIndexName, timestamp = ts.some,
       enabled = None, delete = None, deleted = None, incremental = Some(incremental),
-      refreshPolicy = RefreshPolicy.`wait_for`)
+      refreshPolicy = RefreshPolicy.`wait_for`, staleAge = None)
 
     log.debug("dt reload timestamp response status: {}", response.status())
 
@@ -121,12 +90,13 @@ object InstanceRegistryService extends AbstractDataService {
     if (!isValidIndexName(indexName) || !elasticSearchIndexExists(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
-    val document = InstanceRegistryDocument(
+    val document = com.getjenny.starchat.entities.io.InstanceRegistryDocument(
       timestamp = InstanceRegistryDocument.InstanceRegistryTimestampDefault.some,
       enabled = true.some,
       delete = false.some,
       deleted = false.some,
-      incremental = true.some
+      incremental = true.some,
+      staleAge = 0L.some
     )
 
     val instanceRegistryDocument = findInstance(indexName)
@@ -140,7 +110,7 @@ object InstanceRegistryService extends AbstractDataService {
     IndexManagementResponse(s"Created instance $indexName, operation status: ${response.status}", check = true)
   }
 
-  def getInstance(indexName: String): InstanceRegistryDocument = {
+  def getInstance(indexName: String): InstanceRegistryDocumentCC = {
     if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
     findInstance(indexName)
@@ -157,7 +127,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(indexName, timestamp = None,
       enabled = true.some, delete = None, deleted = None, incremental = None,
-      refreshPolicy = RefreshPolicy.`wait_for`)
+      refreshPolicy = RefreshPolicy.`wait_for`, staleAge = None)
     userEsService.enablePermissionForIndex(indexName)
     IndexManagementResponse(s"Enabled instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -167,7 +137,7 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(indexName, timestamp = None,
       enabled = false.some, delete = None, deleted = None, incremental = None,
-      refreshPolicy = RefreshPolicy.`wait_for`)
+      refreshPolicy = RefreshPolicy.`wait_for`, staleAge = None)
     userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Disabled instance $indexName, operation status: ${response.status}", check = true)
   }
@@ -177,24 +147,29 @@ object InstanceRegistryService extends AbstractDataService {
 
     val response = updateInstance(indexName, timestamp = None, enabled = false.some,
       delete = true.some, deleted = None, incremental = None,
-      refreshPolicy= RefreshPolicy.`wait_for`)
+      refreshPolicy= RefreshPolicy.`wait_for`, staleAge = None)
     userEsService.disablePermissionForIndex(indexName)
     IndexManagementResponse(s"Mark Delete instance $indexName, operation status: ${response.status}", check = true)
   }
 
-  private[this] def updateInstance(indexName: String,
+  def updateInstance(indexName: String,
                                    timestamp: Option[Long],
                                    enabled: Option[Boolean],
                                    delete: Option[Boolean],
                                    deleted: Option[Boolean],
                                    incremental: Option[Boolean],
+                                   staleAge: Option[Long],
                                    refreshPolicy: RefreshPolicy.Value): UpdateResponse = {
     if (!isValidIndexName(indexName))
       throw new IllegalArgumentException(s"Index name $indexName is not a valid index to be used with instanceRegistry")
 
-    val toBeUpdated = InstanceRegistryDocument(timestamp = timestamp, enabled = enabled,
+    val toBeUpdated = com.getjenny.starchat.entities.io.InstanceRegistryDocument(timestamp = timestamp,
+      enabled = enabled,
       delete = delete,
-      deleted = deleted)
+      deleted = deleted,
+      incremental = incremental,
+      staleAge = staleAge)
+
     val response = esCrudBase.update(id = indexName,
       builder = toBeUpdated.builder,
       refreshPolicy = refreshPolicy)
@@ -204,7 +179,7 @@ object InstanceRegistryService extends AbstractDataService {
     response
   }
 
-  private[this] def findInstance(dtIndexName: String): InstanceRegistryDocument = Try {
+  private[this] def findInstance(dtIndexName: String): InstanceRegistryDocumentCC = Try {
     esCrudBase.read(dtIndexName)
   } match {
     case Success(response) => if (!response.isExists || response.isSourceEmpty) {
@@ -232,21 +207,21 @@ object InstanceRegistryService extends AbstractDataService {
     ids.foreach { entry =>
       updateInstance(entry, None, enabled = false.some, delete = false.some, deleted = true.some,
         incremental = false.some,
-        refreshPolicy = RefreshPolicy.`wait_for`)
+        refreshPolicy = RefreshPolicy.`wait_for`, staleAge = None)
       userEsService.disablePermissionForIndex(entry)
     }
   }
 
-  def getAll: List[(String, InstanceRegistryDocument)] = {
+  def getAll: List[(String, InstanceRegistryDocumentCC)] = {
     queryRegistry(QueryBuilders.matchAllQuery())
   }
 
-  def getAllMarkedToDelete: List[(String, InstanceRegistryDocument)] = {
+  def getAllMarkedToDelete: List[(String, InstanceRegistryDocumentCC)] = {
     val queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("delete", true))
     queryRegistry(queryBuilder)
   }
 
-  private[this] def queryRegistry(queryBuilder: QueryBuilder): List[(String, InstanceRegistryDocument)] = Try {
+  private[this] def queryRegistry(queryBuilder: QueryBuilder): List[(String, InstanceRegistryDocumentCC)] = Try {
     esCrudBase.read(queryBuilder)
   } match {
     case Success(response) =>

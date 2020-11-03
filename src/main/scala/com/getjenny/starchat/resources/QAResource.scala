@@ -136,6 +136,124 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
     }
   }
 
+  def anonymConfigRoutes: Route = handleExceptions(routesExceptionHandler) {
+    pathPrefix(indexRegex ~ Slash ~ routeName ~ Slash ~ "anonymization") { indexName =>
+      path(Segment) { operation: String =>
+        post {
+          authenticateBasicAsync(realm = authRealm,
+            authenticator = authenticator.authenticator) { user =>
+            authorizeAsync(_ =>
+              authenticator.hasPermissions(user, indexName, Permissions.write)) {
+              extractRequest { request =>
+                parameters("value".as[Long] ? 0L) { value =>
+                  operation match {
+                    case "olderthan" =>
+                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                      onCompleteWithBreakerFuture(breaker)(
+                        questionAnswerService.setStaleAge(indexName = indexName, age = value)) {
+                        case Success(t) =>
+                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t.toString))
+                        case Failure(e) =>
+                          val message = logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage)
+                          log.error(message)
+                          completeResponse(StatusCodes.BadRequest,
+                            Option {
+                              ReturnMessageData(code = 104, message = "Error bad operation: " + operation)
+                            })
+                      }
+                    case _ =>
+                      log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri,
+                        s"Unsupported operation: $operation"))
+                      completeResponse(StatusCodes.BadRequest,
+                        Option {
+                          ReturnMessageData(code = 105, message = "Error bad operation on QA Documents: " + operation)
+                        })
+                  }
+                }
+              }
+            }
+          }
+        } ~ get {
+          authenticateBasicAsync(realm = authRealm,
+            authenticator = authenticator.authenticator) { user =>
+            authorizeAsync(_ =>
+              authenticator.hasPermissions(user, indexName, Permissions.read)) {
+              extractRequest { request =>
+                operation match {
+                  case "olderthan" =>
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                    onCompleteWithBreakerFuture(breaker)(
+                      questionAnswerService.getStaleAge(indexName = indexName)) {
+                      case Success(t) =>
+                        completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t.toString))
+                      case Failure(e) =>
+                        val message = logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage)
+                        log.error(message)
+                        completeResponse(StatusCodes.BadRequest,
+                          Option {
+                            ReturnMessageData(code = 106, message = "Error bad operation: " + operation)
+                          })
+                    }
+                  case _ =>
+                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri,
+                      s"Unsupported operation: $operation"))
+                    completeResponse(StatusCodes.BadRequest,
+                      Option {
+                        ReturnMessageData(code = 107, message = "Error bad operation on QA Documents: " + operation)
+                      })
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  def updateRoutes: Route = handleExceptions(routesExceptionHandler) {
+    pathPrefix(indexRegex ~ Slash ~ routeName ~ Slash ~ "update") { indexName =>
+      path(Segment) { operation: String =>
+        post {
+          authenticateBasicAsync(realm = authRealm,
+            authenticator = authenticator.authenticator) { user =>
+            authorizeAsync(_ =>
+              authenticator.hasPermissions(user, indexName, Permissions.write)) {
+              extractRequest { request =>
+                operation match {
+                  case "question" =>
+                    entity(as[QADocumentSearch]) { documentSearch =>
+                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                      onCompleteWithBreakerFuture(breaker)(
+                        questionAnswerService.clearQuestionField(
+                          indexName = indexName, documentSearch = documentSearch,
+                          refreshPolicy = RefreshPolicy.`false`)) {
+                        case Success(t) =>
+                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
+                        case Failure(e) =>
+                          val message = logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage)
+                          log.error(message, e)
+                          completeResponse(StatusCodes.BadRequest,
+                            Option {
+                              ReturnMessageData(code = 108, message = "Error bad operation on QA Documents: " + operation)
+                            })
+                      }
+                    }
+                  case _ =>
+                    log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri,
+                      s"Unsupported operation: $operation"))
+                    completeResponse(StatusCodes.BadRequest,
+                      Option {
+                        ReturnMessageData(code = 109, message = "Error bad operation on QA Documents: " + operation)
+                      })
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   def annotationsRoutes: Route = handleExceptions(routesExceptionHandler) {
     pathPrefix(indexRegex ~ Slash ~ """conv""" ~ Slash ~ """annotations""" ~ Slash ~ routeName) { indexName =>
       path(Segment) { operation: String =>
@@ -159,7 +277,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                           log.error(message, e)
                           completeResponse(StatusCodes.BadRequest,
                             Option {
-                              ReturnMessageData(code = 104, message = "Error bad operation on QA Documents: " + operation)
+                              ReturnMessageData(code = 110, message = "Error bad operation on QA Documents: " + operation)
                             })
                       }
                     }
@@ -168,7 +286,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       s"Unsupported operation: $operation"))
                     completeResponse(StatusCodes.BadRequest,
                       Option {
-                        ReturnMessageData(code = 105, message = "Error bad operation on QA Documents: " + operation)
+                        ReturnMessageData(code = 111, message = "Error bad operation on QA Documents: " + operation)
                       })
                 }
               }
@@ -207,14 +325,14 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                                 "IndexDocumentResult is Empty"))
                               completeResponse(StatusCodes.BadRequest,
                                 Option {
-                                  ReturnMessageData(code = 106, message = "Error indexing new document, empty response")
+                                  ReturnMessageData(code = 112, message = "Error indexing new document, empty response")
                                 })
                           }
                         case Failure(e) =>
                           val message = logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage)
                           log.error(message, e)
                           completeResponse(StatusCodes.BadRequest,
-                            Some(ReturnMessageData(code = 107, message = message)))
+                            Some(ReturnMessageData(code = 113, message = message)))
                       }
                     }
                 }
@@ -239,7 +357,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                           log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                           completeResponse(StatusCodes.BadRequest,
                             Option {
-                              ReturnMessageData(code = 108, message = e.getMessage)
+                              ReturnMessageData(code = 114, message = e.getMessage)
                             })
                       }
                     }
@@ -265,7 +383,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                             log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
-                                ReturnMessageData(code = 109, message = e.getMessage)
+                                ReturnMessageData(code = 115, message = e.getMessage)
                               })
                         }
                       } else {
@@ -278,7 +396,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                             log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
-                                ReturnMessageData(code = 110, message = e.getMessage)
+                                ReturnMessageData(code = 116, message = e.getMessage)
                               })
                         }
                       }
@@ -307,7 +425,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                           log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                           completeResponse(StatusCodes.BadRequest,
                             Option {
-                              ReturnMessageData(code = 111, message = e.getMessage)
+                              ReturnMessageData(code = 117, message = e.getMessage)
                             })
                       }
                     }
@@ -321,24 +439,22 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
       pathPrefix(indexRegex ~ Slash ~ routeName ~ Slash ~ "delete_by_query") { indexName =>
         pathEnd {
           post {
-            post {
-              authenticateBasicAsync(realm = authRealm,
-                authenticator = authenticator.authenticator) { user =>
-                extractRequest { request =>
-                  authorizeAsync(_ =>
-                    authenticator.hasPermissions(user, indexName, Permissions.write)) {
-                    entity(as[QADocumentSearch]) { docsearch =>
-                      val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
-                      onCompleteWithBreakerFuture(breaker)(questionAnswerService.deleteByQuery(indexName, docsearch, user)) {
-                        case Success(t) =>
-                          completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
-                        case Failure(e) =>
-                          log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
-                          completeResponse(StatusCodes.BadRequest,
-                            Option {
-                              ReturnMessageData(code = 115, message = e.getMessage)
-                            })
-                      }
+            authenticateBasicAsync(realm = authRealm,
+              authenticator = authenticator.authenticator) { user =>
+              extractRequest { request =>
+                authorizeAsync(_ =>
+                  authenticator.hasPermissions(user, indexName, Permissions.write)) {
+                  entity(as[QADocumentSearch]) { docsearch =>
+                    val breaker: CircuitBreaker = StarChatCircuitBreaker.getCircuitBreaker()
+                    onCompleteWithBreakerFuture(breaker)(questionAnswerService.deleteByQuery(indexName, docsearch, user)) {
+                      case Success(t) =>
+                        completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
+                      case Failure(e) =>
+                        log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
+                        completeResponse(StatusCodes.BadRequest,
+                          Option {
+                            ReturnMessageData(code = 118, message = e.getMessage)
+                          })
                     }
                   }
                 }
@@ -367,7 +483,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
-                          ReturnMessageData(code = 112, message = e.getMessage)
+                          ReturnMessageData(code = 119, message = e.getMessage)
                         })
                   }
                 }
@@ -393,7 +509,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                         log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                         completeResponse(StatusCodes.BadRequest,
                           Option {
-                            ReturnMessageData(code = 113, message = e.getMessage)
+                            ReturnMessageData(code = 120, message = e.getMessage)
                           })
                     }
                   }
@@ -424,7 +540,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
-                          ReturnMessageData(code = 114, message = e.getMessage)
+                          ReturnMessageData(code = 121, message = e.getMessage)
                         })
                   }
                 }
@@ -454,7 +570,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
-                          ReturnMessageData(code = 115, message = e.getMessage)
+                          ReturnMessageData(code = 122, message = e.getMessage)
                         })
                   }
                 }
@@ -486,7 +602,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
-                          ReturnMessageData(code = 116, message = e.getMessage)
+                          ReturnMessageData(code = 123, message = e.getMessage)
                         })
                   }
                 }
@@ -530,7 +646,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                     log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                     completeResponse(StatusCodes.BadRequest,
                       Option {
-                        ReturnMessageData(code = 117, message = e.getMessage)
+                        ReturnMessageData(code = 124, message = e.getMessage)
                       })
                 }
               }
@@ -550,7 +666,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                       log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                       completeResponse(StatusCodes.BadRequest,
                         Option {
-                          ReturnMessageData(code = 118, message = e.getMessage)
+                          ReturnMessageData(code = 125, message = e.getMessage)
                         })
                   }
                 }
@@ -570,7 +686,7 @@ class QAResource(questionAnswerService: QuestionAnswerService, routeName: String
                     log.error(logTemplate(user.id, indexName, routeName, request.method, request.uri, e.getMessage), e)
                     completeResponse(StatusCodes.BadRequest,
                       Option {
-                        ReturnMessageData(code = 119, message = e.getMessage)
+                        ReturnMessageData(code = 126, message = e.getMessage)
                       })
                 }
               }

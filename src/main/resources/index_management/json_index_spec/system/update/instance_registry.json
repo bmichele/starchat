@@ -1,5 +1,10 @@
 {
   "properties": {
-    "incremental": {"type": "boolean"}
+    "incremental": {"type": "boolean"},
+    "staleAge": {
+      "type": "long",
+      "store": true,
+      "index": true
+    }
   }
 }

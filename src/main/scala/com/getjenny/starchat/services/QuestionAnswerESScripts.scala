@@ -24,8 +24,13 @@ trait QuestionAnswerESScripts {
       "ctx._source.starchatAnnotations.convIdxQuestionsCounter += 1 ; "
   }
 
+  private[this] val resetQuestionFieldScriptBody: String = {
+    "ctx._source.question = '' ; "
+  }
+
   val incrementConvIdxCounterScript: Script = getScript(incrementConvIdxCounterScriptBody)
   val incrementConvIdxQuestionsCounterScript: Script = getScript(incrementConvIdxQuestionsCounterScriptBody)
+  val resetQuestionFieldScript: Script = getScript(resetQuestionFieldScriptBody)
 
   private[this] def setIdxCounterScriptBody(value: Int): String = {
       initializeAnnotationsBody +
@@ -44,5 +49,4 @@ trait QuestionAnswerESScripts {
   def setIdxQuestionCounterScript(value: Int): Script = {
     getScript(setIdxQuestionCounterScriptBody(value))
   }
-
 }

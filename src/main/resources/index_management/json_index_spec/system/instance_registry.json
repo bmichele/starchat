@@ -7,6 +7,11 @@
         "store": true,
         "index": true
       },
+      "staleAge": {
+        "type": "long",
+        "store": true,
+        "index": true
+      },
       "enabled": {"type": "boolean"},
       "delete": {"type": "boolean"},
       "deleted": {"type": "boolean"},

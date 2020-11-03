@@ -34,4 +34,8 @@ trait PriorDataResource extends StarChatResource {
   def pdQuestionAnswerAnalyticsRoutes: Route = qaResource.questionAnswerAnalyticsRoutes
 
   def pdAnnotationsRoutes: Route = qaResource.annotationsRoutes
+
+  def pdUpdateRoutes: Route = qaResource.updateRoutes
+
+  def pdAnonymConfigRoutes: Route = qaResource.anonymConfigRoutes
 }

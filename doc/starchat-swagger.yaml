@@ -1,10 +1,10 @@
 openapi: 3.0.3
 servers:
-  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.7'
+  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.8'
 info:
   description: An Open Source, scalable conversational engine for B2B applications. You can find
     out more about StarChat at [github GetJenny/starchat](https://github.com/GetJenny/starchat).
-  version: "v5.7"
+  version: "v5.8"
   title: StarChat APIs
   contact:
     email: angelo@getjenny.com
@@ -2786,6 +2786,128 @@ paths:
             schema:
               $ref: '#/components/schemas/QADocumentUpdate'
         description: QA entry with new fields
+  '/{index_name}/{qa_route}/update/question':
+    post:
+      tags:
+        - customer
+      summary: reset by query of the question fields for the QA documents
+      operationId: post_update_question_qa_route
+      description: reset by query the question field
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: qa_route
+          description: question anser route
+          required: true
+          schema:
+            type: string
+            enum:
+              - conversation_logs
+              - knowledgebase
+              - prior_data
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QADocumentSearch'
+        description: QA document search request
+      responses:
+        '200':
+          description: request successfully executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateByQueryResult'
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
+  '/{index_name}/{qa_route}/anonymization/olderthan':
+    post:
+      tags:
+        - customer
+      summary: set the Age for the anonymization of the logs, older logs will be anonymized.
+      operationId: post_anonymization_qa_route_olderthan
+      description: set the Age of the log for the anonymization
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: qa_route
+          description: question anser route
+          required: true
+          schema:
+            type: string
+            enum:
+              - conversation_logs
+              - knowledgebase
+              - prior_data
+        - in: query
+          name: value
+          description: value in seconds to be set
+          required: true
+          schema:
+            type: number
+            format: integer
+            default: 0
+      responses:
+        '200':
+          description: request successfully executed
+          content:
+            application/json:
+              schema:
+                type: number
+                format: integer
+                example: 3600
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
+    get:
+      tags:
+        - customer
+      summary: get the Age for the anonymization of the logs, older logs will be anonymized.
+      operationId: get_anonymization_qa_route_olderthan
+      description: get the Age of the log for the anonymization
+      parameters:
+        - in: path
+          name: index_name
+          description: name of the index
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: qa_route
+          description: question anser route
+          required: true
+          schema:
+            type: string
+            enum:
+              - conversation_logs
+              - knowledgebase
+              - prior_data
+      responses:
+        '200':
+          description: request successfully executed
+          content:
+            application/json:
+              schema:
+                type: number
+                format: integer
+                example: 3600
+        '400':
+          description: 'invalid input, object invalid, bad request'
+        '401':
+          description: authorization denied or authentication failed
   '/{index_name}/{qa_route}/delete_by_query':
     post:
       tags:
@@ -5625,7 +5747,10 @@ components:
       properties:
         question:
           type: string
-          description: a text to be matched with the question field
+          description: >-
+            a text to be matched with the question field
+            * to match all
+            an empty string to match the document with empty or null question field
           example: >-
             when should I renew my insurance?
         questionScoredTerms:
@@ -5920,7 +6045,7 @@ components:
           example: 10
         coreData:
           $ref: '#/components/schemas/QADocumentCoreSearch'
-        aggAnotations:
+        aggAnnotations:
           $ref: '#/components/schemas/AggAnnotationsSearch'
         annotations:
           $ref: '#/components/schemas/QADocumentAnnotationsSearch'

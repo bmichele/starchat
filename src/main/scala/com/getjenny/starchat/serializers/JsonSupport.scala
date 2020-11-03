@@ -44,6 +44,8 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
+  implicit val instanceRegistryDocumentFormat = jsonFormat6(InstanceRegistryDocument)
+
   implicit val qAAggregationsTypesUnmarshalling:
     Unmarshaller[String, QAAggregationsTypes.Value] =
     Unmarshaller.strict[String, QAAggregationsTypes.Value] { enumValue =>
@@ -446,5 +448,4 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
       case _ => throw DeserializationException("DTDocumentStatus string expected")
     }
   }
-
 }
