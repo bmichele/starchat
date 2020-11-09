@@ -1,10 +1,10 @@
 openapi: 3.0.3
 servers:
-  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.8'
+  - url: 'https://virtserver.swaggerhub.com/angleto/StarChat/v5.10'
 info:
   description: An Open Source, scalable conversational engine for B2B applications. You can find
     out more about StarChat at [github GetJenny/starchat](https://github.com/GetJenny/starchat).
-  version: "v5.8"
+  version: "v5.10"
   title: StarChat APIs
   contact:
     email: angelo@getjenny.com
@@ -1314,18 +1314,18 @@ paths:
                 $ref: '#/components/schemas/DeleteDocumentsResult'
               example: {
                 "data": [
-                {
-                  "index": "index_getjenny_english_usecase0",
-                  "id": "id1",
-                  "version": 1,
-                  "found": true
-                },
-                {
-                  "index": "index_getjenny_english_usecase0",
-                  "id": "id2",
-                  "version": 1,
-                  "found": true
-                }
+                  {
+                    "index": "index_getjenny_english_usecase0",
+                    "id": "id1",
+                    "version": 1,
+                    "found": true
+                  },
+                  {
+                    "index": "index_getjenny_english_usecase0",
+                    "id": "id2",
+                    "version": 1,
+                    "found": true
+                  }
                 ]
               }
         '400':
@@ -2134,12 +2134,12 @@ paths:
                 $ref: '#/components/schemas/DeleteDocumentsResult'
               example: {
                 "data": [
-                {
-                  "index": "index_getjenny_english_usecase0",
-                  "id": "hello",
-                  "version": 1,
-                  "found": true
-                }
+                  {
+                    "index": "index_getjenny_english_usecase0",
+                    "id": "hello",
+                    "version": 1,
+                    "found": true
+                  }
                 ]
               }
         '400':
@@ -2175,12 +2175,12 @@ paths:
                 $ref: '#/components/schemas/UpdateDocumentsResult'
               example: {
                 "data": [
-                {
-                  "index": "index_getjenny_english_usecase0",
-                  "id": "hello",
-                  "version": 3,
-                  "found": true
-                }
+                  {
+                    "index": "index_getjenny_english_usecase0",
+                    "id": "hello",
+                    "version": 3,
+                    "found": true
+                  }
                 ]
               }
         '400':
@@ -5748,9 +5748,10 @@ components:
         question:
           type: string
           description: >-
-            a text to be matched with the question field
-            * to match all
-            an empty string to match the document with empty or null question field
+            Possible values for the question field:
+              * `<text>` -> a text to be matched with the question field
+              * `""` -> an empty string to match the document with empty or null question field
+              * `*` -> to match all
           example: >-
             when should I renew my insurance?
         questionScoredTerms:
@@ -6315,20 +6316,20 @@ components:
         additionalProperties:
           type: string
       example: [
-      {
-        "state": "talktohuman",
-        "label": "Talk to human",
-        "type": "button",
-        "url": "https://www.getjenny.com",
-        "tag": "#human",
-        "target": "_blank"
-      },
-      {
-        "state": "feedback",
-        "label": "insert a feedback",
-        "type": "button",
-        "url": "https://www.getjenny.com",
-        "tag": "#feedback",
-        "target": "_blank"
-      }
+        {
+          "state": "talktohuman",
+          "label": "Talk to human",
+          "type": "button",
+          "url": "https://www.getjenny.com",
+          "tag": "#human",
+          "target": "_blank"
+        },
+        {
+          "state": "feedback",
+          "label": "insert a feedback",
+          "type": "button",
+          "url": "https://www.getjenny.com",
+          "tag": "#feedback",
+          "target": "_blank"
+        }
       ]

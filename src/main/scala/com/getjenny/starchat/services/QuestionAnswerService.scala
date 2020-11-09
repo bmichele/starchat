@@ -368,18 +368,18 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     coreDataIn.question match {
       case Some(questionQuery) =>
         questionQuery match {
-          case "" =>
+          case "" => // empty field
             val questionPositiveQuery: QueryBuilder = QueryBuilders.boolQuery ()
               .mustNot(QueryBuilders.wildcardQuery("question.raw", "?*"))
               .boost(elasticClient.questionExactMatchBoost)
             boolQueryBuilder.must(questionPositiveQuery)
-          case "*" =>
+          case "*" => // existing and non-empty field
             val questionPositiveQuery: QueryBuilder = QueryBuilders.boolQuery ()
               .must(QueryBuilders.existsQuery("question.raw"))
               .must(QueryBuilders.wildcardQuery("question.raw", "?*"))
               .boost(elasticClient.questionExactMatchBoost)
             boolQueryBuilder.must(questionPositiveQuery)
-          case _ =>
+          case _ => // all the other cases
             val questionPositiveQuery: QueryBuilder = QueryBuilders.boolQuery ()
               .must(QueryBuilders.existsQuery("question.raw"))
               .must (QueryBuilders.matchQuery ("question.stem", questionQuery) )

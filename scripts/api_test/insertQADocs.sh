@@ -13,7 +13,6 @@ curl -v -H "Authorization: Basic $(echo -n 'test_user:p4ssw0rd' | base64)" \
   "indexInConversation": 1,
   "status": 0,
   "coreData": {
-    "question": "thank you, bye",
     "questionNegative": ["ok, I will not talk with you anymore", "thank you anyway"],
     "answer": "you are welcome! you very welcome!",
     "questionScoredTerms": [

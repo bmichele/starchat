@@ -11,7 +11,6 @@ curl -k -H "Authorization: Basic $(echo -n 'test_user:p4ssw0rd' | base64)" \
   \"coreData\": {
     \"question\": \"${QUERY}\"
   },
-  \"timestampLte\": ${TSLTE},
   \"size\": 1000,
   \"minScore\": 0.0
 }"
