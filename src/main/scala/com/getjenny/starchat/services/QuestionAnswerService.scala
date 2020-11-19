@@ -1150,11 +1150,9 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
     updateByQuery(indexName, documentSearch, Some(resetQuestionFieldScript), refreshPolicy)
   }
 
-  def updateConvAnnotations(indexName: String,
-                            conversation: String, refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
-    val documentSearch = QADocumentSearch(size = Some(10000),
-      annotations = Some(QADocumentAnnotationsSearch(followup = Some(List(Followup.UNSPECIFIED)))),
-      conversation = Some(List(conversation)))
+  def updateConvAnnotationsByQuery(indexName: String,
+                                   documentSearch: QADocumentSearch,
+                                   refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
     val searchRes: Option[SearchQADocumentsResults] = search(indexName, documentSearch)
     searchRes match {
       case Some(r) =>
@@ -1168,6 +1166,14 @@ trait QuestionAnswerService extends AbstractDataService with QuestionAnswerESScr
           versionConflicts = 0
         )
     }
+  }
+
+  def updateConvAnnotations(indexName: String,
+                            conversation: String, refreshPolicy: RefreshPolicy.Value): UpdateByQueryResult = {
+    val documentSearch = QADocumentSearch(size = Some(10000),
+      annotations = Some(QADocumentAnnotationsSearch(followup = Some(List(Followup.UNSPECIFIED)))),
+      conversation = Some(List(conversation)))
+    updateConvAnnotationsByQuery(indexName, documentSearch, refreshPolicy)
   }
 
   def read(indexName: String, ids: List[String]): Option[SearchQADocumentsResults] = {
