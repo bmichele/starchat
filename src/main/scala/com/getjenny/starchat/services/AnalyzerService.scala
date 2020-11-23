@@ -18,6 +18,7 @@ import com.getjenny.starchat.utils.SystemConfiguration
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import scalaz.Scalaz._
 import spray.json.JsObject
+import com.roundeights.hasher.Implicits._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
@@ -28,6 +29,7 @@ case class AnalyzerServiceException(message: String = "", cause: Throwable = Non
   extends Exception(message, cause)
 
 case class AnalyzerItem(declaration: String,
+                        checksum: String,
                         analyzer: Option[StarChatAnalyzer] = None,
                         build: Boolean,
                         message: String)
@@ -36,7 +38,11 @@ case class DecisionTableRuntimeItem(
                                      executionOrder: Int = -1,
                                      maxStateCounter: Int = -1,
                                      analyzer: AnalyzerItem = AnalyzerItem(
-                                       declaration = "", analyzer = None, build = false, message = ""
+                                       checksum = "",
+                                       declaration = "",
+                                       analyzer = None,
+                                       build = false,
+                                       message = ""
                                      ),
 
                                      queries: List[String] = List.empty[String],
@@ -105,7 +111,10 @@ object AnalyzerService extends AbstractDataService {
           DecisionTableRuntimeItem(
             executionOrder = item.executionOrder,
             maxStateCounter = item.maxStateCounter,
-            analyzer = AnalyzerItem(declaration = item.analyzerDeclaration, build = false,
+            analyzer = AnalyzerItem(
+              checksum = item.analyzerDeclaration.sha512.hash.toString,
+              declaration = item.analyzerDeclaration,
+              build = false,
               message = "Analyzer index(" + indexName + ") state(" + item.state + ") not built"),
             queries = item.queries,
             bubble = item.bubble,
@@ -134,64 +143,76 @@ object AnalyzerService extends AbstractDataService {
 
   def buildAnalyzers(indexName: String,
                      persistentAnalyzersMap: mutable.LinkedHashMap[String, DecisionTableRuntimeItem],
+                     useAnalyzerCache: Boolean = true,
                      incremental: Boolean = true):
   mutable.LinkedHashMap[String, DecisionTableRuntimeItem] = {
-    val newInPlaceIndexAnalyzers = AnalyzerService.analyzersMap.getOrElse(indexName,
+    val currentInPlaceIndexAnalyzers = AnalyzerService.analyzersMap.getOrElse(indexName,
       ActiveAnalyzers(mutable.LinkedHashMap.empty[String, DecisionTableRuntimeItem]))
     val newInPlaceAnalyzersMap = if(incremental) {
-      newInPlaceIndexAnalyzers.analyzerMap.clone()
+      currentInPlaceIndexAnalyzers.analyzerMap.clone()
     } else {
       mutable.LinkedHashMap.empty[String, DecisionTableRuntimeItem]
     }
-    persistentAnalyzersMap.foreach { case (stateId, runtimeItem) =>
-      val analyzerDeclaration = runtimeItem.analyzer.declaration
-      runtimeItem.status match {
+    persistentAnalyzersMap.foreach { case (stateId, persistentItem) =>
+      val startBuild = System.currentTimeMillis()
+      val analyzerDeclaration = persistentItem.analyzer.declaration
+      persistentItem.status match {
         case DTDocumentStatus.DELETED =>
           newInPlaceAnalyzersMap.remove(stateId)
         case DTDocumentStatus.VALID =>
-          val currentState: DecisionTableRuntimeItem =
+          val currentState: DecisionTableRuntimeItem = if(useAnalyzerCache) {
+            currentInPlaceIndexAnalyzers.analyzerMap.getOrElse(stateId, DecisionTableRuntimeItem())
+          } else {
             newInPlaceAnalyzersMap.getOrElse(stateId, DecisionTableRuntimeItem())
+          }
           val requireReloading: Boolean = currentState.version < 0 ||
-            currentState.version =/= runtimeItem.version ||
-            currentState.timestamp < runtimeItem.timestamp
+            currentState.version =/= persistentItem.version ||
+            currentState.timestamp < persistentItem.timestamp
           if(requireReloading) {
-            val analyzerItem = if(incremental && analyzerDeclaration =/= "" &&
-              currentState.analyzer.declaration === runtimeItem.analyzer.declaration) {
+            val analyzerItem = if((incremental || useAnalyzerCache) && analyzerDeclaration =/= "" &&
+              currentState.analyzer.checksum === persistentItem.analyzer.checksum) {
               log.debug("Analyzer already built index({}) state({}) version({}:{})",
-                indexName, stateId, runtimeItem.version, currentState.version)
+                indexName, stateId, persistentItem.version, currentState.version)
               currentState.analyzer
             } else if(analyzerDeclaration =/= "") {
               val restrictedArgs: Map[String, String] = SystemConfiguration
                 .createMapFromPath(atomConfigurationBasePath) + ("index_name" -> indexName)
+              val checksum = analyzerDeclaration.sha512.hash.toString
               Try(new StarChatAnalyzer(analyzerDeclaration, restrictedArgs)) match {
                 case Success(analyzerObject) =>
                   val msg = "Analyzer successfully built index(" + indexName + ") state(" + stateId +
-                    ") version(" + runtimeItem.version + ")"
-                  log.debug(msg)
-                  AnalyzerItem(declaration = analyzerDeclaration,
+                    ") version(" + persistentItem.version + s") Timestamp(${System.currentTimeMillis() - startBuild})"
+                  log.info(msg)
+                  AnalyzerItem(
+                    declaration = analyzerDeclaration,
+                    checksum = checksum,
                     analyzer = Some(analyzerObject), build = true, message = msg)
                 case Failure(e) =>
                   val msg = "Error building analyzer index(" + indexName + ") state(" + stateId +
                     ") declaration(" + analyzerDeclaration +
-                    ") version(" + runtimeItem.version + ") : " + e.getMessage
+                    ") version(" + persistentItem.version + ") : " + e.getMessage
                   log.error(msg)
-                  AnalyzerItem(declaration = analyzerDeclaration, analyzer = None, build = false, message = msg)
+                  AnalyzerItem(checksum = checksum,
+                    declaration = analyzerDeclaration,
+                    analyzer = None, build = false,
+                    message = msg)
               }
             } else {
+              val checksum = analyzerDeclaration.sha512.hash.toString
               val msg = "index(" + indexName + ") : state(" + stateId + ") : analyzer declaration is empty"
               log.debug(msg)
-              AnalyzerItem(declaration = analyzerDeclaration,
+              AnalyzerItem(checksum = checksum, declaration = analyzerDeclaration,
                 analyzer = None, message = msg, build = true)
             }
 
             if(analyzerItem.build) {
-              val decisionTableRuntimeItem = runtimeItem.copy(
+              val decisionTableRuntimeItem = persistentItem.copy(
                 analyzer = analyzerItem
               )
               newInPlaceAnalyzersMap.put(stateId, decisionTableRuntimeItem)
             }
           } // else no reloading required
-        case _ => throw AnalyzerServiceException(s"invalid Status: ${runtimeItem.status}")
+        case _ => throw AnalyzerServiceException(s"invalid Status: ${persistentItem.status}")
       }
     }
     newInPlaceAnalyzersMap
@@ -202,6 +223,7 @@ object AnalyzerService extends AbstractDataService {
 
     val analyzerMap = buildAnalyzers(indexName = indexName,
       persistentAnalyzersMap = persistentsAnalyzers,
+      useAnalyzerCache = true,
       incremental = incremental)
 
     val   dtAnalyzerLoad = DTAnalyzerLoad(numOfEntries = analyzerMap.size)

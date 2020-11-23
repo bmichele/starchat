@@ -22,6 +22,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.{AggregationBuilder, AggregationBuilders}
 import org.elasticsearch.search.sort.{FieldSortBuilder, ScoreSortBuilder, SortOrder}
 import scalaz.Scalaz._
+import com.roundeights.hasher.Implicits._
 
 import scala.collection.immutable.{List, Map}
 import scala.collection.mutable
