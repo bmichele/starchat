@@ -146,7 +146,7 @@ object AnalyzerService extends AbstractDataService {
                      useAnalyzerCache: Boolean = true,
                      incremental: Boolean = true):
   mutable.LinkedHashMap[String, DecisionTableRuntimeItem] = {
-    val currentInPlaceIndexAnalyzers = AnalyzerService.analyzersMap.getOrElse(indexName,
+    val currentInPlaceIndexAnalyzers = analyzersMap.getOrElse(indexName,
       ActiveAnalyzers(mutable.LinkedHashMap.empty[String, DecisionTableRuntimeItem]))
     val newInPlaceAnalyzersMap = if(incremental) {
       currentInPlaceIndexAnalyzers.analyzerMap.clone()
@@ -198,10 +198,9 @@ object AnalyzerService extends AbstractDataService {
                     message = msg)
               }
             } else {
-              val checksum = analyzerDeclaration.sha512.hash.toString
               val msg = "index(" + indexName + ") : state(" + stateId + ") : analyzer declaration is empty"
               log.debug(msg)
-              AnalyzerItem(checksum = checksum, declaration = analyzerDeclaration,
+              AnalyzerItem(checksum = "", declaration = analyzerDeclaration,
                 analyzer = None, message = msg, build = true)
             }
 
@@ -211,6 +210,8 @@ object AnalyzerService extends AbstractDataService {
               )
               newInPlaceAnalyzersMap.put(stateId, decisionTableRuntimeItem)
             }
+          } else {
+            newInPlaceAnalyzersMap.put(stateId, currentState)
           } // else no reloading required
         case _ => throw AnalyzerServiceException(s"invalid Status: ${persistentItem.status}")
       }
@@ -229,10 +230,10 @@ object AnalyzerService extends AbstractDataService {
     val   dtAnalyzerLoad = DTAnalyzerLoad(numOfEntries = analyzerMap.size)
     val activeAnalyzers: ActiveAnalyzers = ActiveAnalyzers(analyzerMap = analyzerMap,
       lastReloadingTimestamp = System.currentTimeMillis)
-    if (AnalyzerService.analyzersMap.contains(indexName)) {
-      AnalyzerService.analyzersMap.replace(indexName, activeAnalyzers)
+    if (analyzersMap.contains(indexName)) {
+      analyzersMap.replace(indexName, activeAnalyzers)
     } else {
-      AnalyzerService.analyzersMap.putIfAbsent(indexName, activeAnalyzers)
+      analyzersMap.putIfAbsent(indexName, activeAnalyzers)
     }
 
     val nodeDtLoadingTimestamp = System.currentTimeMillis()
@@ -260,7 +261,7 @@ object AnalyzerService extends AbstractDataService {
 
   //TODO: extend DTAnalyzerItem to include more informations like action, action input and version
   def getDTAnalyzerMap(indexName: String): DTAnalyzerMap = {
-    DTAnalyzerMap(AnalyzerService.analyzersMap(indexName).analyzerMap
+    DTAnalyzerMap(analyzersMap(indexName).analyzerMap
       .map {
         case (stateName, dtRuntimeItem) =>
           val dtAnalyzer =
