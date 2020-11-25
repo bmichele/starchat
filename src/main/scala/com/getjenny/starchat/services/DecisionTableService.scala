@@ -38,6 +38,8 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   override val elasticClient: DecisionTableElasticClient.type = DecisionTableElasticClient
   private[this] val termService: TermService.type = TermService
   private[this] val log: LoggingAdapter = Logging(SCActorSystem.system, this.getClass.getCanonicalName)
+  private[this] val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
+  private[this] val nodeDtLoadingStatusService: NodeDtLoadingStatusService.type = NodeDtLoadingStatusService
 
   private[this] val queriesScoreMode: Map[String, ScoreMode] =
     Map[String, ScoreMode]("min" -> ScoreMode.Min,
@@ -54,15 +56,15 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
 
     val queryVector = TokenToVector.tokensToVector(queryTokens, ngramsIndex)
 
-    dtDocuments.par.map { case SearchDTDocumentsAndNgrams(searchDocument, queriesNgrams) =>
-      val score = queriesNgrams.par.map(ngrams => {
+    dtDocuments.map { case SearchDTDocumentsAndNgrams(searchDocument, queriesNgrams) =>
+      val score = queriesNgrams.map(ngrams => {
         1.0 - TokenToVector.cosineDist(queryVector, TokenToVector.tokensToVector(ngrams, ngramsIndex))
       }).max
       (searchDocument, score)
     }.map { case (searchDtDocument, score) =>
       val document: DTDocument = searchDtDocument.document
       SearchDTDocument(score = score.toFloat, document = document)
-    }.toList
+    }
   }
 
   private[this] def documentSearchQueries(indexName: String,
@@ -74,7 +76,7 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     val searchAlgorithm = documentSearch.searchAlgorithm.getOrElse(SearchAlgorithm.DEFAULT)
     searchAlgorithm match {
       case SearchAlgorithm.AUTO | SearchAlgorithm.DEFAULT =>
-        val (scriptBody, matchQueryEs, analyzer, algorithm) = if (documentSearch.queries.getOrElse("").length >= 3) {
+        val (scriptBody, matchQueryEs, analyzer, algorithm) = if (documentSearch.queries.getOrElse("").length > 3) {
           (
             "return doc['queries.query.ngram_3'] ;",
             "queries.query.ngram_3",
@@ -440,10 +442,10 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
         })
         val queryArray = t.asInstanceOf[java.util.ArrayList[java.util.HashMap[String, String]]].asScala.toList
           .map(q_e => q_e.get("query"))
-        offsetsAndNgrams.par.map { e =>
+        offsetsAndNgrams.map { e =>
           val qNgrams = queryArray(e).toLowerCase().replaceAll("\\s", "").sliding(sliding).toList
           (queryArray(e), qNgrams)
-        }.toList.unzip
+        }.unzip
       case None => (List.empty, List.empty[List[String]])
     }
   }
@@ -681,8 +683,6 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
                                incremental: Boolean = true,
                                refreshPolicy: RefreshPolicy.Value
                               ): ReindexResult = {
-
-    val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
     if (indexNameSrc === indexNameDst)
       throw DecisionTableServiceException(s"Bad clone operation: " +
         s"src($indexNameSrc) and dst($indexNameDst) are the same")
@@ -763,7 +763,6 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
                         reset: Boolean = true, propagate: Boolean = true,
                         refreshPolicy: RefreshPolicy.Value
                        ): IndexDocumentListResult = {
-    val instanceRegistryService: InstanceRegistryService.type = InstanceRegistryService
     if (reset) {
       IndexLanguageCrud(elasticClient, indexNameDst).delete(QueryBuilders.matchAllQuery, refreshPolicy)
     }
@@ -849,7 +848,14 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   }
 
   def cleanStaleDeletedStates(indexName: String): DeleteDocumentsSummaryResult = {
-    val compareTs = System.currentTimeMillis() - elasticClient.cleanDeletedDTStatesProcessInterval
+    val instanceUpdateDocument = nodeDtLoadingStatusService.loadingStatus(index = indexName, strict = false)
+
+    val compareTs = if(instanceUpdateDocument.updateCompleted) {
+      instanceUpdateDocument.timestamp - elasticClient.cleanDeletedDTStatesProcessInterval
+    } else {
+      0L
+    }
+
     val client: RestHighLevelClient = elasticClient.httpClient
     val boolQueryBuilder : BoolQueryBuilder = QueryBuilders.boolQuery()
     boolQueryBuilder.must(QueryBuilders.rangeQuery("timestamp").lt(compareTs))

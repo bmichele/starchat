@@ -7,6 +7,7 @@ package com.getjenny.starchat.services
 import akka.actor.{Actor, Props}
 import com.getjenny.starchat.SCActorSystem
 
+import scala.collection.parallel.ParSeq
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
@@ -26,38 +27,38 @@ object CronReloadDTService extends CronService {
 
         log.debug("Start DT reloading session: {} items({})", startUpdateTimestamp, maxItemsIndexesToUpdate)
 
-        val indexCheck: List[(String, Boolean)] =
+        val indexCheck: ParSeq[(String, Boolean)] =
           instanceRegistryService.allEnabledInstanceTimestamp(Some(updateTimestamp), Some(maxItemsIndexesToUpdate))
-            .map { dtReloadEntry =>
-              val indexAnalyzers: Option[ActiveAnalyzers] =
-                analyzerService.analyzersMap.get(dtReloadEntry.indexName)
-              val localReloadIndexTimestamp = indexAnalyzers match {
-                case Some(ts) => ts.lastReloadingTimestamp
-                case _ => InstanceRegistryDocument.InstanceRegistryTimestampDefault
-              }
-
-              if (dtReloadEntry.timestamp > 0 && localReloadIndexTimestamp < dtReloadEntry.timestamp) {
-                log.info("dt reloading for index(" + dtReloadEntry.indexName +
-                  ") timestamp (" + startUpdateTimestamp + ") : " + dtReloadEntry.timestamp)
-                Try(analyzerService.loadAnalyzers(indexName = dtReloadEntry.indexName,
-                  incremental = dtReloadEntry.incremental)) match {
-                  case Success(relRes) =>
-                    updateTimestamp = math.max(updateTimestamp, localReloadIndexTimestamp)
-                    log.info("Analyzer loaded for index(" + dtReloadEntry + "), timestamp (" +
-                      startUpdateTimestamp + ") res(" + relRes + ") remote ts: " + dtReloadEntry)
-                    analyzerService.analyzersMap(dtReloadEntry.indexName)
-                      .lastReloadingTimestamp = dtReloadEntry.timestamp
-                    (dtReloadEntry.indexName, true)
-                  case Failure(e) =>
-                    log.error("unable to load analyzers for index({}), timestamp({}), cron job: ",
-                      dtReloadEntry, startUpdateTimestamp, e)
-                    (dtReloadEntry.indexName, false)
-                }
-              } else {
-                (dtReloadEntry.indexName, true)
-              }
+            .par.map { dtReloadEntry =>
+            val indexAnalyzers: Option[ActiveAnalyzers] =
+              analyzerService.analyzersMap.get(dtReloadEntry.indexName)
+            val localReloadIndexTimestamp = indexAnalyzers match {
+              case Some(ts) => ts.lastReloadingTimestamp
+              case _ => InstanceRegistryDocument.InstanceRegistryTimestampDefault
             }
-        indexCheck.filter { case (_, check) => !check }.foreach { case (index, _) =>
+
+            if (dtReloadEntry.timestamp > 0 && localReloadIndexTimestamp < dtReloadEntry.timestamp) {
+              log.info("dt reloading for index(" + dtReloadEntry.indexName +
+                ") timestamp (" + startUpdateTimestamp + ") : " + dtReloadEntry.timestamp)
+              Try(analyzerService.loadAnalyzers(indexName = dtReloadEntry.indexName,
+                incremental = dtReloadEntry.incremental)) match {
+                case Success(relRes) =>
+                  updateTimestamp = math.max(updateTimestamp, localReloadIndexTimestamp)
+                  log.info("Analyzer loaded for index(" + dtReloadEntry + "), timestamp (" +
+                    startUpdateTimestamp + ") res(" + relRes + ") remote ts: " + dtReloadEntry)
+                  analyzerService.analyzersMap(dtReloadEntry.indexName)
+                    .lastReloadingTimestamp = dtReloadEntry.timestamp
+                  (dtReloadEntry.indexName, true)
+                case Failure(e) =>
+                  log.error("unable to load analyzers for index({}), timestamp({}), cron job: ",
+                    dtReloadEntry, startUpdateTimestamp, e)
+                  (dtReloadEntry.indexName, false)
+              }
+            } else {
+              (dtReloadEntry.indexName, true)
+            }
+          }
+        indexCheck.par.filter { case (_, check) => !check }.foreach { case (index, _) =>
           val indexMgmRes = indexManagementService.check(index)
           if (indexMgmRes.check) {
             log.error("Index exists but loading results in an error: " + indexMgmRes.message)
