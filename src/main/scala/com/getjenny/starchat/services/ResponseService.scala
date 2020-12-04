@@ -145,6 +145,8 @@ object ResponseService extends AbstractDataService {
   }
 
   def getNextResponse(indexName: String, request: ResponseRequestIn): ResponseRequestOutOperationResult = {
+    log.info(s"Response Service: ${indexName}, request: ${request}")
+    
     val evaluationClass = request.evaluationClass match {
       case Some(c) => c
       case _ => "default"
@@ -225,7 +227,7 @@ object ResponseService extends AbstractDataService {
           )
           Try(starchatAnalyzer.evaluate(userText, data = analyzersDataInternal)) match {
             case Success(evalRes: Result) =>
-              log.debug("ResponseService: Evaluation of State({}) Query({}) Score({})",
+              log.info("ResponseService: Evaluation of State({}) Query({}) Score({})",
                 stateName, userText, evalRes.toString)
               evalRes
             case Failure(e) =>
