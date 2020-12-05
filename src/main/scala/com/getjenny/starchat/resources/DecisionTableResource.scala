@@ -57,8 +57,8 @@ trait DecisionTableResource extends StarChatResource {
                         case Success(t) =>
                           completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                         case Failure(e) =>
-                          log.error(logTemplate(user.id, indexNameSrc + ":" + indexNameDst,
-                            "decisionTableCloneIndexRoutes", request.method, request.uri), e)
+                          log.error(e, logTemplate(user.id, indexNameSrc + ":" + indexNameDst,
+                            "decisionTableCloneIndexRoutes", request.method, request.uri))
                           completeResponse(StatusCodes.BadRequest,
                             Option {
                               ReturnMessageData(code = 104, message = e.getMessage)
@@ -91,7 +91,7 @@ trait DecisionTableResource extends StarChatResource {
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
+                      log.error(e, logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri))
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 105, message = e.getMessage)
@@ -134,8 +134,8 @@ trait DecisionTableResource extends StarChatResource {
                           t
                         })
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableUploadCSVRoutes",
-                          request.method, request.uri), e)
+                        log.error(e, logTemplate(user.id, indexName, "decisionTableUploadCSVRoutes",
+                          request.method, request.uri))
                         if (file.exists()) {
                           file.delete()
                         }
@@ -172,8 +172,8 @@ trait DecisionTableResource extends StarChatResource {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableBulkCreateRoutes",
-                          request.method, request.uri), e)
+                        log.error(e, logTemplate(user.id, indexName, "decisionTableBulkCreateRoutes",
+                          request.method, request.uri))
                         completeResponse(StatusCodes.BadRequest,
                           Option {
                             ReturnMessageData(code = 107, message = e.getMessage)
@@ -209,8 +209,8 @@ trait DecisionTableResource extends StarChatResource {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableBulkUploadAndMultiCreateRoutes",
-                          request.method, request.uri), e)
+                        log.error(e, logTemplate(user.id, indexName, "decisionTableBulkUploadAndMultiCreateRoutes",
+                          request.method, request.uri))
                         completeResponse(StatusCodes.BadRequest,
                           Option {
                             ReturnMessageData(code = 107, message = e.getMessage)
@@ -242,8 +242,8 @@ trait DecisionTableResource extends StarChatResource {
                       t
                     })
                   case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, "decisionTableAsyncReloadRoutes",
-                      request.method, request.uri), e)
+                    log.error(e, logTemplate(user.id, indexName, "decisionTableAsyncReloadRoutes",
+                      request.method, request.uri))
                     completeResponse(StatusCodes.BadRequest,
                       Option {
                         ReturnMessageData(code = 108, message = e.getMessage)
@@ -273,8 +273,8 @@ trait DecisionTableResource extends StarChatResource {
                       t
                     })
                   case Failure(e) =>
-                    log.error(logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes",
-                      request.method, request.uri), e)
+                    log.error(e, logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes",
+                      request.method, request.uri))
                     completeResponse(StatusCodes.BadRequest,
                       Option {
                         ReturnMessageData(code = 109, message = e.getMessage)
@@ -300,8 +300,8 @@ trait DecisionTableResource extends StarChatResource {
                           t
                         })
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes",
-                          request.method, request.uri), e)
+                        log.error(e, logTemplate(user.id, indexName, "decisionTableAnalyzerRoutes",
+                          request.method, request.uri))
                         completeResponse(StatusCodes.BadRequest,
                           Option {
                             ReturnMessageData(code = 110, message = e.getMessage)
@@ -333,8 +333,8 @@ trait DecisionTableResource extends StarChatResource {
                         t
                       })
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, "decisionTableSearchRoutes",
-                        request.method, request.uri), e)
+                      log.error(e, logTemplate(user.id, indexName, "decisionTableSearchRoutes",
+                        request.method, request.uri))
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 111, message = e.getMessage)
@@ -375,13 +375,13 @@ trait DecisionTableResource extends StarChatResource {
                               }
                             )
                           case e@(_: ResponseServiceNoResponseException) =>
-                            log.error(logTemplate(user.id, indexName, "decisionTableResource", request.method,
-                              request.uri, "No response"), e)
+                            log.error(e, logTemplate(user.id, indexName, "decisionTableResource", request.method,
+                              request.uri, "No response"))
                             completeResponse(StatusCodes.NoContent)
                           case e@(_: AnalyzerEvaluationException) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "Unable to complete the request, due to analyzer")
-                            log.error(message, e)
+                            log.error(e, message)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(
@@ -394,7 +394,7 @@ trait DecisionTableResource extends StarChatResource {
                           case e@(_: ResponseServiceDocumentNotFoundException) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "Requested document not found")
-                            log.error(message, e)
+                            log.error(e, message)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(
@@ -407,7 +407,7 @@ trait DecisionTableResource extends StarChatResource {
                           case e@(_: CircuitBreakerOpenRejection) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "The request the takes too much time")
-                            log.error(message, e)
+                            log.error(e, message)
                             completeResponse(StatusCodes.RequestTimeout,
                               Option {
                                 io.ResponseRequestOutOperationResult(
@@ -420,7 +420,7 @@ trait DecisionTableResource extends StarChatResource {
                           case NonFatal(nonFatalE) =>
                             val message = logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "Unable to complete the request")
-                            log.error(message, e)
+                            log.error(e, message)
                             completeResponse(StatusCodes.BadRequest,
                               Option {
                                 io.ResponseRequestOutOperationResult(
@@ -468,7 +468,7 @@ trait DecisionTableResource extends StarChatResource {
                       case Success(t) =>
                         completeResponse(StatusCodes.Created, StatusCodes.BadRequest, t)
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
+                        log.error(e, logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri))
                         completeResponse(StatusCodes.BadRequest,
                           Option {
                             ReturnMessageData(code = 116, message = e.getMessage)
@@ -493,7 +493,7 @@ trait DecisionTableResource extends StarChatResource {
                         case Success(t) =>
                           completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
-                          log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
+                          log.error(e, logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri))
                           completeResponse(StatusCodes.BadRequest,
                             Option {
                               ReturnMessageData(code = 117, message = e.getMessage)
@@ -505,7 +505,7 @@ trait DecisionTableResource extends StarChatResource {
                         case Success(t) =>
                           completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                         case Failure(e) =>
-                          log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
+                          log.error(e, logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri))
                           completeResponse(StatusCodes.BadRequest,
                             Option {
                               ReturnMessageData(code = 118, message = e.getMessage)
@@ -530,7 +530,7 @@ trait DecisionTableResource extends StarChatResource {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
+                        log.error(e, logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri))
                         completeResponse(StatusCodes.BadRequest,
                           Option {
                             ReturnMessageData(code = 119, message = e.getMessage)
@@ -558,7 +558,7 @@ trait DecisionTableResource extends StarChatResource {
                       case Success(t) =>
                         completeResponse(StatusCodes.OK, StatusCodes.BadRequest, Some(t))
                       case Failure(e) =>
-                        log.error(logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri), e)
+                        log.error(e, logTemplate(user.id, indexName, "decisionTableRoutes", request.method, request.uri))
                         completeResponse(StatusCodes.BadRequest,
                           Option {
                             ReturnMessageData(code = 120, message = e.getMessage)
@@ -587,7 +587,7 @@ trait DecisionTableResource extends StarChatResource {
                       val status = if(t.status) StatusCodes.OK else StatusCodes.BadRequest
                       completeResponse(status, StatusCodes.BadRequest, Option(t))
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, "decisionTableCacheLoad", request.method, request.uri), e)
+                      log.error(e, logTemplate(user.id, indexName, "decisionTableCacheLoad", request.method, request.uri))
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 120, message = e.getMessage)
@@ -610,7 +610,7 @@ trait DecisionTableResource extends StarChatResource {
                       val status = if(t.status) StatusCodes.OK else StatusCodes.BadRequest
                       completeResponse(status, StatusCodes.BadRequest, Option(t))
                     case Failure(e) =>
-                      log.error(logTemplate(user.id, indexName, "decisionTableCacheLoadAsync", request.method, request.uri), e)
+                      log.error(e, logTemplate(user.id, indexName, "decisionTableCacheLoadAsync", request.method, request.uri))
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 120, message = e.getMessage)
@@ -642,8 +642,8 @@ trait DecisionTableResource extends StarChatResource {
                     case Success(t) =>
                       completeResponse(StatusCodes.OK, StatusCodes.BadRequest, t)
                     case Failure(e) =>
-                      log.error(logTemplate(user.id,
-                        indexName, "decisionTableRoutesBulkDeleteRoutes", request.method, request.uri), e)
+                      log.error(e, logTemplate(user.id,
+                        indexName, "decisionTableRoutesBulkDeleteRoutes", request.method, request.uri))
                       completeResponse(StatusCodes.BadRequest,
                         Option {
                           ReturnMessageData(code = 121, message = e.getMessage)

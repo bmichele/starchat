@@ -227,8 +227,8 @@ object ResponseService extends AbstractDataService {
           )
           Try(starchatAnalyzer.evaluate(userText, data = analyzersDataInternal)) match {
             case Success(evalRes: Result) =>
-              log.info("ResponseService: Evaluation of State({}) Query({}) Score({})",
-                stateName, userText, evalRes.toString)
+              log.debug("ResponseService: Evaluation of State({}) Query({}) Score({})",
+                stateName, userText, evalRes.score)
               evalRes
             case Failure(e) =>
               val message = "ResponseService: Evaluation of State(" + stateName + ") : " + e.getMessage
