@@ -12,8 +12,8 @@ resolvers += Resolver.sonatypeRepo("public")
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies ++= {
-  val AkkaHttpVersion	= "10.1.11"
-  val AkkaVersion	= "2.6.4"
+  val AkkaHttpVersion  = "10.1.11"
+  val AkkaVersion      = "2.6.4"
   val AnalyzerVersion = "3.1.1"
   val BreezeVersion	= "1.0"
   val CourierVersion = "1.0.0"
