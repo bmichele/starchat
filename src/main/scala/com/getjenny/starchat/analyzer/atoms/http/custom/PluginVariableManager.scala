@@ -20,7 +20,7 @@ import scala.util.matching.Regex
  *
  * app_id: is the configurator-generated and computer-friendly ID (e.g. `my_organization.email_checker`) which will also be put as prefix of each variable.
  * url: the url where the service developed by the organization's developer was made available example.com:8888)
- * key: the service must be accessible with `-H "Authorization: Basic ${API_KEY}"`
+ * key: the service must be accessible with -H "Authorization: Basic <API_KEY>"
  * user_email is a parameter for which the configurator's mask has all info (type, if it's mandatory etc).
  *
  *
@@ -89,9 +89,9 @@ case class PluginOutput(override val score: String, prefix: String) extends Http
       val outputJsonMap = jsonMap.map {
         case (k,v) => s"$prefix.$k" -> v.toString.stripPrefix("\"").stripSuffix("\"")
       }
-      val appScore: Double = jsonMap.get("score") match {
-        case Some(v) => v.convertTo[Double]
-        case _ => 0.0d
+      val appScore: Int = jsonMap.get("score") match {
+        case Some(v) => v.convertTo[Double].toInt
+        case _ => 0
       }
       Map(
         score -> appScore.toString,
@@ -100,7 +100,7 @@ case class PluginOutput(override val score: String, prefix: String) extends Http
       ) ++ outputJsonMap
     } else {
       Map(
-        score -> 0.0d.toString,
+        score -> "0",
         s"$prefix.status" -> status.toString
       )
     }
