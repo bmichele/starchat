@@ -287,7 +287,7 @@ object AnalyzerService extends AbstractDataService {
         analyzerRequest.data match {
           case Some(data) =>
             // prepare search result for search analyzer
-            val searchRes = decisionTableService.searchDtQueries(indexName, analyzerRequest)
+            val searchRes = decisionTableService.searchDtQueries(indexName, analyzerRequest, 0.0d.some)
             val analyzersInternalData = decisionTableService.resultsToMap(searchRes)
             val dataInternal = AnalyzersDataInternal(
               context = Context(indexName = indexName, stateName = analyzerRequest.stateName.getOrElse("playground")),

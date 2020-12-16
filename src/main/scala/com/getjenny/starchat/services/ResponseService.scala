@@ -183,7 +183,7 @@ object ResponseService extends AbstractDataService {
     // prepare search result for search analyzer
     val analyzerEvaluateRequest = AnalyzerEvaluateRequest(analyzer = "", query = userText, data = None,
       searchAlgorithm = request.searchAlgorithm, evaluationClass = request.evaluationClass)
-    val searchResult = decisionTableService.searchDtQueries(indexName, analyzerEvaluateRequest)
+    val searchResult = decisionTableService.searchDtQueries(indexName, analyzerEvaluateRequest, request.threshold)
     val analyzersInternalData = decisionTableService.resultsToMap(searchResult)
     val searchResAnalyzers = AnalyzersDataInternal(
       context = Context(indexName = indexName, stateName = ""), // stateName is not important here
@@ -226,8 +226,7 @@ object ResponseService extends AbstractDataService {
           )
           Try(starchatAnalyzer.evaluate(userText, data = analyzersDataInternal)) match {
             case Success(evalRes: Result) =>
-              log.debug("ResponseService: Evaluation of State({}) Query({}) Score({})",
-                stateName, userText, evalRes.toString)
+             log.debug("ResponseService: Evaluation of State({}) Query({}) Score({})", stateName, userText, evalRes.score)
               evalRes
             case Failure(e) =>
               val message = "ResponseService: Evaluation of State(" + stateName + ") : " + e.getMessage

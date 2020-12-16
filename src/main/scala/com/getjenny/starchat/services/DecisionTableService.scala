@@ -4,9 +4,6 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
 
-import java.io.File
-import java.util
-
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.utils.TokenToVector
@@ -25,6 +22,8 @@ import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.aggregations.AggregationBuilders
 import scalaz.Scalaz._
 
+import java.io.File
+import java.util
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
 
@@ -67,6 +66,33 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     }.toList
   }
 
+  def tokenizeText(indexName: String, analyzer: String, text: String): TokenizerResponse = {
+    val tokenizerRequest = TokenizerQueryRequest(tokenizer = analyzer, text = text)
+    termService.esTokenizer(indexName, tokenizerRequest)
+  }
+
+  private[this] def ngramsQueryBuilder(indexName: String,
+                                       analyzerName: String,
+                                       fieldName: String,
+                                       text: String,
+                                       minScore: Float,
+                                       searchAlgorithm: SearchAlgorithm.Value
+                                      ): (QueryBuilder, Option[(String, SearchAlgorithm.Value)]) = {
+    val tokenizerResponse: TokenizerResponse = tokenizeText(indexName = indexName,
+      analyzer = analyzerName, text = text)
+    val params: Map[String, Array[String]] = Map("tokens"-> tokenizerResponse.tokens.map(_.token).toArray)
+    val script: Script = nestedNgramSearchScript(s"queries.query.$fieldName", params)
+    (QueryBuilders.nestedQuery("queries",
+      QueryBuilders.scriptScoreQuery(
+        QueryBuilders.boolQuery.filter(
+          QueryBuilders.matchQuery(s"queries.query.$fieldName", text)
+        ), script
+      ).setMinScore(minScore),
+      queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
+    ).ignoreUnmapped(true)
+      .innerHit(new InnerHitBuilder().setSize(100)),
+      Option(fieldName -> searchAlgorithm))
+  }
   private[this] def documentSearchQueries(indexName: String,
                                           value: String,
                                           minScore: Float,
@@ -76,31 +102,25 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
     val searchAlgorithm = documentSearch.searchAlgorithm.getOrElse(SearchAlgorithm.DEFAULT)
     searchAlgorithm match {
       case SearchAlgorithm.AUTO | SearchAlgorithm.DEFAULT =>
-        val (scriptBody, matchQueryEs, analyzer, algorithm) = if (documentSearch.queries.getOrElse("").length >= 3) {
-          (
-            "return doc['queries.query.ngram_3'] ;",
-            "queries.query.ngram_3",
-            "ngram3",
-            SearchAlgorithm.NGRAM3
-
+        if (documentSearch.queries.getOrElse("").length >= 3) {
+          ngramsQueryBuilder(
+            indexName = indexName,
+            analyzerName = "ngram3",
+            fieldName = "ngram_3",
+            text = value,
+            minScore = minScore,
+            searchAlgorithm = searchAlgorithm
           )
         } else {
-          (
-            "return doc['queries.query.ngram_2'] ;",
-            "queries.query.ngram_2",
-            "ngram2",
-            SearchAlgorithm.NGRAM2
+          ngramsQueryBuilder(
+            indexName = indexName,
+            analyzerName = "ngram2",
+            fieldName = "ngram_2",
+            text = value,
+            minScore = minScore,
+            searchAlgorithm = searchAlgorithm
           )
         }
-        val script: Script = new Script(scriptBody)
-        (QueryBuilders.nestedQuery(
-          "queries",
-          QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery(matchQueryEs, value)),
-          queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100)),
-          Option(analyzer -> algorithm))
       case SearchAlgorithm.STEM_BOOST_EXACT =>
         (
           QueryBuilders.nestedQuery(
@@ -162,71 +182,59 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
         ).ignoreUnmapped(true).innerHit(new InnerHitBuilder().setSize(100)),
           None)
       case SearchAlgorithm.NGRAM2 =>
-        val scriptBody = "return doc['queries.query.ngram_2'] ;"
-        val script: Script = new Script(scriptBody)
-        (QueryBuilders.nestedQuery(
-          "queries",
-          QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery("queries.query.ngram_2", value)),
-          queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100)),
-          Option("ngram2" -> searchAlgorithm))
+        ngramsQueryBuilder(
+          indexName = indexName,
+          analyzerName = "ngram2",
+          fieldName = "ngram_2",
+          text = value,
+          minScore = minScore,
+          searchAlgorithm = searchAlgorithm
+        )
       case SearchAlgorithm.STEM_NGRAM2 =>
-        val scriptBody = "return doc['queries.query.stemmed_ngram_2'] ;"
-        val script: Script = new Script(scriptBody)
-        (QueryBuilders.nestedQuery(
-          "queries",
-          QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery("queries.query.stemmed_ngram_2", value)),
-          queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100)),
-          Option("stemmed_ngram2" -> searchAlgorithm))
+        ngramsQueryBuilder(
+          indexName = indexName,
+          analyzerName = "stemmed_ngram2",
+          fieldName = "stemmed_ngram_2",
+          text = value,
+          minScore = minScore,
+          searchAlgorithm = searchAlgorithm
+        )
       case SearchAlgorithm.NGRAM3 =>
-        val scriptBody = "return doc['queries.query.ngram_3'] ;"
-        val script: Script = new Script(scriptBody)
-        (QueryBuilders.nestedQuery(
-          "queries",
-          QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery("queries.query.ngram_3", value)),
-          queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100)),
-          Option("ngram3" -> searchAlgorithm))
+        ngramsQueryBuilder(
+          indexName = indexName,
+          analyzerName = "ngram3",
+          fieldName = "ngram_3",
+          text = value,
+          minScore = minScore,
+          searchAlgorithm = searchAlgorithm
+        )
       case SearchAlgorithm.STEM_NGRAM3 =>
-        val scriptBody = "return doc['queries.query.stemmed_ngram_3'] ;"
-        val script: Script = new Script(scriptBody)
-        (QueryBuilders.nestedQuery(
-          "queries",
-          QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery("queries.query.stemmed_ngram_3", value)),
-          queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100)),
-          Option("stemmed_ngram3", searchAlgorithm))
+        ngramsQueryBuilder(
+          indexName = indexName,
+          analyzerName = "stemmed_ngram3",
+          fieldName = "stemmed_ngram_3",
+          text = value,
+          minScore = minScore,
+          searchAlgorithm = searchAlgorithm
+        )
       case SearchAlgorithm.NGRAM4 =>
-        val scriptBody = "return doc['queries.query.ngram_4'] ;"
-        val script: Script = new Script(scriptBody)
-        (QueryBuilders.nestedQuery(
-          "queries",
-          QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery("queries.query.ngram_4", value)),
-          queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100)),
-          Option("ngram4" -> searchAlgorithm))
+        ngramsQueryBuilder(
+          indexName = indexName,
+          analyzerName = "ngram3",
+          fieldName = "ngram_4",
+          text = value,
+          minScore = minScore,
+          searchAlgorithm = searchAlgorithm
+        )
       case SearchAlgorithm.STEM_NGRAM4 =>
-        val scriptBody = "return doc['queries.query.stemmed_ngram_4'] ;"
-        val script: Script = new Script(scriptBody)
-        (QueryBuilders.nestedQuery(
-          "queries",
-          QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery("queries.query.stemmed_ngram_4", value)),
-          queriesScoreMode.getOrElse(elasticClient.queriesScoreMode, ScoreMode.Max)
-        ).ignoreUnmapped(true)
-          .innerHit(new InnerHitBuilder().addScriptField("terms", script).setSize(100)),
-          Option("stemmed_ngram4" -> searchAlgorithm))
+        ngramsQueryBuilder(
+          indexName = indexName,
+          analyzerName = "stemmed_ngram4",
+          fieldName = "stemmed_ngram_4",
+          text = value,
+          minScore = minScore,
+          searchAlgorithm = searchAlgorithm
+        )
       case _ => throw DecisionTableServiceException("Unknown SearchAlgorithm: " + searchAlgorithm)
     }
 
@@ -277,31 +285,20 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
       case _ => ;
     }
 
-    val (queryBuilder, isNgram) = documentSearch.queries.map(x => {
-      val (q, ngramsAlgorithm) = documentSearchQueries(indexName, x, minScore, boostExactMatchFactor, documentSearch)
-      boolQueryBuilder.must(q) -> ngramsAlgorithm
-    }).getOrElse(boolQueryBuilder -> None)
+    val queryBuilder = documentSearch.queries.map(x => {
+      val (qb, _ /*ngramsAlgorithm*/) =
+        documentSearchQueries(indexName, x, minScore, boostExactMatchFactor, documentSearch)
+      qb
+    }).getOrElse(boolQueryBuilder)
 
-    val queryExtractorFunction = isNgram.map { case (_, alg) =>
-      val sliding = alg match {
-        case SearchAlgorithm.STEM_NGRAM2 | SearchAlgorithm.NGRAM2 => 2
-        case SearchAlgorithm.STEM_NGRAM3 | SearchAlgorithm.NGRAM3 => 3
-        case SearchAlgorithm.STEM_NGRAM4 | SearchAlgorithm.NGRAM4 => 4
-        case _ => 2
-      }
-      queryAndNgramExtractor(sliding)
-    }.getOrElse(orderedQueryExtractor)
-
+    val queryExtractorFunction = orderedQueryExtractor
     val indexLanguageCrud = IndexLanguageCrud(elasticClient, indexName)
     val documents = indexLanguageCrud.read(queryBuilder, version = Option(true),
       from = documentSearch.from.orElse(Option(0)),
       maxItems = documentSearch.size.orElse(Option(10)),
       entityManager = new SearchDTDocumentEntityManager(queryExtractorFunction))
 
-    val res = isNgram.map { case (analyzer, _) => handleNgrams(indexName, analyzer,
-      documentSearch.queries.getOrElse(""), documents)
-    }
-      .getOrElse(documents.map(_.documents))
+    val res = documents.map(_.documents)
 
     val maxScore: Float = if (res.nonEmpty) {
       res.maxBy(_.score).score
@@ -314,7 +311,9 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
   }
 
   def searchDtQueries(indexName: String,
-                      analyzerEvaluateRequest: AnalyzerEvaluateRequest): SearchDTDocumentsResults = {
+                      analyzerEvaluateRequest: AnalyzerEvaluateRequest,
+                      threshold: Option[Double] = None
+                     ): SearchDTDocumentsResults = {
     val dtDocumentSearch: DTDocumentSearch =
       DTDocumentSearch(
         from = Option {
@@ -323,8 +322,9 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
         size = Option {
           10000
         },
-        minScore = Option {
-          elasticClient.queryMinThreshold
+        minScore = threshold match {
+          case Some(v) => v.toFloat.some
+          case _ => elasticClient.queryMinThreshold.some
         },
         executionOrder = None: Option[Int],
         boostExactMatchFactor = Option {
@@ -430,22 +430,6 @@ object DecisionTableService extends AbstractDataService with DecisionTableESScri
         val query_array = t.asInstanceOf[java.util.ArrayList[java.util.HashMap[String, String]]].asScala.toList
           .map(q_e => q_e.get("query"))
         (offsets.map(i => query_array(i)), List.empty[List[String]])
-      case None => (List.empty, List.empty[List[String]])
-    }
-  }
-
-  private[this] val queryAndNgramExtractor = (sliding: Int) => (innerHits: Map[String, SearchHits], source: Map[String, Any]) => {
-    source.get("queries") match {
-      case Some(t) =>
-        val offsetsAndNgrams = innerHits("queries").getHits.toList.map(innerHit => {
-          innerHit.getNestedIdentity.getOffset
-        })
-        val queryArray = t.asInstanceOf[java.util.ArrayList[java.util.HashMap[String, String]]].asScala.toList
-          .map(q_e => q_e.get("query"))
-        offsetsAndNgrams.par.map { e =>
-          val qNgrams = queryArray(e).toLowerCase().replaceAll("\\s", "").sliding(sliding).toList
-          (queryArray(e), qNgrams)
-        }.toList.unzip
       case None => (List.empty, List.empty[List[String]])
     }
   }
