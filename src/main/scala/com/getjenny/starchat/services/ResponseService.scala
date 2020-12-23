@@ -239,7 +239,9 @@ object ResponseService extends AbstractDataService {
       val stateId = stateName
       (stateId, analyzerEvaluation)
     }.filter { case (_, analyzerEvaluation) => analyzerEvaluation.score >= threshold }
-      .sortWith{_._2.score > _._2.score}.toMap
+      .sortWith(_._2.score > _._2.score)
+      .take(maxResults)
+      .toMap
 
     if (analyzersEvalData.isEmpty) {
       throw ResponseServiceNoResponseException(
