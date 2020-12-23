@@ -4,9 +4,6 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
 
-import java.security.SecureRandom
-import java.util.regex.Pattern
-
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.analyzers._
 import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context, Result}
@@ -17,8 +14,9 @@ import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import scalaz.Scalaz._
 import spray.json.{JsString, _}
 
+import java.security.SecureRandom
+import java.util.regex.Pattern
 import scala.collection.immutable.Map
-import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 case class ResponseServiceException(message: String = "", cause: Throwable = None.orNull)
@@ -241,11 +239,7 @@ object ResponseService extends AbstractDataService {
       val stateId = stateName
       (stateId, analyzerEvaluation)
     }.filter { case (_, analyzerEvaluation) => analyzerEvaluation.score >= threshold }
-      .foldLeft(
-        mutable.PriorityQueue.empty[(String, Result)](Ordering.by[(String, Result), Double](_._2.score))
-      )((acc, e) => {
-        (acc += e).take(maxResults)
-      }).dequeueAll.toMap
+      .sortWith{_._2.score > _._2.score}.toMap
 
     if (analyzersEvalData.isEmpty) {
       throw ResponseServiceNoResponseException(
