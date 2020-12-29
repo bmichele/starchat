@@ -49,7 +49,7 @@ class IndexLanguageCrud private(val client: ElasticClient, val index: String, va
               fetchSource: Option[Array[String]] = None, entityManager: ReadEntityManager[T]): List[T] = {
 
     val finalQuery = QueryBuilders.boolQuery()
-      .must(QueryBuilders.matchQuery(instanceFieldName, instance))
+      .filter(QueryBuilders.matchQuery(instanceFieldName, instance))
       .must(queryBuilder)
 
     val response = esCrudBase.read(finalQuery, from, sort, maxItems, searchType,
