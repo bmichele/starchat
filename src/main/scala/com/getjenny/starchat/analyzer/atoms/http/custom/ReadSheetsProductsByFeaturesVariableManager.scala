@@ -32,7 +32,7 @@ case class ReadSheetsProductsByFeaturesOutput(override val score: String = "prod
                                               desired_treatment: String = "product_feature.previousTreatment"
                                              ) extends HttpAtomOutputConf {
 
-  override def BodyParser (body: String, ContentType: String, status: StatusCode): Map[String, String] = {
+  override def bodyParser (body: String, ContentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)) {
       val json = body.parseJson.asJsObject
       val productFeatures: String = json.getFields("where", "what", "material", "age", "previous_treatment", "desired_treatment").headOption.flatMap {
