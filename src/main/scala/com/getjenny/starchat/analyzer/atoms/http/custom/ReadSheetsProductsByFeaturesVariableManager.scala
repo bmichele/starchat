@@ -35,10 +35,10 @@ case class ReadSheetsProductsByFeaturesOutput(override val score: String = "prod
   override def bodyParser (body: String, ContentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)) {
       val json = body.parseJson.asJsObject
-      val productFeatures: String = json.getFields("where", "what", "material", "age", "previous_treatment", "desired_treatment").headOption.flatMap {
-        case JsArray(elements) => elements.headOption.flatMap(e => e.asJsObject.fields.get(productFeatures))
-        case _ => None
-      }.map(_.convertTo[String]).getOrElse("")
+//      val productFeatures: String = json.getFields("where", "what", "material", "age", "previous_treatment", "desired_treatment").headOption.flatMap {
+//        case JsArray(elements) => elements.headOption.flatMap(e => e.asJsObject.fields.get(productFeatures))
+//        case _ => None
+//      }.map(_.convertTo[String]).getOrElse("")
       val whereProduct = extractField(json, "main", "where")
       val whatProduct = extractField(json, "main", "what")
       val materialProduct = extractField(json, "main", "material")
