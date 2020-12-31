@@ -4,13 +4,31 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.getjenny.starchat.analyzer.atoms.http.AtomVariableReader._
 import com.getjenny.starchat.analyzer.atoms.http._
 import scalaz.Scalaz._
-import scalaz.Success
+import scalaz.{Failure, NonEmptyList, Success}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-/**
+/** Implement an atom which gets product info from an external service (designed as in GJ-DD-201130-0)
+ *
+ * Arguments (can be stored in bot variables) are:
+ * readSheetsProductsByName.productName.0
+ * readSheetsProductsByName.productName.1
+ * ...
+ * readSheetsProductsByName.productName.n
+ *
+ * The atom send a request to the external service with the payload template:
+ * [<readSheetsProductsByName.productName.0>, <readSheetsProductsByName.productName.1>, ...]
+ *
+ * Usage example:
  * readSheetsProductsByName()
- */
+ *
+ * Variables set by the atom:
+ * %readSheetsProductsByName.count%: number of products found by external service
+ * %readSheetsProductsByName.results.i%: String json containing details for a product retrieved from the external service
+ * Note that, in general, product details stored in readSheetsProductsByName.results.i does not refer to product
+ * readSheetsProductsByName.productName.i (there is a mismatch in indices if, e.g., one of the product names is not found by the external service)
+ *
+*/
 
 trait ReadSheetsProductsByNameVariableManager extends GenericVariableManager {
 
@@ -19,20 +37,23 @@ trait ReadSheetsProductsByNameVariableManager extends GenericVariableManager {
   // override inputConf so that an arbitrary number of product names can be stored in the input json
   override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
 
-    // Get product names from variables (named "productName.0", "productName.1", ..., "productName.N")
-    def dummy(number: Int, findProperty: String => Option[String]): AtomValidation[String] = {
-      val prodName = "<productName." + number.toString + ">"
+    // Get product names from variables (named "readSheetsProductsByName.productName.0", "readSheetsProductsByName.productName.1", ...)
+    def lookupProductNameVariable(variableIndex: Int, findProperty: String => Option[String]): AtomValidation[String] = {
+      val prodName = "<readSheetsProductsByName.productName." + variableIndex.toString + ">"
       substituteTemplate(prodName, findProperty)
     }
-    val inputProductNames = Stream.iterate(0)(_ + 1)
-      .takeWhile(dummy(_, findProperty).isSuccess)
-      .toList
-      .map("<productName." + _.toString + ">")
-      .map(substituteTemplate(_, findProperty))
-      .map { case Success(value) => value }
 
-    Success(Some(JsonConf("[\"" + inputProductNames.mkString("\", \"") + "\"]")))
-
+    lookupProductNameVariable(0, findProperty) match {
+      case Success(_) =>
+        val inputProductNames = Stream.iterate(0)(_ + 1)
+          .takeWhile(lookupProductNameVariable(_, findProperty).isSuccess)
+          .toList
+          .map("<readSheetsProductsByName.productName." + _.toString + ">")
+          .map(substituteTemplate(_, findProperty))
+          .map { case Success(value) => value }
+        Success(Some(JsonConf("[\"" + inputProductNames.mkString("\", \"") + "\"]")))
+      case Failure(_) => Failure(NonEmptyList(s"Unable to find readSheetsProductsByName.productName.0"))
+    }
   }
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
