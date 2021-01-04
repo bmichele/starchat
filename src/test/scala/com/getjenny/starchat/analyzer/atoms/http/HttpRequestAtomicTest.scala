@@ -1,7 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.getjenny.starchat.analyzer.atoms.http.custom.{ReadSheetsProductsByNameVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{ReadSheetsProductsByNameVariableManager, ReadSheetsProductsByFeaturesVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -787,6 +787,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       val configuration = variableManager.validateAndBuild(List.empty, systemConf, Map.empty, "")
       configuration shouldBe a[Failure[_]]
     }
+
     /*
     "test readSheetsProductsByName atom" in {
 
@@ -802,5 +803,24 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       result.data.extractedVariables.foreach(println)
     }
     */
+
+    "create a valid readSheetsProductsByFeatures atom configuration" in {
+      val variableManager = new ReadSheetsProductsByFeaturesVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atomArgs = List()
+      val extractedVariables = Map(("productFeature.what", "test"),("productFeature.where", "test"), ("productFeature.material", "test"), ("productFeature.age", "test"), ("productFeature.previousTreatment", "test"), ("productFeature.desiredTreatment", "test"))
+      val configuration = variableManager.validateAndBuild(atomArgs, systemConf, extractedVariables, "")
+      configuration shouldBe a[Success[_]]
+    }
+
+    "create an invalid readSheetsProductsByFeatures atom configuration" in {
+      val variableManager = new ReadSheetsProductsByFeaturesVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atomArgs = List.empty
+      val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
+      configuration shouldBe a[Failure[_]]
+    }
   }
 }
