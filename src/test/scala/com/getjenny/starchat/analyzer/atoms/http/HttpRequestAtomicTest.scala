@@ -2,7 +2,7 @@ package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.getjenny.analyzer.expressions.AnalyzersDataInternal
-import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, LTCustomerInfoVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -771,5 +771,27 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     result.data.extractedVariables.foreach(println)
   }
   */
+
+    "create a valid LtCustomerInfo atom" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new LTCustomerInfoVariableManager {}
+
+      val args =  List("lt-api-url=https://lt.net")
+
+      val configuration = atom.validateAndBuild(args, systemConf, Map.empty, "1234")
+      configuration shouldBe a[Success[_]]
+      configuration.map(println)
+    }
+
+    /*"call LTCustomerInfo api" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val args =  List("lt-api-url=https://lt.net")
+      val atom = new HttpRequestAtomic(args, systemConf) with LTCustomerInfoVariableManager
+      val result = atom.evaluate("100227709", AnalyzersDataInternal())
+      result.data.extractedVariables.foreach(println)
+    }*/
   }
 }
