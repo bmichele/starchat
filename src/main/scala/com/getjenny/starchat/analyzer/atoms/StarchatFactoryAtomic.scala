@@ -41,7 +41,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "parseName",
     "prevTravStateIs",
     "readRemoteData",
-    "readSheetsProductsByFeatures",
+    "readSheetsProductsByFeature",
     "readSheetsProductsByName",
     "regex",
     "search",
