@@ -12,7 +12,11 @@ object DecisionTableElasticClient extends ElasticClient {
   val boostExactMatchFactor : Float = config.getDouble("es.dt_boost_exact_match_factor").toFloat
   val queriesScoreMode: String = config.getString("es.dt_queries_score_mode").toLowerCase
   val getNextResponseThreshold: Double =
-    config.getString("starchat.get_next_response_threshold").toDouble
+    config.getDouble("starchat.get_next_response_threshold")
+
+  val loopDetectionMaxCycleLength: Int = config.getInt("starchat.loopDetectionMaxCycleLength")
+  val loopDetectionExaminedLength: Int = config.getInt("starchat.loopDetectionExaminedLength")
+  val loopDetectionTimeThreshold: Long = config.getLong("starchat.loopDetectionTimeThreshold")
 
   val cleanDeletedDTStatesProcessInterval: Long =
     config.getLong("starchat.clean_deleted_dt_states_process_interval")

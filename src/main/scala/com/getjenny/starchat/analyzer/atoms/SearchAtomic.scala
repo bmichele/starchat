@@ -5,7 +5,7 @@ package com.getjenny.starchat.analyzer.atoms
   */
 
 import com.getjenny.analyzer.atoms.AbstractAtomic
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
 import com.getjenny.starchat.entities.persistents.SearchDTDocument
 import com.getjenny.starchat.services._
 

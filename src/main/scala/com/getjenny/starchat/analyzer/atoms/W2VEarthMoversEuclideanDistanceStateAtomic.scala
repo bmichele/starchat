@@ -5,10 +5,9 @@ package com.getjenny.starchat.analyzer.atoms
   */
 
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
 import com.getjenny.starchat.analyzer.utils.EMDVectorDistances
 import com.getjenny.starchat.entities.io.CommonOrSpecificSearch
-import com.getjenny.starchat.entities.persistents.TextTerms
 import com.getjenny.starchat.services._
 import com.getjenny.starchat.utils.Index
 

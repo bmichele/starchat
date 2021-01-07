@@ -1,7 +1,7 @@
 package com.getjenny.starchat.services
 
 import akka.event.{Logging, LoggingAdapter}
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Context}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
 import com.getjenny.starchat.entities.io.{BayesOperatorCacheServiceResponse, RefreshPolicy}

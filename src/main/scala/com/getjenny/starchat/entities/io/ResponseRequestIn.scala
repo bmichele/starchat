@@ -4,6 +4,9 @@ package com.getjenny.starchat.entities.io
  * Created by Angelo Leto <angelo@getjenny.com> on 27/06/16.
  */
 
+import com.getjenny.analyzer.entities.DtHistoryItem
+import scalaz.Scalaz._
+
 import scala.collection.immutable.Map
 
 case class ResponseRequestInUserInput(
@@ -13,7 +16,7 @@ case class ResponseRequestInUserInput(
                                      )
 
 case class ResponseRequestIn(conversationId: String,
-                             traversedStates: Option[Vector[String]] = None,
+                             traversedStates: Option[Vector[DtHistoryItem]] = Vector.empty[DtHistoryItem].some,
                              userInput: Option[ResponseRequestInUserInput] = None,
                              state: Option[List[String]] = None,
                              data: Option[Map[String, String]] = None,

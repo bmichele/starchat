@@ -1,6 +1,7 @@
-package com.getjenny.analyzer.atoms
+package com.getjenny.starchat.analyzer.atoms
 
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
 import scalaz.Scalaz._
 
 /**
@@ -8,11 +9,11 @@ import scalaz.Scalaz._
  */
 
 /** test if a variable exists on dictionary of variables and match the value, eg:
-  *
-  * checkVariableValue(variable_name, variable_value)
-  *
-  * @param arguments: <variable>, <value>
-  */
+ *
+ * checkVariableValue(variable_name, variable_value)
+ *
+ * @param arguments: <variable>, <value>
+ */
 class CheckVariableValue(val arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   val varName: String = arguments.headOption match {
     case Some(t) => t
@@ -32,7 +33,7 @@ class CheckVariableValue(val arguments: List[String], restrictedArgs: Map[String
    * @return Result with 1.0 if the variable exists and match the specified value score = 0.0 otherwise
    */
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
-    if(data.extractedVariables.getOrElse(varName, varValue + ".") === varValue) {
+    if(data.stateVariables.extractedVariables.getOrElse(varName, varValue + ".") === varValue) {
       Result(score = 1.0)
     } else {
       Result(score = 0.0)

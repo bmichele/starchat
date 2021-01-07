@@ -7,19 +7,18 @@ import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.util.ByteString
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result, StateVariables}
 import com.getjenny.starchat.SCActorSystem
+import org.apache.commons.lang3.StringUtils.stripAccents
 import scalaz.Scalaz._
 import scalaz.{Failure, Success}
 
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.language.postfixOps
 import scala.util.Try
-import org.apache.commons.lang3.StringUtils.stripAccents
-
-import java.util.Base64
-import java.nio.charset.StandardCharsets
 
 class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   this: VariableManager =>
@@ -36,24 +35,38 @@ class HttpRequestAtomic(arguments: List[String], restrictedArgs: Map[String, Str
 
 
   override def evaluate(query: String, analyzerData: AnalyzersDataInternal): Result = {
-    val extractedVariables = analyzerData.extractedVariables
+    val extractedVariables = analyzerData.stateVariables.extractedVariables
 
 
     validateAndBuild(arguments, restrictedArgs, extractedVariables, query) match {
       case Success(conf) =>
-          serviceCall(query, conf)
-            .map { outputData =>
-              //if there haven't been previous invocations, the score will be 0
-              val previousInvocationScore = conf.outputConf.getScoreValue(extractedVariables)
-              val score = outputData.getOrElse(conf.outputConf.score, errorScore).toInt
-              if(previousInvocationScore === successScore.toInt && score === errorScore.toInt) {
-                Result(score, data = analyzerData)
-              } else {
-                Result(score, analyzerData.copy(extractedVariables = analyzerData.extractedVariables ++ outputData))
-              }
-            }.getOrElse(Result(errorScore.toInt, analyzerData
-            .copy(extractedVariables = analyzerData.extractedVariables + (conf.outputConf.score -> errorScore))
-          ))
+        serviceCall(query, conf)
+          .map { outputData =>
+            //if there haven't been previous invocations, the score will be 0
+            val previousInvocationScore = conf.outputConf.getScoreValue(extractedVariables)
+            val score = outputData.getOrElse(conf.outputConf.score, errorScore).toInt
+            if(previousInvocationScore === successScore.toInt && score === errorScore.toInt) {
+              Result(score, data = analyzerData)
+            } else {
+              Result(score,
+                analyzerData.copy(
+                  stateVariables = StateVariables(
+                    extractedVariables =
+                      analyzerData.stateVariables.extractedVariables ++ outputData,
+                    traversedStates = analyzerData.stateVariables.traversedStates
+                  )
+                )
+              )
+            }
+          }.getOrElse(Result(errorScore.toInt, analyzerData
+          .copy(
+            stateVariables = StateVariables(
+              extractedVariables =
+                analyzerData.stateVariables.extractedVariables + (conf.outputConf.score -> errorScore),
+              traversedStates = analyzerData.stateVariables.traversedStates
+            )
+          )
+        ))
       case Failure(errors) =>
         log.error(s"Error in parameter list: ${errors.toList.mkString("; ")}")
         throw ExceptionAtomic(s"Error in atom configuration: $errors")

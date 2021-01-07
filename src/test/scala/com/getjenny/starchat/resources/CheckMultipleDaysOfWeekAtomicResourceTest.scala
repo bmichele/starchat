@@ -1,6 +1,6 @@
 package com.getjenny.starchat.resources
 import akka.http.scaladsl.model.StatusCodes
-import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.entities.StateVariables
 import com.getjenny.analyzer.util.Time
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse}
@@ -15,9 +15,7 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = """band(checkMultipleDaysOfWeek("[1,2,3,4,5,6,7]","CET"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -36,9 +34,7 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = """band(checkMultipleDaysOfWeek("[]","CET"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -53,9 +49,7 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = """band(checkMultipleDaysOfWeek("[1,A]","CET"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -70,9 +64,7 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = """band(checkMultipleDaysOfWeek("[1,A]","CETAD"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -92,9 +84,7 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = analyzer,
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -114,9 +104,7 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = analyzer,
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -128,5 +116,4 @@ class CheckMultipleDaysOfWeekAtomicResourceTest extends TestEnglishBase {
       }
     }
   }
-
 }

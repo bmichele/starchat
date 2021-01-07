@@ -5,7 +5,8 @@ package com.getjenny.starchat.services.actions
  */
 
 import akka.event.{Logging, LoggingAdapter}
-import com.getjenny.analyzer.expressions.AnalyzersDataInternal
+import com.getjenny.analyzer.entities.AnalyzersDataInternal
+import com.getjenny.analyzer.entities.StateVariables
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
 import com.getjenny.starchat.entities.io.DtActionResult
@@ -63,10 +64,12 @@ object DtActionAtomAdapter {
     }
 
     starchatAnalyzer.map { analyzer =>
-      val result = analyzer.evaluate(query, AnalyzersDataInternal(extractedVariables = allParams ++ data))
+      val result = analyzer.evaluate(query, AnalyzersDataInternal(
+        stateVariables = StateVariables(
+          extractedVariables = allParams ++ data)))
       DtActionResult(result.score === 1,
         if (result.score === 0) 1 else 0,
-        result.data.extractedVariables
+        result.data.stateVariables.extractedVariables
       )
     }.getOrElse(DtActionResult(code = 1))
   }

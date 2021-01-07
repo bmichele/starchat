@@ -1,8 +1,9 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
-import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.entities.StateVariables
 import com.getjenny.starchat.TestEnglishBase
+import scalaz.Scalaz._
 import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse}
 
 class TimeBetweenAtomicResourceTest extends TestEnglishBase {
@@ -14,9 +15,7 @@ class TimeBetweenAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = """band(timeBetween("00:00", "23:59", "Europe/Helsinki"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -36,9 +35,7 @@ class TimeBetweenAtomicResourceTest extends TestEnglishBase {
           query = "user query unused",
           // Timezone is not used, but it's required
           analyzer = """band(timeBetween("8:00", "23:59", "Europe/Helsinki", "8:44"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -58,9 +55,7 @@ class TimeBetweenAtomicResourceTest extends TestEnglishBase {
           query = "user query unused",
           // Timezone is not used, but it's required
           analyzer = """band(timeBetween("8:45", "16:1", "CET", "10:10"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -79,9 +74,7 @@ class TimeBetweenAtomicResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query unused",
           analyzer = """bor(band(timeBetween("00:00", "11:59", "UTC-6"), bnot(timeBetween("00:00", "11:59", "UTC+6", ""))), band(timeBetween("00:00", "11:59", "UTC+6", ""), bnot(timeBetween("00:00", "11:59", "UTC-6", ""))))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {

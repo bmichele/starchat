@@ -1,10 +1,8 @@
 package com.getjenny.command
 
 /**
-  * Created by angelo on 11/04/17.
-  */
-
-import java.io.{File, FileReader, FileWriter}
+ * Created by angelo on 11/04/17.
+ */
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -14,11 +12,13 @@ import akka.http.scaladsl.model.{HttpRequest, _}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import au.com.bytecode.opencsv.CSVWriter
 import breeze.io.CSVReader
-import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.entities.{DtHistoryItem, StateVariables}
 import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse, SearchAlgorithm}
 import com.getjenny.starchat.serializers.JsonSupport
+import scalaz.Scalaz._
 import scopt.OptionParser
 
+import java.io.{File, FileReader, FileWriter}
 import scala.collection.immutable
 import scala.collection.immutable.Map
 import scala.concurrent.duration._
@@ -88,8 +88,10 @@ object SimilarityTest extends JsonSupport {
         analyzer = analyzer,
         query = text2,
         searchAlgorithm = Some(SearchAlgorithm.DEFAULT),
-        data = Option{ AnalyzersData(extractedVariables = params.variables,
-          traversedStates = params.itemList.toVector) }
+        data = StateVariables(
+          extractedVariables = params.variables,
+          traversedStates = Vector.empty[DtHistoryItem]
+        ).some
       )
 
       val entityFuture = Marshal(evaluate_request).to[MessageEntity]
@@ -157,10 +159,6 @@ object SimilarityTest extends JsonSupport {
         .text(s"the index_name, e.g. index_XXX" +
           s"  default: ${defaultParams.indexName}")
         .action((x, c) => c.copy(indexName = x))
-      opt[Seq[String]]("traversed_states")
-        .text(s"list of string representing the traversed states" +
-          s"  default: ${defaultParams.itemList}")
-        .action((x, c) => c.copy(itemList = x))
       opt[Map[String, String]]("variables")
         .text(s"set of variables to be used by the analyzers" +
           s"  default: ${defaultParams.variables}")

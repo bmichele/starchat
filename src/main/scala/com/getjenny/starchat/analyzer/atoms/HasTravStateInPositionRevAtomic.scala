@@ -1,7 +1,8 @@
 package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
+import scalaz.Scalaz._
 
 class HasTravStateInPositionRevAtomic(arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic{
   val state: String = arguments.headOption match {
@@ -20,8 +21,8 @@ class HasTravStateInPositionRevAtomic(arguments: List[String], restrictedArgs: M
   override def toString: String = "hasTravStateInPosition(\"" + state + "\", \"" + position + "\")"
 
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
-    data.traversedStates.reverse.lift(position-1) match {
-      case Some(this.state) => Result(1)
+    data.stateVariables.traversedStates.reverse.lift(position-1) match {
+      case Some(state) => if (state.state === this.state) Result(1) else Result(0)
       case _ => Result(0)
     }
   }

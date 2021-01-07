@@ -1,9 +1,10 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
-import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.entities.{DtHistoryItem, DtHistoryType, StateVariables}
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io.{AnalyzerEvaluateRequest, AnalyzerEvaluateResponse}
+import scalaz.Scalaz._
 
 class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
 
@@ -13,9 +14,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "",
           analyzer = """vOneKeyword("test")""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -34,9 +33,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "this is a test",
           analyzer = """vOneKeyword("test")""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -55,11 +52,14 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "this is variable check test",
           analyzer = """checkVariableValue("GJ_SERVICE_AVAILABLE", "busy")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"),
-              extractedVariables =
-                Map[String, String]("GJ_SERVICE_AVAILABLE" -> "busy"))
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables =
+              Map[String, String]("GJ_SERVICE_AVAILABLE" -> "busy")
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -78,11 +78,14 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "this is variable check test",
           analyzer = """checkVariableValue("GJ_SERVICE_AVAILABLE", "busy")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"),
-              extractedVariables =
-                Map[String, String]("GJ_SERVICE_AVAILABLE" -> "true"))
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables =
+              Map[String, String]("GJ_SERVICE_AVAILABLE" -> "true")
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -101,9 +104,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "hello helsingiss3ä!",
           analyzer = """and(max(bor(keyword("helsin*"))))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -123,9 +124,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "kivassödfks koirasdölfksdöl",
           analyzer = """and(max(bor(keyword("kiva* koira*"))))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -145,9 +144,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "suomi@ac~something-strange_my.fi",
           analyzer = """and(max(bor(keyword("suomi*fi"))))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -169,9 +166,14 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """hasTravState("one")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables =
+              Map.empty[String, String]
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -190,9 +192,14 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """bnot(hasTravState("three"))""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables =
+              Map.empty[String, String]
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -211,9 +218,14 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """lastTravStateIs("two")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables =
+              Map.empty[String, String]
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -232,9 +244,14 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "query",
           analyzer = """prevTravStateIs("one")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"), extractedVariables = Map.empty[String, String])
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables =
+              Map.empty[String, String]
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -254,10 +271,14 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "on 31-11-1900",
           analyzer =
             """band(prevTravStateIs("one"),binarize(vOneKeyword("on")),matchPatternRegex("[day,month,year](?:(0[1-9]|[12][0-9]|3[01])(?:[- \/\.])(0[1-9]|1[012])(?:[- \/\.])((?:19|20)\d\d))"))""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"),
-              extractedVariables = Map.empty[String, String])
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables =
+              Map.empty[String, String]
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -267,9 +288,12 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         response.buildMessage should be("success")
         response.value should be(1.0)
         response.data.nonEmpty should be(true)
-        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("month.0", "11")) should be(true)
-        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("day.0", "31")) should be(true)
-        response.data.getOrElse(AnalyzersData()).extractedVariables.exists(_ == ("year.0", "1900")) should be(true)
+        response.data.getOrElse(StateVariables())
+          .extractedVariables.exists(_ == ("month.0", "11")) should be(true)
+        response.data.getOrElse(StateVariables())
+          .extractedVariables.exists(_ == ("day.0", "31")) should be(true)
+        response.data.getOrElse(StateVariables())
+          .extractedVariables.exists(_ == ("year.0", "1900")) should be(true)
       }
     }
   }
@@ -281,14 +305,16 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "",
           analyzer =
             """existsVariable("month.0")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two"),
-              extractedVariables =
-                Map[String, String](
-                  "month.0" -> "11",
-                  "day.0" -> "31",
-                  "year.0" -> "1900"))
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables = Map[String, String](
+              "month.0" -> "11",
+              "day.0" -> "31",
+              "year.0" -> "1900")
+          ).some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~>
@@ -309,18 +335,32 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "",
           analyzer =
             """hasTravStateInPosition("two","2")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two", "three", "four", "five"))
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "three", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "four", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "five", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables = Map.empty[String, String]
+          ).some
         )
       val evaluateRequest2: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "",
           analyzer =
             """hasTravStateInPosition("one", "0")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two", "three", "four", "five"))
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "three", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "four", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "five", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables = Map.empty[String, String]
+          ).some
         )
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~>
         addCredentials(testUserCredentials) ~> routes ~> check {
@@ -348,18 +388,32 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
           query = "",
           analyzer =
             """hasTravStateInPositionRev("four","2")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two", "three", "four", "five"))
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "three", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "four", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "five", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables = Map.empty[String, String]
+          ).some
         )
       val evaluateRequest2: AnalyzerEvaluateRequest =
         AnalyzerEvaluateRequest(
           query = "",
           analyzer =
             """hasTravStateInPositionRev("one", "1")""",
-          data = Option {
-            AnalyzersData(traversedStates = Vector("one", "two", "three", "four", "five"))
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "three", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "four", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "five", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables = Map.empty[String, String]
+          ).some
         )
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~>
         addCredentials(testUserCredentials) ~> routes ~> check {
@@ -386,16 +440,18 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "guess the language of this sentence",
           analyzer = """languageGuesser("lang", "0.8", ["et", "fi", "en"])""",
-          data = Option {
-            AnalyzersData(
-              traversedStates = Vector("one", "two")
-            )
-          }
+          data = StateVariables(
+            traversedStates = Vector(
+              DtHistoryItem(state = "one", `type` = DtHistoryType.EXTERNAL),
+              DtHistoryItem(state = "two", `type` = DtHistoryType.EXTERNAL)
+            ),
+            extractedVariables = Map.empty[String, String]
+          ).some
         )
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).traversedStates.map(s => s.state) should be(Vector("one", "two", "playground"))
         response.data.getOrElse(fail).extractedVariables("lang") should be("en")
         response.value should be(1)
       }
@@ -405,7 +461,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).traversedStates.map(s => s.state) should be(Vector("one", "two", "playground"))
         response.data.getOrElse(fail).extractedVariables("guessed_language") should be("en")
         response.value should be(1)
       }
@@ -415,7 +471,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).traversedStates.map(s => s.state) should be(Vector("one", "two", "playground"))
         response.data.getOrElse(fail).extractedVariables("lang") should be("it")
         response.value should be(0)
       }
@@ -425,7 +481,7 @@ class AnalyzersPlaygroundResourceTest extends TestEnglishBase {
         addCredentials(testUserCredentials) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val response = responseAs[AnalyzerEvaluateResponse]
-        response.data.getOrElse(fail).traversedStates should be(Vector("one", "two"))
+        response.data.getOrElse(fail).traversedStates.map(s => s.state) should be(Vector("one", "two", "playground"))
         response.data.getOrElse(fail).extractedVariables("lng") should be("en")
         response.value should be(0)
       }

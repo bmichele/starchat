@@ -1,6 +1,6 @@
 package com.getjenny.starchat.entities.io
 
-import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.entities.StateVariables
 
-case class AnalyzerEvaluateResponse(build: Boolean, value: Double, data: Option[AnalyzersData],
+case class AnalyzerEvaluateResponse(build: Boolean, value: Double, data: Option[StateVariables],
                                     buildMessage: String)

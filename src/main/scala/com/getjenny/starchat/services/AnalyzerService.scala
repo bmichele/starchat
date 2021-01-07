@@ -4,10 +4,8 @@ package com.getjenny.starchat.services
  * Created by Angelo Leto <angelo@getjenny.com> on 01/07/16.
  */
 
-import java.util.concurrent.ConcurrentHashMap
-
 import akka.event.{Logging, LoggingAdapter}
-import com.getjenny.analyzer.expressions.{AnalyzersData, AnalyzersDataInternal, Context}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Context, DtHistoryItem, DtHistoryType, StateVariables}
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.analyzer.analyzers.StarChatAnalyzer
 import com.getjenny.starchat.entities.io._
@@ -15,11 +13,12 @@ import com.getjenny.starchat.entities.persistents.{DecisionTableEntityManager, T
 import com.getjenny.starchat.services.esclient.DecisionTableElasticClient
 import com.getjenny.starchat.services.esclient.crud.IndexLanguageCrud
 import com.getjenny.starchat.utils.SystemConfiguration
+import com.roundeights.hasher.Implicits._
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import scalaz.Scalaz._
 import spray.json.JsObject
-import com.roundeights.hasher.Implicits._
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{List, Map}
 import scala.collection.{concurrent, mutable}
@@ -224,7 +223,6 @@ object AnalyzerService extends AbstractDataService {
 
     val analyzerMap = buildAnalyzers(indexName = indexName,
       persistentAnalyzersMap = persistentsAnalyzers,
-      useAnalyzerCache = true,
       incremental = incremental)
 
     val   dtAnalyzerLoad = DTAnalyzerLoad(numOfEntries = analyzerMap.size)
@@ -290,23 +288,30 @@ object AnalyzerService extends AbstractDataService {
             val searchRes = decisionTableService.searchDtQueries(indexName, analyzerRequest, 0.0d.some)
             val analyzersInternalData = decisionTableService.resultsToMap(searchRes)
             val dataInternal = AnalyzersDataInternal(
-              context = Context(indexName = indexName, stateName = analyzerRequest.stateName.getOrElse("playground")),
-              traversedStates = data.traversedStates,
-              extractedVariables = data.extractedVariables, data = analyzersInternalData)
+              context = Context(indexName = indexName,
+                stateName = analyzerRequest.stateName.getOrElse("playground")),
+              stateVariables = StateVariables(
+                traversedStates = data.traversedStates,
+                extractedVariables = data.extractedVariables),
+              data = analyzersInternalData)
             val evalRes = result.evaluate(analyzerRequest.query, dataInternal)
-            val returnData = if (evalRes.data.extractedVariables.nonEmpty || evalRes.data.traversedStates.nonEmpty) {
-              val dataInternal = evalRes.data
-              Some(AnalyzersData(traversedStates = dataInternal.traversedStates,
-                extractedVariables = dataInternal.extractedVariables))
-            } else {
-              Option.empty[AnalyzersData]
-            }
+            if(LoopDetection.check(evalRes.data.stateVariables.traversedStates,
+              elasticClient.loopDetectionMaxCycleLength,
+              elasticClient.loopDetectionExaminedLength,
+              elasticClient.loopDetectionTimeThreshold))
+              throw ResponseServiceLoopException(s"Loop detected: on index ${indexName}")
+            val returnData = StateVariables(
+              extractedVariables = evalRes.data.stateVariables.extractedVariables,
+                traversedStates = dataInternal.stateVariables.traversedStates :+
+                  DtHistoryItem(state = analyzerRequest.stateName.getOrElse("playground"),
+                    `type` = DtHistoryType.EXTERNAL)
+            )
             Some(AnalyzerEvaluateResponse(build = true,
-              value = evalRes.score, data = returnData, buildMessage = "success"))
+              value = evalRes.score, data = returnData.some, buildMessage = "success"))
 
           case _ =>
             Some(AnalyzerEvaluateResponse(build = true,
-              value = 0.0, data = Option.empty[AnalyzersData], buildMessage = "success"))
+              value = 0.0, data = Option.empty[StateVariables], buildMessage = "success"))
         }
     }
   }

@@ -9,7 +9,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.entities.{DtHistoryItem, DtHistoryType, StateVariables}
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
 import scalaz.Scalaz._
@@ -210,10 +210,6 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val dtActionResultFormat = jsonFormat3(DtActionResult)
   implicit val responseMessageDataFormat = jsonFormat2(ReturnMessageData)
   implicit val responseRequestUserInputFormat = jsonFormat3(ResponseRequestInUserInput)
-  implicit val responseRequestInputFormat = jsonFormat9(ResponseRequestIn)
-  implicit val responseRequestOutputFormat = jsonFormat14(ResponseRequestOut)
-  implicit val dtDocumentFormat = jsonFormat15(DTDocument)
-  implicit val dtDocumentUpdateFormat = jsonFormat14(DTDocumentUpdate)
   implicit val qaAggAnnotationsFormat = jsonFormat1(AggAnnotations)
   implicit val qaAggAnnotationsSearchFormat = jsonFormat2(AggAnnotationsSearch)
   implicit val qaDocumentAnnotationsSearchFormat = jsonFormat20(QADocumentAnnotationsSearch)
@@ -222,11 +218,8 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val qaDocumentFormat = jsonFormat8(QADocument)
   implicit val qaDocumentUpdateFormat = jsonFormat8(QADocumentUpdate)
   implicit val searchQADocumentFormat = jsonFormat2(SearchQADocument)
-  implicit val searchDTDocumentFormat = jsonFormat2(SearchDTDocument)
   implicit val searchQAResultsFormat = jsonFormat4(SearchQADocumentsResults)
-  implicit val searchDTResultsFormat = jsonFormat3(SearchDTDocumentsResults)
   implicit val qaDocumentSearchFormat = jsonFormat14(QADocumentSearch)
-  implicit val dtDocumentSearchFormat = jsonFormat12(DTDocumentSearch)
   implicit val indexDocumentResultFormat = jsonFormat4(IndexDocumentResult)
   implicit val updateDocumentResultFormat = jsonFormat4(UpdateDocumentResult)
   implicit val deleteDocumentResultFormat = jsonFormat4(DeleteDocumentResult)
@@ -255,9 +248,6 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val analyzerQueryRequestFormat = jsonFormat2(TokenizerQueryRequest)
   implicit val analyzerResponseItemFormat = jsonFormat5(TokenizerResponseItem)
   implicit val analyzerResponseFormat = jsonFormat1(TokenizerResponse)
-  implicit val analyzerDataFormat = jsonFormat2(AnalyzersData)
-  implicit val analyzerEvaluateRequestFormat = jsonFormat6(AnalyzerEvaluateRequest)
-  implicit val analyzerEvaluateResponseFormat = jsonFormat4(AnalyzerEvaluateResponse)
   implicit val spellcheckTokenSuggestionsFormat = jsonFormat3(SpellcheckTokenSuggestions)
   implicit val spellcheckTokenSuggestionsFormat2 = jsonFormat6(SpellcheckTokenSuggestions2)
   implicit val spellcheckTokenFormat = jsonFormat4(SpellcheckToken)
@@ -266,7 +256,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val spellcheckTermsResponseFormat2 = jsonFormat1(SpellcheckTermsResponse2)
   implicit val spellcheckTermsRequestFormat = jsonFormat4(SpellcheckTermsRequest)
   implicit val spellcheckTermsRequestFormat2 = jsonFormat5(SpellcheckTermsRequest2)
-  implicit val responseRequestOutOperationResultFormat = jsonFormat2(ResponseRequestOutOperationResult)
+
   implicit val clusterNodeFormat = jsonFormat3(ClusterNode)
   implicit val clusterNodesFormat = jsonFormat2(ClusterNodes)
   implicit val clusterLoadingDtStatusFormat = jsonFormat5(ClusterLoadingDtStatusIndex)
@@ -409,7 +399,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
     }
   }
 
-  implicit val dtHistoryItemFormat = jsonFormat2(DtHistoryItem)
+  implicit val dtHistoryItemFormat = jsonFormat3(DtHistoryItem)
 
   implicit val refreshPolicyUnmarshalling:
     Unmarshaller[String, RefreshPolicy.Value] =
@@ -448,4 +438,15 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
       case _ => throw DeserializationException("DTDocumentStatus string expected")
     }
   }
+  implicit val stateVariablesFormat = jsonFormat2(StateVariables)
+  implicit val analyzerEvaluateRequestFormat = jsonFormat6(AnalyzerEvaluateRequest)
+  implicit val analyzerEvaluateResponseFormat = jsonFormat4(AnalyzerEvaluateResponse)
+  implicit val responseRequestInputFormat = jsonFormat9(ResponseRequestIn)
+  implicit val responseRequestOutputFormat = jsonFormat14(ResponseRequestOut)
+  implicit val dtDocumentFormat = jsonFormat15(DTDocument)
+  implicit val dtDocumentUpdateFormat = jsonFormat14(DTDocumentUpdate)
+  implicit val searchDTDocumentFormat = jsonFormat2(SearchDTDocument)
+  implicit val searchDTResultsFormat = jsonFormat3(SearchDTDocumentsResults)
+  implicit val dtDocumentSearchFormat = jsonFormat12(DTDocumentSearch)
+  implicit val responseRequestOutOperationResultFormat = jsonFormat2(ResponseRequestOutOperationResult)
 }

@@ -1,7 +1,7 @@
-package com.getjenny.analyzer.atoms
+package com.getjenny.starchat.analyzer.atoms
 
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
-
+import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
 
 /**
  * Created by Henri Vuorinen on 14/10/2020.
@@ -35,10 +35,12 @@ class CheckVariableContainsValue(val arguments: List[String], restrictedArgs: Ma
    */
 
   override def evaluate(query: String, data: AnalyzersDataInternal): Result = {
-    if((data.extractedVariables isDefinedAt varName) & data.extractedVariables.getOrElse(varName, varValue + ".").contains(varValue)) {
-      Result(score = 1.0)
+    if((data.stateVariables.extractedVariables isDefinedAt varName) &
+      data.stateVariables.extractedVariables.getOrElse(varName, varValue + ".")
+        .contains(varValue)) {
+      Result(score = 1.0d)
     } else {
-      Result(score = 0.0)
+      Result(score = 0.0d)
     }
   }
 

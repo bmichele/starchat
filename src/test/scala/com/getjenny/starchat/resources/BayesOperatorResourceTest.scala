@@ -1,11 +1,12 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.StatusCodes
-import com.getjenny.analyzer.expressions.AnalyzersData
+import com.getjenny.analyzer.entities.StateVariables
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
 import com.getjenny.starchat.services.BayesOperatorCacheService
+import scalaz.Scalaz._
 import spray.json.JsObject
 
 class BayesOperatorResourceTest extends TestEnglishBase {
@@ -258,9 +259,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query",
           analyzer = """bayes()""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {
@@ -275,9 +274,7 @@ class BayesOperatorResourceTest extends TestEnglishBase {
         AnalyzerEvaluateRequest(
           query = "user query",
           analyzer = """bayes(vOneKeyword("test1"),vOneKeyword("test2"))""",
-          data = Option {
-            AnalyzersData()
-          }
+          data = StateVariables().some
         )
 
       Post(s"/index_getjenny_english_0/analyzer/playground", evaluateRequest) ~> addCredentials(testUserCredentials) ~> routes ~> check {

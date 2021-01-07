@@ -4,14 +4,12 @@
 
 package com.getjenny.starchat.analyzer.atoms
 
-import java.time.format.DateTimeFormatter
-import java.time.{Duration, LocalDateTime, ZoneId}
-
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
 import com.getjenny.analyzer.util.ComparisonOperators
 
-import scala.util.{Failure, Success, Try}
+import java.time.format.DateTimeFormatter
+import java.time.{Duration, LocalDateTime, ZoneId}
 
 
 /**

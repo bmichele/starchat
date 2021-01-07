@@ -2,7 +2,7 @@ package com.getjenny.starchat.analyzer.atoms
 
 import com.getjenny.analyzer.atoms
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result, StateVariables}
 import org.apache.tika.langdetect.OptimaizeLangDetector
 import org.apache.tika.language.detect.{LanguageDetector, LanguageResult}
 
@@ -28,10 +28,10 @@ class LanguageGuesserAtomic (arguments: List[String], restrictedArgs: Map[String
   private[this] val detector: LanguageDetector = new OptimaizeLangDetector().loadModels()
 
   override def toString: String = "languageGuesser(\"" + variableName + "\", \"" + minScoreThreshold + "\"" +
-  (languages match {
-    case Nil => ""
-    case head :: tail => ", [\"" + tail.foldLeft(head)(_ + "\", \"" + _ ) + "\"]"
-  }) + ")"
+    (languages match {
+      case Nil => ""
+      case head :: tail => ", [\"" + tail.foldLeft(head)(_ + "\", \"" + _ ) + "\"]"
+    }) + ")"
 
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
     val languageResult: LanguageResult = detector.detect(query)
@@ -40,11 +40,14 @@ class LanguageGuesserAtomic (arguments: List[String], restrictedArgs: Map[String
       case _ => if(languages.contains(languageResult.getLanguage)) 1.0d else 0.0d
     }
 
-    Result(score, data.copy(
-      extractedVariables = data.extractedVariables
-        .updated(variableName, languageResult.getLanguage)
+    Result(
+      score, data.copy(
+        stateVariables = StateVariables(
+          extractedVariables = data.stateVariables.extractedVariables
+            .updated(variableName, languageResult.getLanguage),
+          traversedStates = data.stateVariables.traversedStates
+        )
       )
     )
-
   }
 }

@@ -6,7 +6,7 @@ package com.getjenny.starchat.services
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.analyzers._
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Context, Result}
+import com.getjenny.analyzer.entities._
 import com.getjenny.starchat.SCActorSystem
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.services.actions._
@@ -31,6 +31,8 @@ case class ResponseServiceNoResponseException(message: String = "", cause: Throw
 case class ResponseServiceDTNotLoadedException(message: String = "", cause: Throwable = None.orNull)
   extends Exception(message, cause)
 
+case class ResponseServiceLoopException(message: String = "", cause: Throwable = None.orNull)
+  extends Exception(message, cause)
 
 /**
  * Implements response functionalities
@@ -135,7 +137,8 @@ object ResponseService extends AbstractDataService {
             evaluationClass = None,
             maxResults = None,
             state = Some(List(state))
-          )
+          ),
+          DtHistoryType.INTERNAL
         ).responseRequestOut.getOrElse(List.empty)
       }
     } else {
@@ -143,7 +146,8 @@ object ResponseService extends AbstractDataService {
     }
   }
 
-  def getNextResponse(indexName: String, request: ResponseRequestIn): ResponseRequestOutOperationResult = {
+  def getNextResponse(indexName: String, request: ResponseRequestIn,
+                      requestType: DtHistoryType.Value = DtHistoryType.EXTERNAL): ResponseRequestOutOperationResult = {
     val evaluationClass = request.evaluationClass match {
       case Some(c) => c
       case _ => "default"
@@ -165,9 +169,12 @@ object ResponseService extends AbstractDataService {
 
     val variables: Map[String, String] = request.data.getOrElse(Map.empty[String, String])
 
-    val traversedStates: Vector[String] = request.traversedStates.getOrElse(Vector.empty[String])
+    val traversedStates: Vector[DtHistoryItem] = request.traversedStates.getOrElse(Vector.empty[DtHistoryItem])
     val traversedStatesCount: Map[String, Int] =
-      traversedStates.foldLeft(Map.empty[String, Int])((map, word) => map + (word -> (map.getOrElse(word, 0) + 1)))
+      traversedStates.foldLeft(Map.empty[String, Int])(
+        (map, stateHistoryItem) =>
+          map + (stateHistoryItem.state -> (map.getOrElse(stateHistoryItem.state, 0) + 1))
+      )
 
     // refresh last_used timestamp
     Try(AnalyzerService.analyzersMap(indexName).lastEvaluationTimestamp = System.currentTimeMillis) match {
@@ -185,8 +192,10 @@ object ResponseService extends AbstractDataService {
     val analyzersInternalData = decisionTableService.resultsToMap(searchResult)
     val searchResAnalyzers = AnalyzersDataInternal(
       context = Context(indexName = indexName, stateName = ""), // stateName is not important here
-      extractedVariables = variables,
-      traversedStates = traversedStates,
+      stateVariables = StateVariables(
+        extractedVariables = variables,
+        traversedStates = traversedStates
+      ),
       data = analyzersInternalData)
 
     val (evaluationList, reqState) = request.state match {
@@ -224,7 +233,7 @@ object ResponseService extends AbstractDataService {
           )
           Try(starchatAnalyzer.evaluate(userText, data = analyzersDataInternal)) match {
             case Success(evalRes: Result) =>
-             log.debug("ResponseService: Evaluation of State({}) Query({}) Score({})", stateName, userText, evalRes.score)
+              log.debug("ResponseService: Evaluation of State({}) Query({}) Score({})", stateName, userText, evalRes.score)
               evalRes
             case Failure(e) =>
               val message = "ResponseService: Evaluation of State(" + stateName + ") : " + e.getMessage
@@ -256,7 +265,8 @@ object ResponseService extends AbstractDataService {
           val analyzer: String = item.analyzer.declaration
           val stateData: Map[String, String] = item.stateData
 
-          val mergedVariables = searchResAnalyzers.extractedVariables ++ evaluationRes.data.extractedVariables
+          val mergedVariables = searchResAnalyzers.stateVariables.extractedVariables ++
+            evaluationRes.data.stateVariables.extractedVariables
           val randomizedBubbleValue = randomizeBubble(item.bubble)
           val bubble = replaceTemplates(randomizedBubbleValue, mergedVariables)
           val action = replaceTemplates(item.action, mergedVariables) //FIXME: action shouldn't contain templates
@@ -266,7 +276,14 @@ object ResponseService extends AbstractDataService {
 
           val cleanedData = mergedVariables.filter { case (key, _) => !(key matches "\\A__temp__.*") }
 
-          val traversedStatesUpdated: Vector[String] = traversedStates ++ Vector(state)
+          if(LoopDetection.check(traversedStates,
+            elasticClient.loopDetectionMaxCycleLength,
+            elasticClient.loopDetectionExaminedLength,
+            elasticClient.loopDetectionTimeThreshold))
+            throw ResponseServiceLoopException(s"Loop detected: on index ${indexName} : convId $conversationId")
+
+          val traversedStatesUpdated: Vector[DtHistoryItem] = traversedStates :+ DtHistoryItem(state = state, `type` = requestType)
+
           ResponseRequestOut(conversationId = conversationId,
             state = state,
             maxStateCount = maxStateCount,
@@ -284,7 +301,9 @@ object ResponseService extends AbstractDataService {
       }
     }).toList.sortWith(_.score > _.score)
       .flatMap { document =>
-        executeAction(indexName, document = document, userText, request.copy(threshold = Option(threshold)))
+        executeAction(indexName,
+          document = document, userText,
+          request.copy(threshold = Option(threshold)))
       }
 
     if (dtDocumentsList.isEmpty) {

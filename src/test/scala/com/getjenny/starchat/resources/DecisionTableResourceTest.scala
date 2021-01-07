@@ -1,9 +1,11 @@
 package com.getjenny.starchat.resources
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, StatusCodes}
+import com.getjenny.analyzer.entities.{DtHistoryItem, DtHistoryType}
 import com.getjenny.starchat.TestEnglishBase
 import com.getjenny.starchat.entities.io._
 import com.getjenny.starchat.entities.persistents._
+import scalaz.Scalaz._
 import spray.json._
 
 class DecisionTableResourceTest extends TestEnglishBase {
@@ -295,7 +297,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         val response = responseAs[List[ResponseRequestOut]]
         val headResponseRequestOut = response.headOption.getOrElse(fail)
         headResponseRequestOut.bubble should be ("Hello Donald Duck, how can I help you?")
-        headResponseRequestOut.traversedStates should be (Vector("forgot_password"))
+        headResponseRequestOut.traversedStates.map(s => s.state) should be (Vector("forgot_password"))
       }
     }
   }
@@ -398,7 +400,12 @@ class DecisionTableResourceTest extends TestEnglishBase {
   it should {
     "return an HTTP code 200 when getting next response by search" in {
       val request = ResponseRequestIn(conversationId = "conv_12131",
-        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        traversedStates = Vector(
+          DtHistoryItem(state = "state_0", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_1", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_2", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_3", `type` = DtHistoryType.EXTERNAL)
+        ).some,
         userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
         )),
         state = None,
@@ -414,7 +421,7 @@ class DecisionTableResourceTest extends TestEnglishBase {
         val response = responseAs[List[ResponseRequestOut]]
         val headResponseRequestOut = response.headOption.getOrElse(fail)
         headResponseRequestOut.bubble should be ("Hello Donald Duck, how can I help you?")
-        headResponseRequestOut.traversedStates should be (Vector("state_0", "state_1", "state_2", "state_3", "forgot_password"))
+        headResponseRequestOut.traversedStates.map(s => s.state) should be (Vector("state_0", "state_1", "state_2", "state_3", "forgot_password"))
       }
     }
   }
@@ -451,7 +458,12 @@ class DecisionTableResourceTest extends TestEnglishBase {
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
-        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        traversedStates = Vector(
+          DtHistoryItem(state = "state_0", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_1", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_2", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_3", `type` = DtHistoryType.EXTERNAL)
+        ).some,
         userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
         )),
         state = None,
@@ -466,8 +478,8 @@ class DecisionTableResourceTest extends TestEnglishBase {
         status shouldEqual StatusCodes.OK
         val response = responseAs[List[ResponseRequestOut]]
         val headResponseRequestOut = response.headOption.getOrElse(fail)
-        assert(headResponseRequestOut.bubble === "Hello Donald Duck, how can I help you?" ||
-          headResponseRequestOut.bubble === "Hello Donald Duck, ask me anything!")
+        assert(headResponseRequestOut.bubble == "Hello Donald Duck, how can I help you?" ||
+          headResponseRequestOut.bubble == "Hello Donald Duck, ask me anything!")
       }
     }
   }
@@ -505,7 +517,12 @@ class DecisionTableResourceTest extends TestEnglishBase {
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
-        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        traversedStates = Vector(
+          DtHistoryItem(state = "state_0", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_1", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_2", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_3", `type` = DtHistoryType.EXTERNAL)
+        ).some,
         userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"), img = None
         )),
         state = None,
@@ -558,7 +575,12 @@ class DecisionTableResourceTest extends TestEnglishBase {
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
-        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        traversedStates = Vector(
+          DtHistoryItem(state = "state_0", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_1", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_2", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_3", `type` = DtHistoryType.EXTERNAL)
+        ).some,
         userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"))),
         state = None,
         data = Some(Map("number" -> "5", "action" -> "test")),
@@ -609,7 +631,12 @@ class DecisionTableResourceTest extends TestEnglishBase {
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
-        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        traversedStates = Vector(
+          DtHistoryItem(state = "state_0", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_1", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_2", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_3", `type` = DtHistoryType.EXTERNAL)
+        ).some,
         userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"))),
         state = None,
         data = Some(Map.empty),
@@ -661,7 +688,12 @@ class DecisionTableResourceTest extends TestEnglishBase {
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
-        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        traversedStates = Vector(
+          DtHistoryItem(state = "state_0", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_1", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_2", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_3", `type` = DtHistoryType.EXTERNAL)
+        ).some,
         userInput = Some(ResponseRequestInUserInput(text = Some("I forgot my password"))),
         state = None,
         data = Some(Map.empty),
@@ -725,7 +757,12 @@ class DecisionTableResourceTest extends TestEnglishBase {
       }
 
       val request = ResponseRequestIn(conversationId = "conv_12131",
-        traversedStates = Some(Vector("state_0", "state_1", "state_2", "state_3")),
+        traversedStates = Vector(
+          DtHistoryItem(state = "state_0", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_1", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_2", `type` = DtHistoryType.EXTERNAL),
+          DtHistoryItem(state = "state_3", `type` = DtHistoryType.EXTERNAL)
+        ).some,
         userInput = Some(ResponseRequestInUserInput(text = Some("my email is this.is.test@email.com"))),
         threshold = Some(0.5),
         searchAlgorithm = Some(SearchAlgorithm.NGRAM3)

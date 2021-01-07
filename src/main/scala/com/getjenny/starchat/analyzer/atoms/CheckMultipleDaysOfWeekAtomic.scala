@@ -15,12 +15,11 @@
 
 package com.getjenny.starchat.analyzer.atoms
 
-import java.time.ZoneId
-
 import com.getjenny.analyzer.atoms.{AbstractAtomic, ExceptionAtomic}
-import com.getjenny.analyzer.expressions.{AnalyzersDataInternal, Result}
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
 import com.getjenny.analyzer.util.Time
 
+import java.time.ZoneId
 import scala.util.{Failure, Success}
 
 class CheckMultipleDaysOfWeekAtomic(val arguments: List[String],

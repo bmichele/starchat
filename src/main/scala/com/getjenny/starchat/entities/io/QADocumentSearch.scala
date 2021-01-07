@@ -48,7 +48,7 @@ case class QADocumentSearch(
                              from: Option[Int] = None,
                              size: Option[Int] = None,
                              minScore: Option[Float] = None,
-                             @deprecated("this attribute will be removed, see: sortBy instead", "StarChat v6.0.0")
+                             @deprecated("this attribute will be removed, see: sortBy instead", "StarChat v7.0.0")
                              sortByConvIdIdx: Option[Boolean] = None,
                              sortBy: Option[List[QASearchSortBy.Value]] = None,
                              conversation: Option[List[String]] = None, /* IDs of the conversations (or query) */

@@ -192,7 +192,7 @@ trait DecisionTableResource extends StarChatResource {
     }
   }
 
-  @deprecated("this attribute will be removed, see: cloneIndexContentReindex instead", "StarChat v6.0.0")
+  @deprecated("this attribute will be removed, see: cloneIndexContentReindex instead", "StarChat v7.0.0")
   def decisionTableBulkUploadAndMultiCreateRoutes: Route = handleExceptions(routesExceptionHandler) {
     pathPrefix(indexRegex ~ Slash ~ "decisiontable" ~ Slash ~ "bulk") { indexName =>
       pathEnd {
@@ -381,6 +381,10 @@ trait DecisionTableResource extends StarChatResource {
                                   })
                               }
                             )
+                          case e@(_: ResponseServiceLoopException) =>
+                            log.error(e, logTemplate(user.id, indexName, "decisionTableResource", request.method,
+                              request.uri, "Loop"))
+                            completeResponse(StatusCodes.LoopDetected)
                           case e@(_: ResponseServiceNoResponseException) =>
                             log.error(e, logTemplate(user.id, indexName, "decisionTableResource", request.method,
                               request.uri, "No response"))

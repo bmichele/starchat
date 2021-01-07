@@ -2,6 +2,7 @@ package com.getjenny.starchat.analyzer.operators
 
 import akka.event.{Logging, LoggingAdapter}
 import com.getjenny.analyzer.atoms.ExceptionAtomic
+import com.getjenny.analyzer.entities.{AnalyzersDataInternal, Result}
 import com.getjenny.analyzer.expressions._
 import com.getjenny.analyzer.operators.{AbstractOperator, OperatorException}
 import com.getjenny.starchat.SCActorSystem
