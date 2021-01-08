@@ -22,17 +22,24 @@ trait LTCustomerInfoVariableManager extends GenericVariableManager{
 
 }
 
-case class LTCustomerInfoOutput(override val score: String = s"${LTCustomerInfoOutput.prefix}.score") extends HttpAtomOutputConf {
+case class LTCustomerInfoOutput(override val score: String = s"${LTCustomerInfoOutput.prefix}.score",
+                                customerWorksiteNo: String = "customerWorksiteNo.result") extends HttpAtomOutputConf {
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)) {
-      val json = body.parseJson
-      json match {
+      val json = body.parseJson.asJsObject
+
+      val customerWorksiteNo = json.getFields("customerWorksiteNo").toString
+      /*json match {
         case JsArray(elements) =>
           elements
             .flatMap(_.asJsObject.fields.map {case (k,v) => s"${LTCustomerInfoOutput.prefix}.$k" -> v.toString})
             .toMap
         case _ => throw new IllegalArgumentException("Bad json format")
-      }
+      }*/
+      Map(
+        score -> "1",
+        customerWorksiteNo -> status.toString
+      )
     } else {
       Map(
         score -> "0",
