@@ -11,6 +11,8 @@ import spray.json._
  * ltCustomerInfo("lt-api-url=<base url>"")
  *
  * Takes <query> as parameter, query has to be a valid customer id
+ *
+ * This atom needs to be run first in order to LTCustomerWorksiteInfoVariableManager to work.
  */
 trait LTCustomerInfoVariableManager extends GenericVariableManager{
 
@@ -26,7 +28,7 @@ case class LTCustomerInfoOutput(override val score: String = s"${LTCustomerInfoO
                                 customerWorksiteNo: String = "customerWorksiteNo.result") extends HttpAtomOutputConf {
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)) {
-      val json = body.parseJson.asJsObject
+      val json = body.parseJson
       val data = json match {
         case JsArray(elements) =>
           elements

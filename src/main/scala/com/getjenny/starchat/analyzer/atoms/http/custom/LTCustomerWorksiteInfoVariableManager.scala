@@ -6,9 +6,17 @@ import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpAt
 import scalaz.Scalaz._
 import spray.json._
 
+/**
+ * Author Henri Vuorinen
+ * requires botVariable customerWorksiteNo.result to make the GET request.
+ * This variable is set in the request url and it will give in response lot of different values.
+ * For this atom to works LTCustomerInfoVariableManager needs to be run first
+ *
+ */
+
 trait LTCustomerWorksiteInfoVariableManager extends GenericVariableManager {
 
-  override def configurationPrefix: Option[String] = Some("http-atom.lt-customer-worksite")
+  override def configurationPrefix: Option[String] = Some("http-atom.ltCustomerWorksiteNo")
 
   //override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
 //
