@@ -27,18 +27,17 @@ case class LTCustomerInfoOutput(override val score: String = s"${LTCustomerInfoO
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)) {
       val json = body.parseJson.asJsObject
-
-      val customerWorksiteNo = json.getFields("customerWorksiteNo").toString
-      /*json match {
+      val data = json match {
         case JsArray(elements) =>
           elements
-            .flatMap(_.asJsObject.fields.map {case (k,v) => s"${LTCustomerInfoOutput.prefix}.$k" -> v.toString})
+            .flatMap(_.asJsObject.fields.map {case (k,v) => s"$k" -> v.toString})
             .toMap
         case _ => throw new IllegalArgumentException("Bad json format")
-      }*/
+      }
       Map(
         score -> "1",
-        customerWorksiteNo -> status.toString
+        customerWorksiteNo -> data.getOrElse("customerWorksiteNo", ""),
+        s"${LTCustomerInfoOutput.prefix}.status" -> status.toString
       )
     } else {
       Map(
