@@ -28,18 +28,44 @@ trait LTCustomerWorksiteInfoVariableManager extends GenericVariableManager {
   }
 }
 
-case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCustomerWorksiteInfoOutput.prefix}.score"
+case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCustomerWorksiteInfoOutput.prefix}.score",
+                                        customerBackOfficeId: String = "ltCustomerWorksiteNo.customerBackOfficeId",
+                                        routePointBackOfficeId: String = "ltCustomerWorksiteNo.routePointBackOfficeId",
+                                        documentId: String = "ltCustomerWorksiteNo.documentId",
+                                        contentTypeItemName: String = "ltCustomerWorksiteNo.contentTypeItemName",
+                                        address: String = "ltCustomerWorksiteNo.address",
+                                        routeDate: String = "ltCustomerWorksiteNo.routeDate",
+                                        taskListDate: String = "ltCustomerWorksiteNo.taskListDate",
+                                        contentTypeName: String = "ltCustomerWorksiteNo.contentTypeName",
+                                        containerTypeName: String = "ltCustomerWorksiteNo.containerTypeName",
+                                        quantity: String = "ltCustomerWorksiteNo.quantity",
+                                        orderStatus: String = "ltCustomerWorksiteNo.orderStatus"
                                        ) extends HttpAtomOutputConf {
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)) {
       val json = body.parseJson
-      json match{
+      val data = json match{
         case JsArray(elements) =>
           elements
           .flatMap(_.asJsObject.fields.map {case (a,b) => s"${LTCustomerWorksiteInfoOutput.prefix}.$a" -> b.toString})
           .toMap
         case _ => throw new IllegalArgumentException("bad Json or Bad request")
       }
+      Map(
+        score -> "1",
+        customerBackOfficeId -> data.getOrElse("CustomerBackOfficeId", ""),
+        routePointBackOfficeId -> data.getOrElse("RoutePointBackOfficeId", ""),
+        documentId -> data.getOrElse("DocumentId", ""),
+        contentTypeItemName -> data.getOrElse("ContentTypeItemName", ""),
+        address -> data.getOrElse("Address", ""),
+        routeDate -> data.getOrElse("RouteData", ""),
+        taskListDate -> data.getOrElse("TaskListDate", ""),
+        contentTypeName -> data.getOrElse("ContentTypeName", ""),
+        containerTypeName -> data.getOrElse("ContainerTypeName", ""),
+        quantity -> data.getOrElse("Quantity", ""),
+        orderStatus -> data.getOrElse("Status", ""),
+        s"${LTCustomerInfoOutput.prefix}.status" -> status.toString
+      )
     } else {
       Map(
         score -> "0",
