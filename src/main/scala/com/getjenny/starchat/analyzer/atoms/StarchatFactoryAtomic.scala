@@ -37,6 +37,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "lastTravStateIs",
     "matchDateDDMMYYYY",
     "matchPatternRegex",
+    "orKeyword",
     "parseDate",
     "parseName",
     "prevTravStateIs",
@@ -88,13 +89,12 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "lastTravStateIs" => new LastTravStateIsAtomic(argument, restrictedArgs)
     case "matchDateDDMMYYYY" => new MatchDateDDMMYYYYAtomic(argument, restrictedArgs)
     case "matchPatternRegex" => new MatchPatternRegexAtomic(argument, restrictedArgs)
+    case "orKeyword" => new OrKeywordAtomic(argument, restrictedArgs)
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
     case "parseName" => new HttpRequestAtomic(argument, restrictedArgs) with ParseNameVariableManager
     case "entityExtractor" => new HttpRequestAtomic(argument, restrictedArgs) with EntityExtractorVariableManager
     case "prevTravStateIs" => new PrevTravStateIsAtomic(argument, restrictedArgs)
     case "readRemoteData" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
-    case "zendeskTicketComments" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskTicketCommentsVariableManager
-    case "zendeskSearchTickets" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskSearchTicketsVariableManager
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
     case "search" => new SearchAtomic(argument, restrictedArgs)
     case "setServiceOpening" => new SetServiceOpeningAtomic(argument, restrictedArgs)
@@ -110,6 +110,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "toDouble" => new ToDoubleNumberAtomic(argument, restrictedArgs)
     case "vOneKeyword" => new KeywordAtomic(argument, restrictedArgs)
     case "weather" => new HttpRequestAtomic(argument, restrictedArgs) with WeatherVariableManager
+    case "zendeskTicketComments" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskTicketCommentsVariableManager
+    case "zendeskSearchTickets" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskSearchTicketsVariableManager
     case _ => throw ExceptionAtomic("Atom \'" + name + "\' not found")
   }
 }
