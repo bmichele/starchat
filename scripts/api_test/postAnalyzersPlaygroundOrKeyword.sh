@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-ANALYZER=${1:-"orKeyword(\\\"test\\\", \\\"this\\\")"}
+ANALYZER=${1:-"orKeyword(\\\"test\\\", \\\"this.*\\\")"}
 #ANALYZER=${1:-"orKeyword(\\\"test\\\")"}
-QUERY=${2:-"this is a test"}
+QUERY=${2:-"test is a pippo"}
 DATA=${3:-"{\"traversedStates\": [], \"extractedVariables\":{}}"}
 PORT=${4:-8888}
 INDEX_NAME=${5:-index_getjenny_english_0}

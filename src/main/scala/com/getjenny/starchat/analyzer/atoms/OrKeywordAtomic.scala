@@ -14,7 +14,11 @@ import scala.util.matching.Regex
 /**
  * Takes a list of words or regex and check if any matches the query.
  * orKeyword("foo", "low")  matches "foo and bar" but not "fooish and bar"
- * orKeyword("foo.*", "low") matches "fooish and bar"
+ *
+ * NB One cannot use regex, because the atom builds a regex itself.
+ *
+ * Simple patterns like orKeyword("foo.*", "low") can be used, although
+ * it would be better to avoid it.
  */
 class OrKeywordAtomic(val arguments: List[String], restrictedArgs: Map[String, String]) extends AbstractAtomic {
   val atomName: String = "orKeyword"
@@ -22,12 +26,12 @@ class OrKeywordAtomic(val arguments: List[String], restrictedArgs: Map[String, S
   override def toString: String = "orKeyword(\"" + arguments + "\")"
   val isEvaluateNormalized: Boolean = true
 
+  val matchR: Regex = ("(?:\\b(?:"  + arguments.mkString("|") + ")\\b)").r
+
   def evaluate(query: String, data: AnalyzersDataInternal = AnalyzersDataInternal()): Result = {
-    arguments.map { word => {
-      """\b""" + word + """\b"""
-    }.r.findAllIn(query).nonEmpty
-    }.contains(true) match {
-      case true => Result(score = 1.0)
+
+    matchR.findFirstIn(query) match {
+      case Some(_) => Result(score = 1.0)
       case _ => Result(score = 0.0)
     }
   }
