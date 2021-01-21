@@ -39,7 +39,8 @@ case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCusto
                                         contentTypeName: String = "ltCustomerWorksiteNo.contentTypeName",
                                         containerTypeName: String = "ltCustomerWorksiteNo.containerTypeName",
                                         quantity: String = "ltCustomerWorksiteNo.quantity",
-                                        orderStatus: String = "ltCustomerWorksiteNo.orderStatus"
+                                        orderStatus: String = "ltCustomerWorksiteNo.orderStatus",
+                                        responseStatus: String = s"${LTCustomerWorksiteInfoOutput.prefix}.status"
                                        ) extends HttpAtomOutputConf {
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
     if(StatusCodes.OK.equals(status)) {
@@ -64,12 +65,12 @@ case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCusto
         containerTypeName -> data.getOrElse("ContainerTypeName", ""),
         quantity -> data.getOrElse("Quantity", ""),
         orderStatus -> data.getOrElse("Status", ""),
-        s"${LTCustomerInfoOutput.prefix}.status" -> status.toString
+        responseStatus -> status.toString
       )
     } else {
       Map(
         score -> "0",
-        s"${LTCustomerWorksiteInfoOutput.prefix}.status" -> status.toString
+        responseStatus -> status.toString,
       )
     }
   }
@@ -77,5 +78,5 @@ case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCusto
 }
 
 object LTCustomerWorksiteInfoOutput{
-  val prefix = "ltCustomerWorksiteInfo"
+  val prefix = "ltCustomerWorksiteInfooo"
 }
