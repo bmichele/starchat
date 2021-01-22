@@ -8,9 +8,9 @@ import spray.json._
 
 /**
  * Author Henri Vuorinen
- * requires botVariable customerWorksiteNo.result to make the GET request.
+ * requires botVariable ltCustomerInfo.worksiteNo to make the GET request. Calling this analyzer happens using "ltCustomerWorksiteNo()", no query is needed.
  * This variable is set in the request url and it will give in response lot of different values.
- * For this atom to works LTCustomerInfoVariableManager needs to be run first
+ * For this atom to works LTCustomerInfoVariableManager needs to be run first to collect the needed ltCustomerInfo.worksiteNo value.
  *
  */
 
@@ -18,28 +18,23 @@ trait LTCustomerWorksiteInfoVariableManager extends GenericVariableManager {
 
   override def configurationPrefix: Option[String] = Some("http-atom.ltCustomerWorksiteNo")
 
-  //override def inputConf(configMap: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[Option[HttpAtomInputConf]] = {
-//
-  //
-  //}
-
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
     LTCustomerWorksiteInfoOutput().successNel
   }
 }
 
 case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCustomerWorksiteInfoOutput.prefix}.score",
-                                        customerBackOfficeId: String = "ltCustomerWorksiteNo.customerBackOfficeId",
-                                        routePointBackOfficeId: String = "ltCustomerWorksiteNo.routePointBackOfficeId",
-                                        documentId: String = "ltCustomerWorksiteNo.documentId",
-                                        contentTypeItemName: String = "ltCustomerWorksiteNo.contentTypeItemName",
-                                        address: String = "ltCustomerWorksiteNo.address",
-                                        routeDate: String = "ltCustomerWorksiteNo.routeDate",
-                                        taskListDate: String = "ltCustomerWorksiteNo.taskListDate",
-                                        contentTypeName: String = "ltCustomerWorksiteNo.contentTypeName",
-                                        containerTypeName: String = "ltCustomerWorksiteNo.containerTypeName",
-                                        quantity: String = "ltCustomerWorksiteNo.quantity",
-                                        orderStatus: String = "ltCustomerWorksiteNo.orderStatus",
+                                        customerBackOfficeId: String = s"${LTCustomerWorksiteInfoOutput.prefix}.customerBackOfficeId",
+                                        routePointBackOfficeId: String = s"${LTCustomerWorksiteInfoOutput.prefix}.routePointBackOfficeId",
+                                        documentId: String = s"${LTCustomerWorksiteInfoOutput.prefix}.documentId",
+                                        contentTypeItemName: String = s"${LTCustomerWorksiteInfoOutput.prefix}.contentTypeItemName",
+                                        address: String = s"${LTCustomerWorksiteInfoOutput.prefix}.address",
+                                        routeDate: String = s"${LTCustomerWorksiteInfoOutput.prefix}.routeDate",
+                                        taskListDate: String = s"${LTCustomerWorksiteInfoOutput.prefix}.taskListDate",
+                                        contentTypeName: String = s"${LTCustomerWorksiteInfoOutput.prefix}.contentTypeName",
+                                        containerTypeName: String = s"${LTCustomerWorksiteInfoOutput.prefix}.containerTypeName",
+                                        quantity: String = s"${LTCustomerWorksiteInfoOutput.prefix}.quantity",
+                                        orderStatus: String = s"${LTCustomerWorksiteInfoOutput.prefix}.orderStatus",
                                         responseStatus: String = s"${LTCustomerWorksiteInfoOutput.prefix}.status"
                                        ) extends HttpAtomOutputConf {
   override def bodyParser(body: String, contentType: String, status: StatusCode): Map[String, String] = {
@@ -48,7 +43,7 @@ case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCusto
       val data = json match{
         case JsArray(elements) =>
           elements
-          .flatMap(_.asJsObject.fields.map {case (a,b) => s"${LTCustomerWorksiteInfoOutput.prefix}.$a" -> b.toString})
+          .flatMap(_.asJsObject.fields.map {case (k,v) => k -> v.toString})
           .toMap
         case _ => throw new IllegalArgumentException("bad Json or Bad request")
       }
@@ -59,7 +54,7 @@ case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCusto
         documentId -> data.getOrElse("DocumentId", ""),
         contentTypeItemName -> data.getOrElse("ContentTypeItemName", ""),
         address -> data.getOrElse("Address", ""),
-        routeDate -> data.getOrElse("RouteData", ""),
+        routeDate -> data.getOrElse("RouteDate", ""),
         taskListDate -> data.getOrElse("TaskListDate", ""),
         contentTypeName -> data.getOrElse("ContentTypeName", ""),
         containerTypeName -> data.getOrElse("ContainerTypeName", ""),
@@ -78,5 +73,5 @@ case class LTCustomerWorksiteInfoOutput(override val score: String = s"${LTCusto
 }
 
 object LTCustomerWorksiteInfoOutput{
-  val prefix = "ltCustomerWorksiteInfooo"
+  val prefix = "ltCustomerWorksiteInfo"
 }

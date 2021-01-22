@@ -788,7 +788,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     /*"call LTCustomerInfo api" in {
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
-      val args =  List("lt-api-url=https://lt.net")
+      val args =  List("lt-api-url=http://lt.net")
       val atom = new HttpRequestAtomic(args, systemConf) with LTCustomerInfoVariableManager
       val result = atom.evaluate("100227709", AnalyzersDataInternal())
       result.data.extractedVariables.foreach(println)
@@ -814,15 +814,15 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       configuration shouldBe a[Failure[_]]
       configuration.map(println)
     }
-    "call LTCustomerWorksite request api" in {
+    /*"call LTCustomerWorksite request api" in {
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
       val args = List()
-      val extractedVariables = Map(("customerWorksiteNo.result", "200320114"))
+      val extractedVariables = Map(("ltCustomerInfo.worksiteNo", "200320114"))
       val atom = new HttpRequestAtomic(args, extractedVariables ++ systemConf) with LTCustomerWorksiteInfoVariableManager
       val result = atom.evaluate("", AnalyzersDataInternal())
       result.data.extractedVariables.foreach(println)
       println(systemConf)
-    }
+    }*/
   }
 }
