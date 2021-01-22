@@ -799,7 +799,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
         .createMapFromPath("starchat.atom-values")
       val atom = new LTCustomerWorksiteInfoVariableManager {}
       val args = List()
-      val extractedVariable = Map(("customerWorksiteNo.result", "123132"))
+      val extractedVariable = Map(("ltCustomerInfo.worksiteNo", "123132"))
       val configuration = atom.validateAndBuild(args, systemConf, extractedVariable, "")
       configuration shouldBe a[Success[_]]
       configuration.map(println)
