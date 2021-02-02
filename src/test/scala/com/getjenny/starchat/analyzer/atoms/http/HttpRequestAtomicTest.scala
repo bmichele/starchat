@@ -1,7 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.getjenny.starchat.analyzer.atoms.http.custom.{ReadSheetsProductsByNameVariableManager, ReadSheetsProductsByFeaturesVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom._
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -805,7 +805,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     */
 
     "create a valid readSheetsProductsByFeatures atom configuration" in {
-      val variableManager = new ReadSheetsProductsByFeaturesVariableManager {}
+      val variableManager = new ReadSheetsProductsByFeatureVariableManager {}
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
       val atomArgs = List()
@@ -815,7 +815,7 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     }
 
     "create an invalid readSheetsProductsByFeatures atom configuration" in {
-      val variableManager = new ReadSheetsProductsByFeaturesVariableManager {}
+      val variableManager = new ReadSheetsProductsByFeatureVariableManager {}
       val systemConf = SystemConfiguration
         .createMapFromPath("starchat.atom-values")
       val atomArgs = List.empty

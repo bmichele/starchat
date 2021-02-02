@@ -26,20 +26,20 @@ import spray.json._
  * ReadSheetsProductsByFeatures(ARGUMENTSHERE)
  *
  * Variables set by atom:
- * %readSheetsProductsByFeature.count%: number of products found by external service
- * %readSheetsProductsByFeature.results.i%: String json containing details for a product retrieved from the external service
+ * %productFeature.count%: number of products found by external service
+ * %productFeature.results.i%: String json containing details for a product retrieved from the external service
  */
 
-trait ReadSheetsProductsByFeaturesVariableManager extends GenericVariableManager {
+trait ReadSheetsProductsByFeatureVariableManager extends GenericVariableManager {
 
   override def configurationPrefix: Option[String] = Some("http-atom.readSheetsProductsByFeature")
 
   override def outputConf(configuration: VariableConfiguration, findProperty: String => Option[String]): AtomValidation[HttpAtomOutputConf] = {
-    ReadSheetsProductsByFeaturesOutput().successNel
+    ReadSheetsProductsByFeatureOutput().successNel
   }
 }
 
-case class ReadSheetsProductsByFeaturesOutput(override val score: String = "readSheetsProductsByFeature.score",
+case class ReadSheetsProductsByFeatureOutput(override val score: String = "readSheetsProductsByFeature.score",
                                               readSheetsProductsByFeatureStatus: String = "readSheetsProductsByFeature.status",
                                               numberOfProducts: String = "readSheetsProductsByFeature.count",
                                               results: String = "readSheetsProductsByFeature.results"
