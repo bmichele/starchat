@@ -8,6 +8,7 @@ import spray.json._
 
 /**
  * Author Henri Vuorinen
+ *  ltCustomerWorksiteNo("lt-api-url=<base url>"")
  * requires botVariable ltCustomerInfo.worksiteNo to make the GET request. Calling this analyzer happens using "ltCustomerWorksiteNo()", no query is needed.
  * This variable is set in the request url and it will give in response lot of different values.
  * For this atom to works LTCustomerInfoVariableManager needs to be run first to collect the needed ltCustomerInfo.worksiteNo value.
