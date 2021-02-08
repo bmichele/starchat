@@ -41,6 +41,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "parseName",
     "prevTravStateIs",
     "readRemoteData",
+    "readSheetsProductsByFeature",
+    "readSheetsProductsByName",
     "regex",
     "search",
     "setServiceOpening",
@@ -93,6 +95,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "entityExtractor" => new HttpRequestAtomic(argument, restrictedArgs) with EntityExtractorVariableManager
     case "prevTravStateIs" => new PrevTravStateIsAtomic(argument, restrictedArgs)
     case "readRemoteData" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
+    case "readSheetsProductsByName" => new HttpRequestAtomic(argument, restrictedArgs) with ReadSheetsProductsByNameVariableManager
+    case "readSheetsProductsByFeature" => new HttpRequestAtomic(argument, restrictedArgs) with ReadSheetsProductsByFeatureVariableManager
     case "zendeskTicketComments" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskTicketCommentsVariableManager
     case "zendeskSearchTickets" => new HttpRequestAtomic(argument, restrictedArgs) with ZendeskSearchTicketsVariableManager
     case "regex" => new RegularExpressionAtomic(argument, restrictedArgs)
