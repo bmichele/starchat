@@ -1,8 +1,7 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.getjenny.analyzer.expressions.AnalyzersDataInternal
-import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
+import com.getjenny.starchat.analyzer.atoms.http.custom._
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
