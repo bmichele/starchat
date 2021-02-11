@@ -1,7 +1,8 @@
 package com.getjenny.starchat.analyzer.atoms.http
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.getjenny.starchat.analyzer.atoms.http.custom._
+import com.getjenny.analyzer.expressions.AnalyzersDataInternal
+import com.getjenny.starchat.analyzer.atoms.http.custom.{EntityExtractorVariableManager, WeatherVariableManager, ZendeskSearchTicketsVariableManager, ZendeskTicketCommentsVariableManager}
 import com.getjenny.starchat.utils.SystemConfiguration
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -770,6 +771,58 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
     result.data.extractedVariables.foreach(println)
   }
   */
+    "create a valid readSheetsProductsByName atom configuration" in {
+      val variableManager = new ReadSheetsProductsByNameVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atomArgs = List()
+      val extractedVariables = Map(("readSheetsProductsByName.productName.0", "test"))
+      val configuration = variableManager.validateAndBuild(atomArgs, systemConf, extractedVariables, "")
+      configuration shouldBe a[Success[_]]
+    }
+
+    "create an invalid readSheetsProductsByName atom configuration" in {
+      val variableManager = new ReadSheetsProductsByNameVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val configuration = variableManager.validateAndBuild(List.empty, systemConf, Map.empty, "")
+      configuration shouldBe a[Failure[_]]
+    }
+
+    /*
+    "test readSheetsProductsByName atom" in {
+
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atomArgs = List("readSheetsProductsByName.productName.0=product name 3", "readSheetsProductsByName.productName.1=product name 1")
+
+      val atom = new HttpRequestAtomic(atomArgs, systemConf) with ReadSheetsProductsByNameVariableManager
+
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      println(result)
+      result.data.extractedVariables.foreach(println)
+    }
+    */
+
+    "create a valid readSheetsProductsByFeatures atom configuration" in {
+      val variableManager = new ReadSheetsProductsByFeatureVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atomArgs = List()
+      val extractedVariables = Map(("productFeature.what", "test"),("productFeature.where", "test"), ("productFeature.material", "test"), ("productFeature.age", "test"), ("productFeature.previousTreatment", "test"), ("productFeature.desiredTreatment", "test"))
+      val configuration = variableManager.validateAndBuild(atomArgs, systemConf, extractedVariables, "")
+      configuration shouldBe a[Success[_]]
+    }
+
+    "create an invalid readSheetsProductsByFeatures atom configuration" in {
+      val variableManager = new ReadSheetsProductsByFeatureVariableManager {}
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atomArgs = List.empty
+      val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
+      configuration shouldBe a[Failure[_]]
+    }
 
     "create a valid LtCustomerInfo atom" in {
       val systemConf = SystemConfiguration
