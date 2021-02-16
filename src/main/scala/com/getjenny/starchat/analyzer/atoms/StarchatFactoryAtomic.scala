@@ -35,6 +35,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "keyword",
     "languageGuesser",
     "lastTravStateIs",
+    "ltCustomerInfo",
+    "ltCustomerWorksiteNo",
     "matchDateDDMMYYYY",
     "matchPatternRegex",
     "parseDate",
@@ -88,6 +90,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "keyword" => new KeywordAtomic2(argument, restrictedArgs)
     case "languageGuesser" => new LanguageGuesserAtomic(argument, restrictedArgs)
     case "lastTravStateIs" => new LastTravStateIsAtomic(argument, restrictedArgs)
+    case "ltCustomerInfo" => new HttpRequestAtomic(argument, restrictedArgs) with LTCustomerInfoVariableManager
+    case "ltCustomerWorksiteNo" => new HttpRequestAtomic(argument, restrictedArgs) with LTCustomerWorksiteInfoVariableManager
     case "matchDateDDMMYYYY" => new MatchDateDDMMYYYYAtomic(argument, restrictedArgs)
     case "matchPatternRegex" => new MatchPatternRegexAtomic(argument, restrictedArgs)
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager

@@ -822,5 +822,58 @@ class HttpRequestAtomicTest extends AnyWordSpec with Matchers with ScalatestRout
       val configuration = variableManager.validateAndBuild(atomArgs, systemConf, Map.empty, "")
       configuration shouldBe a[Failure[_]]
     }
+
+    "create a valid LtCustomerInfo atom" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+
+      val atom = new LTCustomerInfoVariableManager {}
+
+      val args =  List("lt-api-url=lt-api-url")
+
+      val configuration = atom.validateAndBuild(args, systemConf, Map.empty, "1234")
+      configuration shouldBe a[Success[_]]
+      configuration.map(println)
+    }
+
+    /*"call LTCustomerInfo api" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val args =  List("lt-api-url=<lt-api-url>")
+      val atom = new HttpRequestAtomic(args, systemConf) with LTCustomerInfoVariableManager
+      val result = atom.evaluate("100227709", AnalyzersDataInternal())
+      result.data.extractedVariables.foreach(println)
+    }*/
+
+    "create a valid LTCustomerWorksite request" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new LTCustomerWorksiteInfoVariableManager {}
+      val args =  List("lt-worksite-url=lt-worksite-url")
+      val extractedVariable = Map(("ltCustomerInfo.worksiteNo", "123132"))
+      val configuration = atom.validateAndBuild(args, systemConf, extractedVariable, "")
+      configuration shouldBe a[Success[_]]
+      configuration.map(println)
+    }
+
+    "create a invalid LTCustomerWorkiste request" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val atom = new LTCustomerWorksiteInfoVariableManager {}
+      val args = List.empty
+      val configuration = atom.validateAndBuild(args, systemConf, Map.empty, "")
+      configuration shouldBe a[Failure[_]]
+      configuration.map(println)
+    }
+    /*"call LTCustomerWorksite request api" in {
+      val systemConf = SystemConfiguration
+        .createMapFromPath("starchat.atom-values")
+      val args = List("lt-worksite-url=<lt-worksite-url>")
+      val extractedVariables = Map(("ltCustomerInfo.worksiteNo", "200320114"))
+      val atom = new HttpRequestAtomic(args, extractedVariables ++ systemConf) with LTCustomerWorksiteInfoVariableManager
+      val result = atom.evaluate("", AnalyzersDataInternal())
+      result.data.extractedVariables.foreach(println)
+      println(systemConf)
+    }*/
   }
 }
