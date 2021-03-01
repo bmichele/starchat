@@ -7,7 +7,7 @@ package com.getjenny.starchat.analyzer.atoms
 import com.getjenny.analyzer.atoms._
 import com.getjenny.analyzer.interfaces._
 import com.getjenny.starchat.analyzer.atoms.http.custom._
-import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic}
+import com.getjenny.starchat.analyzer.atoms.http.{GenericVariableManager, HttpRequestAtomic, HttpSearchAtomic}
 
 class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAtomic, Map[String, String]] {
 
@@ -26,6 +26,7 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     "cosDistanceKeywords",
     "distance",
     "doubleNumberVariable",
+    "embeddingSearch",
     "existsVariable",
     "hasTravState",
     "hasTravStateInPosition",
@@ -97,6 +98,8 @@ class StarchatFactoryAtomic extends AtomicFactoryTrait[List[String], AbstractAto
     case "parseDate" => new HttpRequestAtomic(argument, restrictedArgs) with ParseDateVariableManager
     case "parseName" => new HttpRequestAtomic(argument, restrictedArgs) with ParseNameVariableManager
     case "entityExtractor" => new HttpRequestAtomic(argument, restrictedArgs) with EntityExtractorVariableManager
+    case "embeddingSearch" => new HttpSearchAtomic(argument, restrictedArgs) with HttpSearchVariableManager
+//    case "embeddingSearch" => new HttpRequestAtomic(argument, restrictedArgs) with HttpSearchVariableManager
     case "prevTravStateIs" => new PrevTravStateIsAtomic(argument, restrictedArgs)
     case "readRemoteData" => new HttpRequestAtomic(argument, restrictedArgs) with ReadS3DataVariableManager
     case "readSheetsProductsByName" => new HttpRequestAtomic(argument, restrictedArgs) with ReadSheetsProductsByNameVariableManager
